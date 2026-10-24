@@ -1,0 +1,96 @@
+<?php
+
+namespace App\Livewire\Sedes;
+
+use App\Livewire\Concerns\RequiereAdmin;
+use App\Models\Sede;
+use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+#[Layout('layouts.app')]
+#[Title('Sede')]
+class SedeForm extends Component
+{
+    use RequiereAdmin;
+
+    #[Locked]
+    public ?Sede $sede = null;
+
+    public string $nombre = '';
+
+    public ?string $direccion = null;
+
+    public ?float $latitud = null;
+
+    public ?float $longitud = null;
+
+    public int $radioMetros = 150;
+
+    public bool $activo = true;
+
+    public const RADIO_MAXIMO_METROS = 1000;
+
+    public function mount(?Sede $sede = null): void
+    {
+        if ($sede?->exists) {
+            $this->sede = $sede;
+            $this->nombre = $sede->nombre;
+            $this->direccion = $sede->direccion;
+            $this->latitud = (float) $sede->latitud;
+            $this->longitud = (float) $sede->longitud;
+            $this->radioMetros = $sede->radio_metros;
+            $this->activo = $sede->activo;
+        }
+    }
+
+    protected function rules(): array
+    {
+        return [
+            'nombre' => ['required', 'string', 'max:255'],
+            'direccion' => ['nullable', 'string', 'max:255'],
+            'latitud' => ['required', 'numeric', 'between:-90,90'],
+            'longitud' => ['required', 'numeric', 'between:-180,180'],
+            'radioMetros' => ['required', 'integer', 'min:10', 'max:'.self::RADIO_MAXIMO_METROS],
+            'activo' => ['boolean'],
+        ];
+    }
+
+    protected $messages = [
+        'radioMetros.max' => 'El radio no puede superar los '.self::RADIO_MAXIMO_METROS.' metros.',
+        'radioMetros.min' => 'El radio mínimo es de 10 metros.',
+        'latitud.required' => 'Marca la ubicación en el mapa antes de guardar.',
+        'longitud.required' => 'Marca la ubicación en el mapa antes de guardar.',
+    ];
+
+    public function guardar(): void
+    {
+        $this->autorizarAdmin();
+
+        $datos = $this->validate();
+
+        $atributos = [
+            'nombre' => $datos['nombre'],
+            'direccion' => $datos['direccion'],
+            'latitud' => $datos['latitud'],
+            'longitud' => $datos['longitud'],
+            'radio_metros' => $datos['radioMetros'],
+            'activo' => $datos['activo'],
+        ];
+
+        $this->sede
+            ? $this->sede->update($atributos)
+            : Sede::create($atributos);
+
+        session()->flash('mensaje', $this->sede ? 'Sede actualizada.' : 'Sede creada.');
+
+        $this->redirectRoute('sedes.index', navigate: false);
+    }
+
+    public function render(): View
+    {
+        return view('livewire.sedes.sede-form');
+    }
+}

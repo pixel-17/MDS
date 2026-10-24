@@ -1,0 +1,772 @@
+<div
+    x-data="{ todos: null, arrastrando: null, sobre: null, leyenda: false, ayuda: false, pendientes: false, bandeja: [], panelAbierto: true }"
+    class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8 space-y-6"
+>
+
+    <style>
+        .org-tree { --org-line: #cbd5e1; }
+        .dark .org-tree { --org-line: rgba(255, 255, 255, .18); }
+        .org-tree ul { list-style: none; margin: 0 0 0 .9rem; padding: 0; }
+        .org-tree ul > li { position: relative; padding-left: 1.6rem; padding-top: .75rem; }
+        .org-tree ul > li::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; border-left: 2px solid var(--org-line); }
+        .org-tree ul > li:last-child::before { bottom: auto; height: 2.1rem; }
+        .org-tree ul > li::after { content: ''; position: absolute; left: 0; top: 2.1rem; width: 1.3rem; border-top: 2px solid var(--org-line); }
+        .org-editando .org-persona { outline: 1px dashed #f59e0b; outline-offset: 1px; }
+
+        .org-nivel { border-left: 5px solid var(--org-tono); background-image: linear-gradient(90deg, var(--org-velo), transparent 55%); }
+        .org-n0 { --org-tono: #223437; --org-velo: rgba(34, 52, 55, .16); }
+        .org-n1 { --org-tono: #324e52; --org-velo: rgba(50, 78, 82, .13); }
+        .org-n2 { --org-tono: #436164; --org-velo: rgba(67, 97, 100, .11); }
+        .org-n3 { --org-tono: #647d7d; --org-velo: rgba(100, 125, 125, .10); }
+        .org-n4 { --org-tono: #98adab; --org-velo: rgba(152, 173, 171, .12); }
+        .org-n5 { --org-tono: #c3d0ce; --org-velo: rgba(195, 208, 206, .16); }
+        .dark .org-n0 { --org-tono: #c3d0ce; --org-velo: rgba(195, 208, 206, .16); }
+        .dark .org-n1 { --org-tono: #98adab; --org-velo: rgba(152, 173, 171, .13); }
+        .dark .org-n2 { --org-tono: #647d7d; --org-velo: rgba(100, 125, 125, .12); }
+        .dark .org-n3 { --org-tono: #436164; --org-velo: rgba(67, 97, 100, .14); }
+        .dark .org-n4 { --org-tono: #324e52; --org-velo: rgba(50, 78, 82, .16); }
+        .dark .org-n5 { --org-tono: #293f43; --org-velo: rgba(41, 63, 67, .18); }
+
+        .org-arrastrando .org-nivel { outline: 2px dashed rgba(245, 158, 11, .55); outline-offset: 2px; }
+        .org-foco > .org-nivel { box-shadow: 0 0 0 3px rgba(245, 158, 11, .75); transition: box-shadow .3s; }
+        .org-persona .org-asa { color: #94a3b8; }
+        .org-persona:hover .org-asa { color: #475569; }
+        .org-persona[draggable="true"]:active { opacity: .6; }
+        .org-tree button:focus-visible, .org-tree a:focus-visible { outline: 2px solid #f59e0b; outline-offset: 2px; border-radius: .5rem; }
+        .org-tree > ul { margin-left: 0; }
+        .org-tree > ul > li { padding-left: 0; }
+        .org-tree > ul > li::before, .org-tree > ul > li::after { display: none; }
+
+        .org-encabezado-fija {
+            padding-block: .5rem;
+        }
+
+        .org-panel-lateral {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: .5rem;
+            width: 16rem;
+            max-width: calc(100vw - 2rem);
+            position: fixed;
+            right: 1.25rem;
+            bottom: 1.25rem;
+            z-index: 30;
+        }
+
+        .org-boton-edicion-flotante {
+            align-self: flex-end;
+            border-radius: 9999px;
+            box-shadow: 0 12px 28px -10px rgb(0 0 0 / .35);
+        }
+
+        .org-panel-tarjeta {
+            border-radius: 1rem;
+            border: 1px solid rgb(0 0 0 / .08);
+            background: color-mix(in srgb, var(--surface) 92%, transparent);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 12px 28px -12px rgb(0 0 0 / .22);
+            padding: .75rem;
+        }
+        .dark .org-panel-tarjeta { border-color: rgb(255 255 255 / .1); }
+        .org-panel-separador { border-top: 1px solid rgb(0 0 0 / .08); margin-block: .5rem; }
+        .dark .org-panel-separador { border-color: rgb(255 255 255 / .1); }
+    </style>
+
+    <div class="org-encabezado-fija">
+        <x-admin.encabezado titulo="Organigrama del área">
+
+            <div class="inline-flex overflow-hidden rounded-lg border border-gray-200 text-xs dark:border-white/15" role="group" aria-label="Qué tanto del árbol se ve">
+                <button type="button" class="px-3 py-2 font-medium text-tinta-950 hover:bg-tinta-50 dark:text-white dark:hover:bg-white/10"
+                        :class="todos === null && 'bg-tinta-50 dark:bg-white/10'" :aria-pressed="todos === null"
+                        @click="todos = null; $dispatch('org-areas')">Solo áreas</button>
+                <button type="button" class="border-s border-gray-200 px-3 py-2 font-medium text-tinta-950 hover:bg-tinta-50 dark:border-white/15 dark:text-white dark:hover:bg-white/10"
+                        :class="todos === true && 'bg-tinta-50 dark:bg-white/10'" :aria-pressed="todos === true"
+                        @click="todos = true; $dispatch('org-expandir')">Todo abierto</button>
+                <button type="button" class="border-s border-gray-200 px-3 py-2 font-medium text-tinta-950 hover:bg-tinta-50 dark:border-white/15 dark:text-white dark:hover:bg-white/10"
+                        :class="todos === false && 'bg-tinta-50 dark:bg-white/10'" :aria-pressed="todos === false"
+                        @click="todos = false; $dispatch('org-contraer')">Todo cerrado</button>
+            </div>
+        </x-admin.encabezado>
+    </div>
+
+    @if ($modoEdicion)
+        <div class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200" role="status">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span class="inline-block size-2 animate-pulse rounded-full bg-amber-500"></span>
+                <strong>Modo edición</strong>
+                <span class="text-amber-800/80 dark:text-amber-200/80">Arrastra a una persona sobre otra unidad para moverla. Siempre se pide confirmación.</span>
+                <button type="button" class="ms-auto text-xs font-medium underline hover:no-underline" @click="ayuda = ! ayuda" :aria-expanded="ayuda">
+                    <span x-text="ayuda ? 'Ocultar ayuda' : '¿Cómo funciona?'"></span>
+                </button>
+            </div>
+            <ul x-show="ayuda" x-cloak x-collapse class="mt-2 list-disc space-y-1 ps-5 text-xs text-amber-800/90 dark:text-amber-200/90">
+                <li>Se pueden arrastrar trabajadores y jefes inmediatos a otra unidad.</li>
+                @if ($esAdmin)
+                    <li>Sobre un área con jefe de área puedes mover también su unidad con toda su gente.</li>
+                    <li>Los íconos de cada unidad y persona sirven para editar, agregar sub-unidades o altas.</li>
+                @elseif ($esJefeDeArea)
+                    <li>El ícono «Agregar sub-unidad» de cada unidad de tu área sirve para crear una rama nueva.</li>
+                @endif
+                <li>Sin arrastrar (táctil o teclado): abre a la persona con clic en su nombre y usa «Mover a otra unidad».</li>
+            </ul>
+        </div>
+    @endif
+
+    <div x-data="{ show: false, texto: '', t: null,
+                   init() {
+                       this.$wire.$watch('mensajeOk', v => {
+                           if (! v) return;
+                           this.texto = v; this.show = true; clearTimeout(this.t);
+                           this.t = setTimeout(() => { this.show = false; this.$wire.set('mensajeOk', null, false) }, 3000);
+                       });
+                   } }"
+         class="pointer-events-none fixed inset-x-0 top-6 z-[60] flex justify-center px-4">
+        <div x-show="show" x-cloak
+             x-transition:enter="transition ease-out duration-200" x-transition:enter-start="-translate-y-2 opacity-0" x-transition:enter-end="translate-y-0 opacity-100"
+             x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+             class="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 shadow-lg dark:border-green-500/30 dark:bg-green-950 dark:text-green-200" role="status">
+            <svg class="size-5 shrink-0 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+            <span class="flex-1" x-text="texto"></span>
+            <button type="button" @click="show = false" class="ms-1 opacity-60 hover:opacity-100" aria-label="Cerrar aviso">✕</button>
+        </div>
+    </div>
+
+    @if ($mensajeError)
+        <x-aviso-toast tipo="error">{{ $mensajeError }}</x-aviso-toast>
+    @endif
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <x-stat-card label="Unidades" :value="$stats['unidades']" />
+        <x-stat-card label="Personas" :value="$stats['personas']" />
+        <x-stat-card label="Sin sede" :value="$stats['sin_sede']" :hint="$stats['sin_sede'] ? 'Hay que asignarles sede' : 'Todos tienen sede'" />
+        <x-stat-card label="Sin jefe" :value="$stats['sin_jefe']" hint="Unidades sin jefe activo" />
+    </div>
+
+    @php
+
+        $recolectarSinJefe = function ($nodos, array $ruta = []) use (&$recolectarSinJefe): array {
+            $filas = [];
+            foreach ($nodos as $n) {
+                if ($n['sin_jefe']) {
+                    $filas[] = ['unidad' => $n['unidad'], 'ruta' => $ruta];
+                }
+                $filas = array_merge($filas, $recolectarSinJefe($n['hijos'], [...$ruta, $n['unidad']->id]));
+            }
+
+            return $filas;
+        };
+        $sinJefe = $recolectarSinJefe($raices);
+    @endphp
+
+    <div class="flex flex-wrap items-start gap-3">
+        @if (count($sinJefe) > 0 || $stats['sin_sede'] > 0)
+            <div class="flex-1 min-w-[16rem] rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm dark:border-amber-500/30 dark:bg-amber-500/10">
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <strong class="text-amber-900 dark:text-amber-200">Por atender</strong>
+                    @if (count($sinJefe) > 0)
+                        <button type="button" class="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-amber-900 shadow-sm ring-1 ring-amber-200 hover:bg-amber-100 dark:bg-white/10 dark:text-amber-100 dark:ring-amber-500/30"
+                                @click="pendientes = ! pendientes" :aria-expanded="pendientes">
+                            {{ count($sinJefe) }} {{ count($sinJefe) === 1 ? 'unidad sin jefe' : 'unidades sin jefe' }}
+                            <svg class="size-3.5 transition-transform" :class="pendientes && 'rotate-90'" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                        </button>
+                    @endif
+                    @if ($stats['sin_sede'] > 0 && $sede !== 'sin')
+                        <button type="button" wire:click="$set('sede', 'sin')"
+                                class="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-red-800 shadow-sm ring-1 ring-red-200 hover:bg-red-50 dark:bg-white/10 dark:text-red-200 dark:ring-red-500/30">
+                            {{ $stats['sin_sede'] }} {{ $stats['sin_sede'] === 1 ? 'persona sin sede' : 'personas sin sede' }} · ver solo ellas
+                        </button>
+                    @endif
+                </div>
+                @if (count($sinJefe) > 0)
+                    <ul x-show="pendientes" x-cloak x-collapse class="mt-2 flex flex-wrap gap-2">
+                        @foreach ($sinJefe as $fila)
+                            <li wire:key="sin-jefe-{{ $fila['unidad']->id }}">
+                                <button type="button" class="rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-xs text-tinta-950 hover:bg-amber-100 dark:border-amber-500/40 dark:bg-gray-900 dark:text-white dark:hover:bg-white/10"
+                                        @click="$dispatch('org-ir', { id: {{ $fila['unidad']->id }}, ruta: @js($fila['ruta']) })">
+                                    {{ $fila['unidad']->nombre }}
+                                </button>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        @endif
+
+        @if ($esAdmin || $esJefeDeArea)
+            <div class="org-panel-lateral">
+
+                @unless ($modoEdicion)
+                    <button type="button"
+                            wire:click="alternarEdicion"
+                            aria-pressed="false"
+                            class="btn-secondary org-boton-edicion-flotante inline-flex items-center justify-center gap-1.5 px-4 py-3 text-xs">
+                        <x-icon name="pencil" class="size-4" />
+                        Modo edición
+                    </button>
+                @else
+                    <div class="org-panel-tarjeta">
+                        <div class="flex items-center justify-between gap-2">
+                            <button type="button" class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400"
+                                    @click="panelAbierto = ! panelAbierto" :aria-expanded="panelAbierto" aria-label="Mostrar u ocultar el panel">
+                                <span class="inline-block size-2 animate-pulse rounded-full bg-amber-500"></span>
+                                Edición activa
+                                <svg class="size-3.5 transition-transform" :class="! panelAbierto && '-rotate-180'" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
+                            </button>
+                            <button type="button"
+                                    wire:click="alternarEdicion"
+                                    aria-pressed="true"
+                                    class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-gray-600 ring-1 ring-gray-300 hover:bg-gray-100 dark:text-tinta-50/80 dark:ring-white/20 dark:hover:bg-white/10">
+                                <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" /></svg>
+                                Salir
+                            </button>
+                        </div>
+
+                        <div x-show="panelAbierto" x-collapse x-cloak>
+
+                        <div class="org-panel-separador"></div>
+
+                        <div class="flex flex-col gap-2">
+                @if ($modoEdicion && $esAdmin)
+                    <div x-data="{ m: false }" class="relative" @click.outside="m = false" @keydown.escape="m = false">
+                        <button type="button" class="btn-primary flex w-full items-center justify-center gap-1 text-xs" @click="m = ! m" :aria-expanded="m">
+                            <x-icon name="plus-circle" class="size-4" /> Agregar
+                        </button>
+                        <div x-show="m" x-cloak x-transition.opacity.duration.120ms class="absolute right-0 z-30 mt-1 w-52 rounded-xl border border-gray-200 bg-white p-1 shadow-lg dark:border-white/15 dark:bg-gray-800">
+                            <button type="button" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-tinta-950 hover:bg-tinta-50 dark:text-white dark:hover:bg-white/10"
+                                    @click="m = false; $dispatch('org-unidad-abrir', { id: null, parentId: null })">
+                                <x-icon name="building" class="size-4" /> Unidad orgánica
+                            </button>
+                            <button type="button" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-tinta-950 hover:bg-tinta-50 dark:text-white dark:hover:bg-white/10"
+                                    @click="m = false; $dispatch('org-persona-abrir', {})">
+                                <x-icon name="users" class="size-4" /> Trabajador
+                            </button>
+                            <a href="{{ route('sedes.crear') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-tinta-950 hover:bg-tinta-50 dark:text-white dark:hover:bg-white/10">
+                                <x-icon name="map-pin" class="size-4" /> Sede
+                            </a>
+                        </div>
+                    </div>
+                @elseif ($modoEdicion && $esJefeDeArea)
+
+                    <button type="button" class="btn-primary flex w-full items-center justify-center gap-1 text-xs"
+                            @click="$dispatch('org-persona-abrir', {})">
+                        <x-icon name="plus-circle" class="size-4" /> Agregar trabajador o jefe inmediato
+                    </button>
+                @elseif ($modoEdicion)
+
+                    <button type="button" class="btn-primary flex w-full items-center justify-center gap-1 text-xs"
+                            @click="$dispatch('org-persona-abrir', {})">
+                        <x-icon name="plus-circle" class="size-4" /> Agregar trabajador
+                    </button>
+                @endif
+
+                @if ($modoEdicion)
+
+                    <div class="flex flex-col items-stretch gap-2 rounded-xl border border-dashed px-3 py-2 transition"
+                         :class="bandeja.length > 0
+                            ? 'border-amber-400/70 bg-amber-50/60 dark:border-amber-400/40 dark:bg-amber-500/10'
+                            : 'border-gray-300 dark:border-white/15'"
+                         @dragover.prevent="$event.dataTransfer.dropEffect = 'move'"
+                         @drop.prevent="
+                            if (arrastrando && ! bandeja.some(p => p.id === arrastrando)) {
+                                bandeja.push({ id: arrastrando, nombre: (window.orgNombres && window.orgNombres[arrastrando]) || ('#' + arrastrando) });
+                            }
+                            arrastrando = null; sobre = null;
+                         "
+                         role="group" aria-label="Bandeja: arrastra aquí a quien quieras apartar antes de moverlo">
+                        <div class="flex items-center gap-2">
+                            <x-icon name="users" class="size-4 shrink-0 text-gray-400" />
+                            <span x-show="bandeja.length === 0" class="text-xs text-gray-400 dark:text-tinta-50/50">
+                                Arrástralos aquí para apartarlos mientras buscas dónde ponerlos; luego arrástralos desde aquí hasta la unidad.
+                            </span>
+                        </div>
+                        <template x-for="p in bandeja" :key="p.id">
+                            <span class="org-persona inline-flex w-full cursor-grab items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs shadow-sm active:cursor-grabbing dark:bg-gray-800"
+                                  draggable="true"
+                                  title="Arrástralo sobre la unidad de destino"
+                                  @dragstart="arrastrando = p.id; $event.dataTransfer.effectAllowed = 'move'; $event.dataTransfer.setData('text/plain', String(p.id))"
+                                  @dragend="arrastrando = null; sobre = null">
+                                <svg class="org-asa size-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                                <span class="min-w-0 flex-1 truncate" x-text="p.nombre"></span>
+                                <button type="button" class="shrink-0 text-gray-400 hover:text-red-600" @click="bandeja = bandeja.filter(x => x.id !== p.id)"
+                                        title="Quitar de la bandeja (no mueve nada)" aria-label="Quitar de la bandeja">
+                                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" /></svg>
+                                </button>
+                            </span>
+                        </template>
+                    </div>
+                @endif
+                        </div>
+                        </div>
+                    </div>
+                @endunless
+            </div>
+        @endif
+    </div>
+
+    <div class="flex flex-wrap items-end gap-4">
+        <x-admin.filtro-campo label="Buscar" for="organigrama-buscar">
+            <x-input id="organigrama-buscar" type="text" wire:model.live.debounce.400ms="buscar" placeholder="Unidad, jefe, trabajador o DNI" />
+        </x-admin.filtro-campo>
+
+        <x-admin.filtro-campo label="Sede" for="organigrama-sede">
+            <x-select id="organigrama-sede" wire:model.live="sede">
+                <option value="">Todas las sedes ({{ array_sum($conteoSedes) }})</option>
+                @foreach ($sedes as $s)
+                    <option value="{{ $s->id }}">{{ $s->nombre }} ({{ $conteoSedes[(string) $s->id] ?? 0 }})</option>
+                @endforeach
+                <option value="sin">Sin sede ({{ $conteoSedes['sin'] ?? 0 }})</option>
+            </x-select>
+        </x-admin.filtro-campo>
+
+        @if ($sede !== '')
+            <button type="button" wire:click="limpiarSede" class="pb-2 text-xs text-tinta-700 underline hover:no-underline dark:text-tinta-200">Quitar filtro de sede</button>
+        @endif
+
+        <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-tinta-50/80 pb-2">
+            <input type="checkbox" wire:model.live="verInactivos" class="rounded border-gray-300 text-tinta-600 focus:ring-tinta-500">
+            Mostrar desactivados
+        </label>
+
+        <div class="ms-auto pb-2 text-xs text-gray-600 dark:text-tinta-50/70">
+            <button type="button" class="inline-flex items-center gap-1 rounded-lg px-2 py-1 font-medium text-tinta-700 hover:bg-tinta-50 dark:text-tinta-100 dark:hover:bg-white/10"
+                    @click="leyenda = ! leyenda" :aria-expanded="leyenda">
+                <svg class="size-4 transition-transform" :class="leyenda && 'rotate-90'" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                Leyenda
+            </button>
+            <div x-show="leyenda" x-cloak x-collapse class="mt-1 flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+                <span class="inline-flex items-center gap-1" title="Cada nivel del organigrama tiene un tono más claro que el anterior">
+                    Nivel
+                    <span class="inline-flex overflow-hidden rounded">
+                        @foreach (['#223437', '#324e52', '#436164', '#647d7d', '#98adab', '#c3d0ce'] as $tono)
+                            <span class="inline-block h-2.5 w-3" style="background: {{ $tono }}"></span>
+                        @endforeach
+                    </span>
+                </span>
+                <span class="inline-flex items-center gap-1"><span class="inline-block size-2.5 rounded-full bg-tinta-600"></span> Jefe</span>
+                <span class="inline-flex items-center gap-1"><span class="inline-block size-2.5 rounded-full bg-emerald-500"></span> Trabajador</span>
+                <span class="inline-flex items-center gap-1"><span class="inline-block size-2.5 rounded-full bg-amber-500"></span> Sede distinta a la de su jefe</span>
+                <span class="inline-flex items-center gap-1"><span class="inline-block size-2.5 rounded-full bg-red-500"></span> Sin sede</span>
+            </div>
+        </div>
+    </div>
+
+    @if ($raices->isEmpty())
+        <div class="glass-card p-8 text-center text-sm text-gray-500 dark:text-tinta-50/70">
+            {{ $buscar !== '' || $sede !== '' ? 'Nada coincide con los filtros.' : 'Todavía no hay unidades orgánicas para mostrar.' }}
+            @if ($esAdmin && $buscar === '' && $sede === '')
+                <div class="mt-4">
+                    <button type="button" class="btn-primary text-sm" @click="$dispatch('org-unidad-abrir', { id: null, parentId: null })">Crear la primera unidad</button>
+                </div>
+            @endif
+        </div>
+    @else
+        <div @class(['org-tree overflow-x-auto pb-4', 'org-editando' => $modoEdicion]) :class="arrastrando && 'org-arrastrando'">
+            <ul>
+                @foreach ($raices as $nodo)
+                    @include('livewire.organigrama._nodo', ['nodo' => $nodo, 'forzarAbierto' => $buscar !== '' || $sede !== '', 'esAdmin' => $esAdmin, 'esJefeDeArea' => $esJefeDeArea, 'modoEdicion' => $modoEdicion, 'nivel' => 0, 'buscar' => $buscar])
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    @if ($historial->isNotEmpty())
+        <div class="glass-card p-4" x-data="{ verTodo: false }">
+            <h2 class="text-sm font-semibold text-tinta-950 dark:text-white">Movimientos recientes</h2>
+            <ul class="mt-2 divide-y divide-gray-100 dark:divide-white/10">
+                @foreach ($historial as $fila)
+                    @php($h = $fila['movimiento'])
+                    <li wire:key="org-mov-{{ $h->id }}"
+                        @if ($loop->index >= 2) x-show="verTodo" x-cloak @endif
+                        class="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
+                        <span class="font-medium text-tinta-950 dark:text-white">{{ $h->trabajador?->nombre_completo ?? 'Persona eliminada' }}</span>
+                        <span class="text-gray-700 dark:text-tinta-50/80">{{ $h->unidadAnterior?->nombre ?? '—' }} → {{ $h->unidadNueva?->nombre ?? '—' }}</span>
+                        @if ($h->esReversion())
+                            <span class="rounded-full bg-tinta-50 px-2 py-0.5 text-[11px] text-tinta-700 dark:bg-white/10 dark:text-tinta-100">Reversión</span>
+                        @endif
+                        @if ($h->cambioSede())
+                            <span class="rounded-full bg-tinta-50 px-2 py-0.5 text-[11px] text-tinta-700 dark:bg-white/10 dark:text-tinta-100">Sede: {{ $h->sedeAnterior?->nombre ?? 'Sin sede' }} → {{ $h->sedeNueva?->nombre ?? 'Sin sede' }}</span>
+                        @endif
+                        @if ($h->deshecho_at)
+                            <span class="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] text-gray-700 dark:bg-white/10 dark:text-tinta-50/80">Deshecho</span>
+                        @endif
+                        <span class="ms-auto text-xs text-gray-500 dark:text-tinta-50/60">{{ $h->actor?->nombre_completo ?? 'Sistema' }} · {{ $h->created_at->format('d/m/Y H:i') }}</span>
+                        @if ($fila['puede_deshacer'])
+                            <button
+                                type="button"
+                                x-on:click="mssConfirmar(@js('¿Deshacer este movimiento?'), { peligro: true }).then((ok) => ok && $wire.deshacerMovimiento({{ $h->id }}))"
+                                class="btn-secondary text-xs"
+                            >Deshacer</button>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+            @if ($historial->count() > 2)
+                <button type="button"
+                        class="mt-2 text-xs font-medium text-tinta-700 underline hover:no-underline dark:text-tinta-100"
+                        @click="verTodo = ! verTodo" :aria-expanded="verTodo">
+                    <span x-text="verTodo ? 'Ver menos' : 'Ver todo ({{ $historial->count() }})'"></span>
+                </button>
+            @endif
+        </div>
+    @endif
+
+    @if ($movimiento)
+        @php($t = $movimiento['trabajador'])
+        <div class="fixed inset-0 z-50" @keydown.escape.window="$wire.cancelarMovimiento()">
+            <div class="absolute inset-0 bg-black/40" wire:click="cancelarMovimiento" aria-hidden="true"></div>
+
+            <div class="absolute left-1/2 top-1/2 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900"
+                 role="dialog" aria-modal="true" aria-label="Confirmar movimiento"
+                 x-trap.noscroll="true">
+                <h2 class="text-lg font-semibold text-tinta-950 dark:text-white">Confirmar movimiento</h2>
+                <p class="mt-2 text-sm text-gray-700 dark:text-tinta-50/80">
+                    Vas a mover a <strong>{{ $t->nombre_completo }}</strong> de
+                    <strong>{{ $movimiento['origen']->nombre }}</strong> a
+                    <strong>{{ $movimiento['destino']->nombre }}</strong>.
+                </p>
+
+                @if ($modoEdicion)
+                    <div class="mt-3 flex flex-wrap gap-2 text-xs" role="group" aria-label="Cómo moverlo">
+                        <span class="rounded-full bg-tinta-600 px-3 py-1 font-medium text-white">Como trabajador</span>
+                        <button type="button" wire:click="ascenderTrabajador" class="rounded-full border border-gray-300 px-3 py-1 font-medium text-tinta-950 hover:bg-gray-50 dark:border-white/20 dark:text-white dark:hover:bg-white/5">
+                            Como jefe inmediato de {{ $movimiento['destino']->nombre }}
+                        </button>
+                    </div>
+                @endif
+
+                <dl class="mt-4 space-y-3 text-sm">
+                    @foreach ([['Jefe inmediato', $movimiento['jefe_inmediato']], ['Jefe de área', $movimiento['jefe_area']]] as [$etiqueta, $fila])
+                        <div>
+                            <dt class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">{{ $etiqueta }}</dt>
+                            <dd class="mt-0.5 text-tinta-950 dark:text-white">
+                                @if ($fila['cambia'])
+                                    {{ $fila['antes']?->nombre_completo ?? 'Sin asignar' }} → <strong>{{ $fila['despues']?->nombre_completo ?? 'Sin asignar' }}</strong>
+                                @else
+                                    {{ $fila['despues']?->nombre_completo ?? 'Sin asignar' }} <span class="text-xs text-gray-500 dark:text-tinta-50/60">(no cambia)</span>
+                                @endif
+                            </dd>
+                        </div>
+                    @endforeach
+                    <div>
+                        <dt class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Sede</dt>
+                        <dd class="mt-0.5 text-tinta-950 dark:text-white">
+                            @if ($movimiento['sede']['propone_cambio'])
+                                <label class="flex items-start gap-2">
+                                    <input type="checkbox" wire:model="propuesta.cambiar_sede" class="mt-0.5 rounded border-gray-300 text-tinta-600 focus:ring-tinta-500">
+                                    <span>
+                                        Cambiar la sede de <strong>{{ $movimiento['sede']['actual']?->nombre ?? 'Sin sede' }}</strong>
+                                        a <strong>{{ $movimiento['sede']['propuesta']->nombre }}</strong>
+                                        <span class="block text-xs text-gray-500 dark:text-tinta-50/60">Es la sede del jefe de {{ $movimiento['destino']->nombre }}. Desmárcalo para conservar la actual.</span>
+                                    </span>
+                                </label>
+                            @else
+                                {{ $movimiento['sede']['actual']?->nombre ?? 'Sin sede' }} <span class="text-xs text-gray-500 dark:text-tinta-50/60">(no cambia)</span>
+                            @endif
+                        </dd>
+                    </div>
+                </dl>
+
+                @if ($movimiento['avisos'] !== [] || $movimiento['pendientes'] > 0)
+                    <ul class="mt-4 space-y-1 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                        @foreach ($movimiento['avisos'] as $aviso)
+                            <li>{{ $aviso }}</li>
+                        @endforeach
+                        @if ($movimiento['pendientes'] > 0)
+                            <li>Tiene {{ $movimiento['pendientes'] }} {{ $movimiento['pendientes'] === 1 ? 'papeleta pendiente' : 'papeletas pendientes' }}; las que esperan a su jefe pasan al jefe nuevo.</li>
+                        @endif
+                    </ul>
+                @endif
+
+                <div class="mt-6 flex justify-end gap-2">
+                    <button type="button" wire:click="cancelarMovimiento" class="btn-secondary text-sm">Cancelar</button>
+                    <button type="button" wire:click="confirmarMovimiento" wire:loading.attr="disabled" class="btn-primary text-sm">Confirmar movimiento</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <div wire:loading.flex wire:target="confirmarMovimiento,confirmarMovimientoJefe,deshacerMovimiento"
+         class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/50" role="status" aria-live="polite">
+        <div class="flex items-center gap-3 rounded-2xl bg-white px-6 py-4 text-sm font-medium text-tinta-950 shadow-xl dark:bg-gray-900 dark:text-white">
+            <svg class="size-5 animate-spin text-tinta-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
+                <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round" class="opacity-75"/>
+            </svg>
+            Moviendo y recalculando jefes…
+        </div>
+    </div>
+
+    @if ($movimientoJefe)
+        @php($mt = $movimientoJefe['trabajador'])
+        @php($mj = $movimientoJefe['como_jefe'])
+        @php($mu = $movimientoJefe['unidad'])
+        @php($base = $mt ?? $mj)
+        <div class="fixed inset-0 z-50" @keydown.escape.window="$wire.cancelarMovimiento()">
+            <div class="absolute inset-0 bg-black/40" wire:click="cancelarMovimiento" aria-hidden="true"></div>
+
+            <div class="absolute left-1/2 top-1/2 max-h-[90vh] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900"
+                 role="dialog" aria-modal="true" aria-label="Mover jefe"
+                 x-trap.noscroll="true">
+                <h2 class="text-lg font-semibold text-tinta-950 dark:text-white">{{ $movimientoJefe['es_jefe'] ? 'Mover a' : 'Hacer jefe inmediato a' }} {{ $movimientoJefe['jefe']->nombre_completo }}</h2>
+                <p class="mt-1 text-sm text-gray-700 dark:text-tinta-50/80">Destino: <strong>{{ $movimientoJefe['destino']->nombre }}</strong></p>
+
+                @if ($mensajeError)
+                    <p class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-800 dark:bg-red-500/10 dark:text-red-200" role="alert">{{ $mensajeError }}</p>
+                @endif
+
+                <fieldset class="mt-4 space-y-2 text-sm">
+                    <legend class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">¿Cómo quieres moverlo?</legend>
+
+                    @if ($movimientoJefe['es_jefe'])
+                    <label class="flex items-start gap-2 {{ $mt ? '' : 'opacity-50' }}">
+                        <input type="radio" wire:model.live="modoJefe" value="trabajador" class="mt-1" @disabled(! $mt)>
+                        <span><strong>Como trabajador.</strong> Pasa a ser trabajador de {{ $movimientoJefe['destino']->nombre }}; su unidad se queda con su gente y un reemplazo.
+                            @unless ($mt)<span class="block text-xs text-gray-500">No disponible: {{ $movimientoJefe['errores']['trabajador'] ?? '' }}</span>@endunless</span>
+                    </label>
+
+                    @endif
+
+                    <label class="flex items-start gap-2 {{ $mj ? '' : 'opacity-50' }}">
+                        <input type="radio" wire:model.live="modoJefe" value="jefe" class="mt-1" @disabled(! $mj)>
+                        <span><strong>Como jefe inmediato de {{ $movimientoJefe['destino']->nombre }}.</strong> {{ $movimientoJefe['es_jefe'] ? 'Pasa a esa oficina como jefe; su unidad se queda con su gente y un reemplazo.' : 'Pasa a encabezar esa oficina.' }} Conserva su sede.
+                            @unless ($mj)<span class="block text-xs text-gray-500">No disponible: {{ $movimientoJefe['errores']['como_jefe'] ?? '' }}</span>@endunless</span>
+                    </label>
+
+                    @if ($movimientoJefe['es_jefe'])
+                    <label class="flex items-start gap-2 {{ $mu ? '' : 'opacity-50' }}">
+                        <input type="radio" wire:model.live="modoJefe" value="unidad" class="mt-1" @disabled(! $mu)>
+                        <span><strong>La unidad completa.</strong> Se mueve con su jefe y todo su personal.
+                            @unless ($mu)<span class="block text-xs text-gray-500">No disponible: {{ $movimientoJefe['errores']['unidad'] ?? '' }}</span>@endunless</span>
+                    </label>
+                    @endif
+                </fieldset>
+
+                @if (in_array($modoJefe, ['trabajador', 'jefe'], true) && ($modoJefe === 'trabajador' ? $mt : $mj))
+                    @php($mp = $modoJefe === 'trabajador' ? $mt : $mj)
+
+                    @foreach ($mp['unidades'] as $fila)
+                        <div class="mt-4 rounded-lg border border-gray-200 p-3 text-sm dark:border-white/10" wire:key="reemplazo-{{ $fila['unidad']->id }}">
+                            <p class="text-tinta-950 dark:text-white">
+                                Deja de encabezar <strong>{{ $fila['unidad']->nombre }}</strong>
+                                ({{ $fila['es_area'] ? $fila['subunidades'].' sub-unidades · ' : '' }}{{ $fila['personas'] }} {{ $fila['personas'] === 1 ? 'persona activa' : 'personas activas' }}).
+                            </p>
+
+                            @if ($fila['requiere_reemplazo'])
+                                <label class="mt-2 block text-xs font-semibold text-gray-600 dark:text-tinta-50/70" for="reemplazo-{{ $fila['unidad']->id }}">
+                                    {{ $fila['es_area'] ? 'Nuevo jefe de área (opcional)' : 'Nuevo jefe inmediato (opcional)' }}
+                                </label>
+                                <select id="reemplazo-{{ $fila['unidad']->id }}" wire:model="reemplazos.{{ $fila['unidad']->id }}" class="mt-1 w-full rounded-lg border-gray-300 text-sm dark:border-white/20 dark:bg-gray-800">
+                                    <option value="">Sin reemplazo: la unidad queda sin jefe</option>
+                                    @foreach ($fila['candidatos'] as $c)
+                                        <option value="{{ $c->id }}">{{ $c->nombre_completo }}</option>
+                                    @endforeach
+                                </select>
+                            @else
+                                <p class="mt-2 text-xs text-amber-700 dark:text-amber-400">Nadie puede asumir la jefatura ahora: la unidad quedará sin jefe.</p>
+                            @endif
+                        </div>
+                    @endforeach
+
+                    @if ($modoJefe === 'jefe')
+                        <div class="mt-4 rounded-lg border border-gray-200 p-3 text-sm dark:border-white/10">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Jefes de {{ $movimientoJefe['destino']->nombre }}</p>
+                            <p class="mt-1 text-tinta-950 dark:text-white">
+                                {{ $mp['jefes_destino']->isEmpty() ? 'Todavía no tiene jefe: quedará como su jefe inmediato.' : $mp['jefes_destino']->pluck('nombre_completo')->join(', ') }}
+                            </p>
+
+                            @if ($mp['requiere_reemplazar_destino'])
+                                <p class="mt-1 text-xs text-gray-600 dark:text-tinta-50/70">La unidad solo tiene un jefe: lo releva y ese jefe sigue en la unidad como trabajador.</p>
+                            @else
+                                <p class="mt-1 text-xs text-gray-600 dark:text-tinta-50/70">La unidad no tiene jefe: queda como su jefe inmediato.</p>
+                            @endif
+                        </div>
+                    @else
+                        <dl class="mt-4 space-y-3 text-sm">
+                            <div>
+                                <dt class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Como trabajador de {{ $movimientoJefe['destino']->nombre }}</dt>
+                                <dd class="mt-0.5 text-tinta-950 dark:text-white">
+                                    Su jefe inmediato será <strong>{{ $movimientoJefe['destino']->jefe?->nombre_completo ?? '—' }}</strong>
+                                    @if ($mp['sede']['propuesta'])
+                                        · sede: {{ $mp['sede']['actual']?->nombre ?? 'sin sede' }} → <strong>{{ $mp['sede']['propuesta']->nombre }}</strong>
+                                    @endif
+                                </dd>
+                            </div>
+                        </dl>
+
+                        @if ($mp['necesita_turno'])
+                            <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                <div class="col-span-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Turno como trabajador (728)</div>
+                                <select wire:model="turnoJefe.turno" class="rounded-lg border-gray-300 text-sm dark:border-white/20 dark:bg-gray-800">
+                                    <option value="">Turno…</option>
+                                    @foreach ($mp['turnos_validos'] as $codigo)
+                                        <option value="{{ $codigo }}">{{ \App\Models\ConfiguracionTurno::etiquetaDeTurno($codigo) }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="date" wire:model="turnoJefe.fecha_ancla" class="rounded-lg border-gray-300 text-sm dark:border-white/20 dark:bg-gray-800" aria-label="Inicio del ciclo">
+                                <input type="number" min="1" wire:model="turnoJefe.dias_trabajo" class="rounded-lg border-gray-300 text-sm dark:border-white/20 dark:bg-gray-800" aria-label="Días de trabajo">
+                                <input type="number" min="0" wire:model="turnoJefe.dias_descanso" class="rounded-lg border-gray-300 text-sm dark:border-white/20 dark:bg-gray-800" aria-label="Días de descanso">
+                            </div>
+                        @endif
+                    @endif
+
+                    @if ($mp['avisos'] !== [])
+                        <ul class="mt-4 space-y-1 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                            @foreach ($mp['avisos'] as $aviso)
+                                <li>{{ $aviso }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                @elseif ($modoJefe === 'unidad' && $mu)
+                    <p class="mt-4 text-sm text-gray-700 dark:text-tinta-50/80">
+                        <strong>{{ $mu['jefe']->nombre_completo }}</strong> se mueve con su unidad
+                        <strong>{{ $mu['unidad']->nombre }}</strong>
+                        ({{ $mu['personas'] }} {{ $mu['personas'] === 1 ? 'persona activa' : 'personas activas' }})
+                        de <strong>{{ $mu['origen']?->nombre ?? 'raíz' }}</strong> a <strong>{{ $mu['destino']->nombre }}</strong>.
+                        Jefe de área de esa gente: {{ $mu['jefe_area']['antes']?->nombre_completo ?? 'Sin asignar' }} →
+                        <strong>{{ $mu['jefe_area']['despues']?->nombre_completo ?? 'Sin asignar' }}</strong>.
+                    </p>
+                    @if ($mu['avisos'] !== [])
+                        <ul class="mt-3 space-y-1 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                            @foreach ($mu['avisos'] as $aviso)
+                                <li>{{ $aviso }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                @endif
+
+                <p class="mt-3 text-xs text-gray-500 dark:text-tinta-50/60">Las papeletas ya creadas conservan su jefe.</p>
+
+                <div class="mt-6 flex justify-end gap-2">
+                    <button type="button" wire:click="cancelarMovimiento" class="btn-secondary text-sm">Cancelar</button>
+                    <button type="button" wire:click="confirmarMovimientoJefe" wire:loading.attr="disabled" wire:target="confirmarMovimientoJefe"
+                            @disabled(! in_array($modoJefe, ['trabajador', 'jefe', 'unidad'], true)) class="btn-primary text-sm disabled:opacity-50">
+                        <span wire:loading.remove wire:target="confirmarMovimientoJefe">Confirmar movimiento</span>
+                        <span wire:loading wire:target="confirmarMovimientoJefe">Moviendo…</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if ($ficha)
+        @php($p = $ficha['persona'])
+        <div class="fixed inset-0 z-40" @keydown.escape.window="$wire.cerrarPersona()">
+            <div class="absolute inset-0 bg-black/30" wire:click="cerrarPersona" aria-hidden="true"></div>
+
+            <aside class="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto bg-white p-6 shadow-xl dark:bg-gray-900"
+                   role="dialog" aria-modal="true" aria-label="Ficha de {{ $p->nombre_completo }}"
+                   x-trap.noscroll="true">
+                <div class="flex items-start justify-between gap-3">
+                    <x-avatar :user="$p" size="size-14" class="text-lg" />
+                    <div class="min-w-0 flex-1">
+                        <h2 class="truncate text-lg font-semibold text-tinta-950 dark:text-white">{{ $p->nombre_completo }}</h2>
+                        <p class="text-sm text-gray-500 dark:text-tinta-50/60">DNI {{ $p->dni ?? '—' }}</p>
+                    </div>
+                    @if ($esAdmin || $modoEdicion)
+                        <button type="button" class="btn-secondary shrink-0 text-xs" @click="$dispatch('org-persona-abrir', { id: {{ $p->id }} }); $wire.cerrarPersona()">Editar</button>
+                    @endif
+                    <button type="button" wire:click="cerrarPersona" class="rounded p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10" aria-label="Cerrar">
+                        <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                @unless ($p->activo)
+                    <p class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">Esta persona está desactivada.</p>
+                @endunless
+
+                <dl class="mt-5 space-y-4 text-sm">
+                    <div>
+                        <dt class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Unidad</dt>
+                        <dd class="mt-0.5 text-tinta-950 dark:text-white">
+                            {{ $p->unidadOrganica?->nombre ?? 'Sin unidad' }}
+                            @if ($p->unidadOrganica?->padre)
+                                <span class="block text-xs text-gray-500 dark:text-tinta-50/60">dentro de {{ $p->unidadOrganica->padre->nombre }}</span>
+                            @endif
+                            @if ($ficha['encabeza']->isNotEmpty())
+                                <span class="block text-xs text-tinta-700 dark:text-tinta-200">Encabeza: {{ $ficha['encabeza']->implode(', ') }}</span>
+                            @endif
+                        </dd>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <dt class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Sede</dt>
+                            <dd class="mt-0.5 {{ $p->sede_id === null ? 'font-medium text-red-600' : 'text-tinta-950 dark:text-white' }}">{{ $p->sede?->nombre ?? 'Sin sede' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Régimen</dt>
+                            <dd class="mt-0.5 text-tinta-950 dark:text-white">{{ $p->regimen ?? '—' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Turno</dt>
+                            <dd class="mt-0.5 text-tinta-950 dark:text-white">{{ $ficha['turno'] ?? '—' }}</dd>
+                        </div>
+                    </div>
+
+                    <div>
+                        <dt class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Jefe inmediato</dt>
+                        <dd class="mt-1 space-y-1">
+                            @forelse ($ficha['jefes'] as $j)
+                                <div class="flex items-center gap-2 text-tinta-950 dark:text-white">
+                                    <span>{{ $j['nombre'] }}</span>
+                                </div>
+                            @empty
+                                <span class="text-amber-700 dark:text-amber-400">Sin jefe inmediato asignado</span>
+                            @endforelse
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Jefe de área</dt>
+                        <dd class="mt-0.5 text-tinta-950 dark:text-white">{{ $p->jefeArea?->nombre_completo ?? '—' }}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Papeletas pendientes</dt>
+                        <dd class="mt-1">
+                            @if ($ficha['pendientes_total'] === 0)
+                                <span class="text-tinta-950 dark:text-white">Ninguna</span>
+                            @else
+                                <p class="font-medium text-tinta-950 dark:text-white">{{ $ficha['pendientes_total'] }}</p>
+                                <ul class="mt-1 space-y-0.5 text-xs text-gray-600 dark:text-tinta-50/70">
+                                    @foreach ($ficha['pendientes'] as $fila)
+                                        <li>{{ $fila['etiqueta'] }}: {{ $fila['total'] }}</li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                        </dd>
+                    </div>
+                </dl>
+
+                @if ($modoEdicion && $destinosMover !== [])
+                    <section class="mt-6 border-t border-gray-100 pt-5 dark:border-white/10">
+                        <label for="mover-destino" class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Mover a otra unidad</label>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-tinta-50/60">Elige el destino. Antes de mover se te pide confirmación.</p>
+
+                        <div class="mt-2">
+                            <x-organigrama.combobox model="destinoMover" id="mover-destino" :options="$destinosMover" :limpiable="false"
+                                                    placeholder="Buscar unidad…" vacio="Elige la unidad de destino" />
+                        </div>
+                        <x-input-error for="destinoMover" class="mt-1" />
+
+                        <button type="button" wire:click="moverDesdeFicha" wire:loading.attr="disabled" wire:target="moverDesdeFicha"
+                                class="btn-primary mt-3 w-full text-sm">
+                            <span wire:loading.remove wire:target="moverDesdeFicha">Continuar</span>
+                            <span wire:loading wire:target="moverDesdeFicha">Revisando…</span>
+                        </button>
+                    </section>
+                @endif
+            </aside>
+        </div>
+    @endif
+
+    <livewire:organigrama.persona-drawer />
+
+    @if ($esAdmin || $esJefeDeArea)
+        <livewire:organigrama.unidad-modal />
+    @endif
+    @if ($esAdmin)
+        <livewire:usuarios.baja-con-reemplazo />
+    @endif
+</div>

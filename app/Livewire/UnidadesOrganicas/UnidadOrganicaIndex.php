@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Livewire\UnidadesOrganicas;
+
+use App\Livewire\Concerns\RequiereAdmin;
+use App\Models\UnidadOrganica;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\QueryException;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+#[Layout('layouts.app')]
+#[Title('Unidades orgánicas')]
+class UnidadOrganicaIndex extends Component
+{
+    use RequiereAdmin;
+
+    public string $buscar = '';
+
+    public function eliminar(UnidadOrganica $unidad): void
+    {
+        $this->autorizarAdmin();
+
+        try {
+            $unidad->delete();
+            session()->now('mensaje', 'Unidad orgánica eliminada.');
+        } catch (QueryException $e) {
+
+            if (! str_starts_with((string) $e->getCode(), '23')) {
+                throw $e;
+            }
+
+            $unidad->forceFill(['activo' => false])->save();
+            session()->now('mensaje', 'Unidad desactivada: tiene usuarios o sub-unidades asociados y no puede borrarse.');
+        }
+    }
+
+    public function render(): View
+    {
+        return view('livewire.unidades-organicas.unidad-organica-index', [
+            'unidades' => UnidadOrganica::with(['padre', 'jefe'])->when(trim($this->buscar) !== '', fn ($q) => $q->where('nombre', 'like', '%'.trim($this->buscar).'%'))->orderBy('nombre')->get(),
+        ]);
+    }
+}

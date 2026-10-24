@@ -1,0 +1,191 @@
+<?php
+
+use App\Http\Controllers\Admin\PapeletaController;
+use App\Http\Controllers\Jefe\DecisionController as JefeDecisionController;
+use App\Http\Controllers\Jefe\PapeletaController as JefePapeletaController;
+use App\Http\Controllers\Papeleta\PapeletaArchivoController;
+use App\Http\Controllers\Papeleta\SustentoArchivoController;
+use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\Rrhh\DecisionController as RrhhDecisionController;
+use App\Http\Controllers\Rrhh\PapeletaController as RrhhPapeletaController;
+use App\Http\Controllers\Rrhh\SustentoController as RrhhSustentoController;
+use App\Http\Controllers\Trabajador\PapeletaController as TrabajadorPapeletaController;
+use App\Http\Controllers\Trabajador\PdfController as TrabajadorPdfController;
+use App\Http\Controllers\Trabajador\RetornoController as TrabajadorRetornoController;
+use App\Http\Controllers\Trabajador\SustentoController as TrabajadorSustentoController;
+use App\Http\Controllers\Usuario\UsuarioController;
+use App\Livewire\Auth\ActualizarPasswordInicial;
+use App\Livewire\Catalogos\CatalogoIndex;
+use App\Livewire\Configuraciones\ConfiguracionForm;
+use App\Livewire\Configuraciones\ConfiguracionIndex;
+use App\Livewire\DashboardIndex;
+use App\Livewire\Motivos\MotivoForm;
+use App\Livewire\Motivos\MotivoIndex;
+use App\Livewire\Organigrama\OrganigramaArbol;
+use App\Livewire\Papeletas\AdminPapeletasIndex;
+use App\Livewire\Papeletas\JefeIndex;
+use App\Livewire\Papeletas\RrhhAbandonos;
+use App\Livewire\Papeletas\RrhhIndex;
+use App\Livewire\Papeletas\TrabajadorIndex;
+use App\Livewire\Reportes\DecisionesRrhhIndex;
+use App\Livewire\Reportes\ResumenPapeletasIndex;
+use App\Livewire\Reportes\SustentosIndex;
+use App\Livewire\Reportes\TrabajadorHistorialIndex;
+use App\Livewire\Sedes\SedeForm;
+use App\Livewire\Sedes\SedeIndex;
+use App\Livewire\Turnos\CalendarioEquipoIndex;
+use App\Livewire\Turnos\CalendarioIndividualIndex;
+use App\Livewire\Turnos\ConfiguracionTurnoForm;
+use App\Livewire\Turnos\DefinicionTurnos;
+use App\Livewire\Turnos\ProgramacionAdmin;
+use App\Livewire\Turnos\ProgramacionEquipo;
+use App\Livewire\Turnos\ProgramacionMensual;
+use App\Livewire\UnidadesOrganicas\UnidadOrganicaForm;
+use App\Livewire\UnidadesOrganicas\UnidadOrganicaIndex;
+use App\Livewire\Usuarios\UsuarioAdminForm;
+use App\Livewire\Usuarios\UsuarioAdminIndex;
+use App\Livewire\Usuarios\UsuarioForm;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+$autenticado = ['auth:sanctum', config('jetstream.auth_session'), 'verified'];
+$soloAdmin = [...$autenticado, 'role:admin'];
+
+Route::get('/', function () {
+    return Auth::check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
+});
+
+Route::middleware($soloAdmin)->prefix('sedes')->name('sedes.')->group(function () {
+    Route::get('/', SedeIndex::class)->name('index');
+    Route::get('/crear', SedeForm::class)->name('crear');
+    Route::get('/{sede}/editar', SedeForm::class)->name('editar');
+});
+
+Route::middleware($soloAdmin)->prefix('motivos')->name('motivos.')->group(function () {
+    Route::get('/', MotivoIndex::class)->name('index');
+    Route::get('/crear', MotivoForm::class)->name('crear');
+    Route::get('/{motivo}/editar', MotivoForm::class)->name('editar');
+});
+
+Route::middleware($soloAdmin)->prefix('turnos')->name('turnos.')->group(function () {
+    Route::get('/', DefinicionTurnos::class)->name('index');
+
+    Route::get('/administrar', ProgramacionAdmin::class)->name('administrar');
+});
+
+Route::middleware($autenticado)->prefix('turnos')->name('turnos.')->group(function () {
+    Route::get('/configuracion/{trabajador}', ConfiguracionTurnoForm::class)->name('configuracion');
+
+    Route::get('/programacion/{trabajador}', ProgramacionMensual::class)->name('programacion');
+    Route::get('/programacion-equipo', ProgramacionEquipo::class)->name('programacion.equipo');
+
+    Route::get('/calendario', CalendarioEquipoIndex::class)->name('calendario.equipo');
+    Route::get('/calendario/mio', CalendarioIndividualIndex::class)->name('calendario.individual');
+    Route::get('/calendario/{trabajador}', CalendarioIndividualIndex::class)->name('calendario.individual-de');
+});
+
+Route::middleware($autenticado)->get('/organigrama', OrganigramaArbol::class)->name('organigrama.index');
+
+Route::middleware($soloAdmin)->prefix('unidades-organicas')->name('unidades-organicas.')->group(function () {
+    Route::get('/', UnidadOrganicaIndex::class)->name('index');
+    Route::get('/crear', UnidadOrganicaForm::class)->name('crear');
+    Route::get('/{unidad}/editar', UnidadOrganicaForm::class)->name('editar');
+});
+
+Route::middleware($soloAdmin)->prefix('configuraciones')->name('configuraciones.')->group(function () {
+    Route::get('/', ConfiguracionIndex::class)->name('index');
+    Route::get('/{configuracion}/editar', ConfiguracionForm::class)->name('editar');
+});
+
+Route::middleware($soloAdmin)->get('/usuarios-admin', UsuarioAdminIndex::class)->name('usuarios-admin.index');
+Route::middleware($soloAdmin)->get('/usuarios-admin/crear', UsuarioAdminForm::class)->name('usuarios-admin.crear');
+Route::middleware($soloAdmin)->get('/usuarios-admin/{usuario}/editar', UsuarioAdminForm::class)->name('usuarios-admin.editar');
+
+Route::middleware($soloAdmin)->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/papeletas', AdminPapeletasIndex::class)->name('papeletas.index');
+    Route::get('/papeletas/{papeleta}', [PapeletaController::class, 'show'])->name('papeletas.show');
+});
+
+Route::middleware($soloAdmin)->get('/catalogos', CatalogoIndex::class)->name('catalogos.index');
+
+Route::middleware($autenticado)->group(function () {
+    Route::get('/dashboard', DashboardIndex::class)->name('dashboard');
+
+    Route::get('/reportes/resumen-papeletas', ResumenPapeletasIndex::class)
+        ->name('reportes.resumen-papeletas');
+
+    Route::get('/reportes/trabajador', TrabajadorHistorialIndex::class)
+        ->name('reportes.trabajador-historial');
+
+    Route::get('/reportes/sustentos', SustentosIndex::class)
+        ->name('reportes.sustentos');
+
+    Route::middleware('role:rrhh|admin')->group(function () {
+        Route::get('/reportes/decisiones-rrhh', DecisionesRrhhIndex::class)
+            ->name('reportes.decisiones-rrhh');
+
+        Route::get('/rrhh/abandonos', RrhhAbandonos::class)->name('rrhh.abandonos.index');
+    });
+
+    Route::get('/actualizar-password-inicial', ActualizarPasswordInicial::class)
+        ->name('password.actualizar-inicial');
+
+    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store'])->name('push-subscriptions.store');
+    Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push-subscriptions.destroy');
+
+    Route::prefix('usuarios')->name('usuarios.')->group(function () {
+        Route::get('/', [UsuarioController::class, 'index'])->name('index');
+        Route::get('/crear', UsuarioForm::class)->name('crear');
+        Route::get('/{usuario}/editar', UsuarioForm::class)->name('editar');
+    });
+
+    Route::get('/papeletas/sustentos/{sustento}/archivo', [SustentoArchivoController::class, 'show'])->name('sustentos.archivo');
+
+    Route::get('/papeletas/{papeleta}/archivo/{tipo}', [PapeletaArchivoController::class, 'show'])
+        ->whereIn('tipo', ['adjunto-inicial', 'retorno-foto', 'justificacion-observacion', 'respuesta-posthoc'])
+        ->name('papeletas.archivo');
+
+    Route::prefix('papeletas')->name('trabajador.papeletas.')->middleware('role:trabajador')->group(function () {
+        Route::get('/', TrabajadorIndex::class)->name('index');
+        Route::get('/crear', [TrabajadorPapeletaController::class, 'create'])->name('create');
+        Route::post('/', [TrabajadorPapeletaController::class, 'store'])->name('store');
+        Route::get('/{papeleta}', [TrabajadorPapeletaController::class, 'show'])->name('show');
+        Route::get('/{papeleta}/pdf', [TrabajadorPdfController::class, 'papeleta'])->name('pdf');
+        Route::delete('/{papeleta}', [TrabajadorPapeletaController::class, 'cancelar'])->name('cancelar');
+
+        Route::post('/{papeleta}/subsanar', [TrabajadorPapeletaController::class, 'subsanar'])->name('subsanar');
+        Route::post('/{papeleta}/retorno', [TrabajadorRetornoController::class, 'store'])->name('retorno.store');
+        Route::post('/sustentos/{sustento}', [TrabajadorSustentoController::class, 'store'])->name('sustento.store');
+    });
+
+    Route::prefix('jefe')->name('jefe.')->group(function () {
+        Route::get('/papeletas', JefeIndex::class)->name('papeletas.index');
+        Route::get('/papeletas/{papeleta}', [JefePapeletaController::class, 'show'])->name('papeletas.show');
+
+        Route::post('/papeletas/{papeleta}/aprobar', [JefeDecisionController::class, 'aprobar'])->name('papeletas.aprobar');
+        Route::post('/papeletas/{papeleta}/rechazar', [JefeDecisionController::class, 'rechazar'])->name('papeletas.rechazar');
+        Route::post('/papeletas/{papeleta}/observar', [JefeDecisionController::class, 'observar'])->name('papeletas.observar');
+        Route::post('/papeletas/{papeleta}/reconocer-observacion-rrhh', [JefeDecisionController::class, 'reconocerObservacionRrhh'])->name('papeletas.reconocer-observacion-rrhh');
+        Route::post('/papeletas/{papeleta}/responder-posthoc', [JefeDecisionController::class, 'responderPosthoc'])->name('papeletas.responder-posthoc');
+        Route::post('/papeletas/{papeleta}/retorno-manual', [JefeDecisionController::class, 'retornoManual'])->name('papeletas.retorno-manual');
+
+    });
+
+    // --- RRHH (Paso 3 y Paso 4) ---
+    Route::prefix('rrhh')->name('rrhh.')->middleware('role:rrhh')->group(function () {
+        Route::get('/papeletas', RrhhIndex::class)->name('papeletas.index');
+        Route::get('/papeletas/{papeleta}', [RrhhPapeletaController::class, 'show'])->name('papeletas.show');
+
+        Route::post('/papeletas/{papeleta}/aprobar', [RrhhDecisionController::class, 'aprobar'])->name('papeletas.aprobar');
+        Route::post('/papeletas/{papeleta}/rechazar', [RrhhDecisionController::class, 'rechazar'])->name('papeletas.rechazar');
+        Route::post('/papeletas/{papeleta}/observar', [RrhhDecisionController::class, 'observar'])->name('papeletas.observar');
+        Route::post('/papeletas/{papeleta}/posthoc-aprobar', [RrhhDecisionController::class, 'posthocAprobar'])->name('papeletas.posthoc-aprobar');
+        Route::post('/papeletas/{papeleta}/posthoc-observar', [RrhhDecisionController::class, 'posthocObservar'])->name('papeletas.posthoc-observar');
+        Route::post('/papeletas/{papeleta}/posthoc-no-aprobar', [RrhhDecisionController::class, 'posthocNoAprobar'])->name('papeletas.posthoc-no-aprobar');
+        Route::post('/papeletas/{papeleta}/corregir', [RrhhDecisionController::class, 'corregir'])->name('papeletas.corregir');
+
+        Route::post('/sustentos/{sustento}/revisar', [RrhhSustentoController::class, 'revisar'])->name('sustentos.revisar');
+    });
+});

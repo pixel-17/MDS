@@ -1,0 +1,73 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Papeleta;
+use App\Models\Retorno;
+use App\Models\Sustento;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
+
+class LimpiarArchivosHuerfanos extends Command
+{
+    protected $signature = 'archivos:huerfanos
+        {--borrar : Elimina los archivos huérfanos (sin esto solo los lista)}
+        {--dias=30 : Solo considera archivos con más de N días}';
+
+    protected $description = 'Lista (o elimina) los archivos de papeletas que ninguna fila de la base de datos referencia.';
+
+    private const CARPETAS = [
+        'papeletas/adjuntos-iniciales',
+        'papeletas/retornos',
+        'papeletas/subsanaciones',
+        'papeletas/sustentos',
+    ];
+
+    public function handle(): int
+    {
+        $dias = max(0, (int) $this->option('dias'));
+        $borrar = (bool) $this->option('borrar');
+        $limite = now()->subDays($dias)->getTimestamp();
+        $disco = Storage::disk('local');
+
+        $referenciados = array_flip(array_merge(
+            Papeleta::whereNotNull('adjunto_inicial_path')->pluck('adjunto_inicial_path')->all(),
+            Papeleta::whereNotNull('observacion_adjunto_path')->pluck('observacion_adjunto_path')->all(),
+            Retorno::whereNotNull('foto_path')->pluck('foto_path')->all(),
+            Sustento::whereNotNull('archivo_path')->pluck('archivo_path')->all(),
+        ));
+
+        $huerfanos = 0;
+        $bytes = 0;
+
+        foreach (self::CARPETAS as $carpeta) {
+            foreach ($disco->files($carpeta) as $archivo) {
+                if (isset($referenciados[$archivo]) || $disco->lastModified($archivo) > $limite) {
+                    continue;
+                }
+
+                $huerfanos++;
+                $bytes += $disco->size($archivo);
+
+                $this->line(($borrar ? 'borrado  ' : 'huérfano ').$archivo);
+
+                if ($borrar) {
+                    $disco->delete($archivo);
+                }
+            }
+        }
+
+        $resumen = sprintf('%d archivo(s), %s.', $huerfanos, $this->legible($bytes));
+
+        $this->info($borrar ? "Eliminados: {$resumen}" : "Huérfanos con más de {$dias} días: {$resumen} Usa --borrar para eliminarlos.");
+
+        return self::SUCCESS;
+    }
+
+    private function legible(int $bytes): string
+    {
+        return $bytes >= 1048576
+            ? number_format($bytes / 1048576, 1).' MB'
+            : number_format($bytes / 1024, 1).' KB';
+    }
+}

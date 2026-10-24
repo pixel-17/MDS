@@ -1,0 +1,954 @@
+/*
+ * Fuentes autoalojadas (antes venían de fonts.bunny.net en cada página:
+ * una petición externa que bloquea el primer pintado y no existe sin
+ * conexión). Son variables (un archivo cubre todos los pesos) y traen
+ * `unicode-range`: el navegador solo descarga el subconjunto que la
+ * página usa (latin para español). Los nombres de familia están en
+ * tailwind.config.js (fontFamily).
+ */
+@import '@fontsource-variable/inter/index.css';
+@import '@fontsource-variable/fraunces/index.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[x-cloak] {
+    display: none !important;
+}
+
+
+/* ==================================================================== */
+/*  Sistema de diseño "Papeletas"  elegante, con glassmorfismo  */
+/* ==================================================================== */
+
+:root {
+    --surface: #ffffff;
+    --surface-muted: #f2f3f1;
+    --border-soft: #e2e5e2;
+    --ink-900: #101c22;
+    --sidebar-bg: linear-gradient(180deg, #293f43 0%, #1b2b34 100%);
+    --sidebar-bg-active: rgba(255, 255, 255, 0.14);
+    accent-color: #b8792f;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Fraunces lleva la identidad (folios, títulos, cifras grandes);
+   se aplica a los encabezados semánticos directamente para que no haga
+   falta agregar una clase en cada vista. Un span.font-display cubre
+   los casos puntuales (folio, wordmark) que no son un <h1-3>. */
+h1, h2, h3,
+.font-display {
+    font-family: 'Fraunces', ui-serif, Georgia, serif;
+    font-optical-sizing: auto;
+}
+
+body.app-bg {
+    background: var(--surface-muted);
+    min-height: 100vh;
+    color: #101c22;
+}
+
+/* Modo oscuro: gris carbón neutro (zinc), a propósito SIN tinte azul/
+   marino — antes usaba #161c2c/#0b0f19/#111827, que llevan un canal azul
+   más alto que rojo/verde y se leían como "azul oscuro". Aquí R≈G≈B. */
+
+.dark body.app-bg,
+.dark .app-bg {
+    --surface: #1f1f23;
+    --surface-muted: #14181a;
+    --border-soft: #2d2d33;
+    background: var(--surface-muted);
+    color: #e4e4e7;
+}
+
+/* Fondo de las pantallas de acceso (login, recuperar contraseña, etc.):
+   un degradado radial muy sutil con la tinta de sello, para que no se
+   sienta como una pantalla gris plana sin perder la base "sin
+   glassmorfismo" del resto del sistema. */
+
+.auth-bg {
+    background:
+        radial-gradient(
+            60rem 32rem at 50% -10%,
+            rgba(184, 121, 47, 0.09),
+            transparent 65%
+        ),
+        var(--surface-muted);
+}
+
+.dark .auth-bg {
+    /* Mismas superficies oscuras que .app-bg: sin esto la tarjeta del
+       login se quedaba blanca en modo oscuro y las etiquetas (claras)
+       no se leían. */
+    --surface: #1f1f23;
+    --surface-muted: #14181a;
+    --border-soft: #2d2d33;
+    background:
+        radial-gradient(
+            60rem 32rem at 50% -10%,
+            rgba(198, 144, 47, 0.14),
+            transparent 65%
+        ),
+        var(--surface-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-fade-in-up,
+    .animate-fade-in,
+    .animate-scale-in,
+    .stagger > * {
+        animation: none !important;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Superficies: tarjetas y paneles planos                            */
+/* ------------------------------------------------------------------ */
+
+.glass,
+.glass-strong,
+.glass-dark {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+}
+
+.glass-card {
+    @apply rounded-2xl transition-all duration-200;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    box-shadow: 0 1px 4px 0 rgba(15, 23, 42, 0.09);
+}
+
+.glass-card:hover {
+    box-shadow: 0 6px 16px -4px rgba(15, 23, 42, 0.14);
+    border-color: #cbcbd1;
+    transform: none;
+}
+
+.dark .glass-card:hover {
+    box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.45);
+    border-color: #34343b;
+}
+
+.glass-panel {
+    @apply rounded-2xl;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    box-shadow: 0 1px 4px 0 rgba(15, 23, 42, 0.09);
+}
+
+/* Superposiciones white/NN: antes se apoyaban en el desenfoque del glass,
+   ahora se remapean a tonos neutros planos, en claro y oscuro. */
+
+.hover\:bg-white\/70:hover,
+.hover\:bg-white\/60:hover,
+.hover\:bg-white\/50:hover {
+    background-color: #f0f0f3 !important;
+}
+
+.bg-white\/50,
+.bg-white\/40,
+.bg-white\/60,
+.bg-white\/70,
+.bg-white\/80 {
+    background-color: #f5f5f7;
+}
+
+.border-white\/40,
+.border-white\/50,
+.border-white\/60 {
+    border-color: var(--border-soft);
+}
+
+.divide-white\/40 > :not([hidden]) ~ :not([hidden]),
+.divide-white\/50 > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--border-soft);
+}
+
+.ring-white\/80 {
+    --tw-ring-color: var(--surface);
+}
+
+.dark .hover\:bg-white\/60:hover,
+.dark .hover\:bg-white\/70:hover {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .bg-brand-50\/50 {
+    background-color: rgba(2, 132, 199, 0.12);
+}
+
+/* Texto: ajuste automático en modo oscuro sin tocar cada vista.
+   Escala neutra (zinc), no gris azulado, para que no reaparezca el
+   tinte "marino" en textos y superficies secundarias. */
+
+.dark {
+    color-scheme: dark;
+}
+
+.dark .text-gray-800,
+.dark .text-gray-900 {
+    color: #e4e4e7;
+}
+
+.dark .text-gray-700 {
+    color: #d4d4d8;
+}
+
+.dark .text-gray-600 {
+    color: #b0b0b8;
+}
+
+.dark .text-gray-500 {
+    color: #8f8f99;
+}
+
+.dark .text-gray-400 {
+    color: #71717a;
+}
+
+/* Familia `tinta-*` (texto/fondo/borde): se usa en ~60 vistas para
+   títulos, etiquetas y bordes de input, pero nunca tuvo variante dark: 
+   propia — a diferencia de gray-* y white arriba, se quedaba con el
+   mismo tono oscuro/claro fijo en ambos temas. En modo oscuro eso
+   volvía casi ilegibles los títulos (tinta-950 es casi negro) y
+   dejaba tarjetas bg-tinta-50 brillando blancas sobre fondo oscuro.
+   Mismo criterio que el resto del archivo: un solo lugar que arregla
+   todas las vistas, sin tocar cada Blade una por una. */
+
+.dark .text-tinta-950,
+.dark .text-tinta-900 {
+    color: #f3f5f4;
+}
+
+.dark .text-tinta-800 {
+    color: #c3d0ce;
+}
+
+.dark .text-tinta-700 {
+    color: #98adab;
+}
+
+.dark .text-tinta-600 {
+    color: #647d7d;
+}
+
+.dark .bg-tinta-50,
+.dark .bg-tinta-50\/50,
+.dark .bg-tinta-100 {
+    background-color: rgba(100, 125, 125, 0.14);
+}
+
+.dark .border-tinta-100,
+.dark .border-tinta-200 {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark .bg-white\/50,
+.dark .bg-white\/40,
+.dark .bg-white\/60,
+.dark .bg-white\/70,
+.dark .bg-white\/80 {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* bg-gray-50/100 y border-gray-100/200: usadas en varias vistas (badges,
+   separadores, barras de progreso) sin variante dark: — sin esto quedan
+   como parches claros sobre fondo oscuro. */
+
+.dark .bg-gray-50,
+.dark .bg-gray-50\/80,
+.dark .bg-gray-100,
+.dark .bg-gray-100\/80 {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-200\/60 {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark .hover\:bg-gray-50:hover {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .hover\:border-gray-200:hover {
+    border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.dark .border-white\/40,
+.dark .border-white\/50,
+.dark .border-white\/60 {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark .divide-white\/40 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-white\/50 > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #3a3a42;
+    background-clip: content-box;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Badges de estado (estado-papeleta, papeleta-ticket)                 */
+/* ------------------------------------------------------------------ */
+
+/* La cápsula del "sello": bordes casi rectos (no píldora) y una leve
+   rotación, como si estuviera estampado a mano — el color (bg/text/
+   ring por estado) lo aporta PapeletaEstadoPresentacion::para() en
+   cada uso, ya con sus propias variantes dark:. */
+.badge-tinta {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-semibold ring-1 ring-inset;
+    transform: rotate(-1.5deg);
+    letter-spacing: 0.01em;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Botones                                                             */
+/* ------------------------------------------------------------------ */
+
+.btn-glass {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold
+           transition-all duration-150 select-none;
+}
+
+.btn-primary {
+    @apply btn-glass text-white;
+    background: #b8792f;
+}
+
+.btn-primary:hover {
+    background: #9a6027;
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+.dark .btn-primary {
+    background: #c6902f;
+}
+
+.dark .btn-primary:hover {
+    background: #b8792f;
+}
+
+.btn-secondary {
+    @apply btn-glass text-slate-700;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+}
+
+.btn-secondary:hover {
+    background: var(--surface-muted);
+    border-color: #cbcbd1;
+}
+
+.dark .btn-secondary {
+    color: #e4e4e7;
+}
+
+.dark .btn-secondary:hover {
+    border-color: #3a3a42;
+}
+
+.btn-danger {
+    @apply btn-glass text-white;
+    background: #e11d48;
+}
+
+.btn-danger:hover {
+    background: #be123c;
+}
+
+/* btn-danger-glass: alias histórico de btn-danger, todavía referenciado
+   por <x-danger-button>. Se mantiene como alias en vez de tocar el
+   componente para no arriesgar su uso en formularios de confirmación
+   (borrar cuenta, cancelar papeleta, etc.). */
+.btn-danger-glass {
+    @apply btn-danger;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Acciones de fila (tablas de administración: Editar / Eliminar)      */
+/* ------------------------------------------------------------------ */
+
+/* Antes eran enlaces de texto subrayados, sin borde ni fondo — poco
+   visibles como acción y sin affordance de botón. Ahora son "chips"
+   pequeños con borde, coherentes con .btn-secondary/.btn-danger pero
+   a escala de fila de tabla. */
+
+.btn-row {
+    @apply inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold
+           transition-all duration-150 select-none;
+    color: #436164;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+}
+
+.btn-row:hover {
+    background: var(--surface-muted);
+    border-color: #cbcbd1;
+}
+
+.btn-row:active {
+    transform: scale(0.97);
+}
+
+.dark .btn-row {
+    color: #98adab;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .btn-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.btn-row-danger {
+    @apply btn-row;
+    color: #dc2626;
+    border-color: rgba(220, 38, 38, 0.25);
+}
+
+.btn-row-danger:hover {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.4);
+}
+
+.dark .btn-row-danger {
+    color: #f87171;
+    border-color: rgba(248, 113, 113, 0.3);
+}
+
+.dark .btn-row-danger:hover {
+    background: rgba(248, 113, 113, 0.1);
+    border-color: rgba(248, 113, 113, 0.45);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Tarjetas de estadística (dashboard)                                 */
+/* ------------------------------------------------------------------ */
+
+.stat-card {
+    @apply glass-card flex items-center justify-between gap-3 p-4;
+}
+
+.stat-card-label {
+    @apply text-xs font-medium text-gray-500 dark:text-zinc-400;
+}
+
+.stat-card-value {
+    @apply text-2xl font-bold;
+    color: var(--ink-900);
+}
+
+.dark .stat-card-value {
+    color: #ffffff;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Inputs                                                              */
+/* ------------------------------------------------------------------ */
+
+.input-glass {
+    @apply w-full rounded-xl px-4 py-2.5 text-sm
+           transition-all duration-150
+           focus:outline-none;
+    color: #27272a;
+    background: var(--surface);
+    border: 1px solid #d4d4d9;
+}
+
+.input-glass::placeholder {
+    color: #a1a1aa;
+}
+
+.input-glass:focus {
+    border-color: #b8792f;
+    box-shadow: 0 0 0 3px rgba(184, 121, 47, 0.15);
+}
+
+.dark .input-glass {
+    color: #e4e4e7;
+    border-color: #34343b;
+}
+
+.dark .input-glass::placeholder {
+    color: #71717a;
+}
+
+.dark .input-glass:focus {
+    border-color: #c6902f;
+    box-shadow: 0 0 0 3px rgba(198, 144, 47, 0.18);
+}
+
+/* Scrollbar sutil */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c7c7ce;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a0a0a8;
+    background-clip: content-box;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #48484f;
+    background-clip: content-box;
+}
+
+/* Utilidad: aparición escalonada de tarjetas en listas */
+
+.stagger > * {
+    animation: fade-in-up 0.4s ease-out both;
+}
+
+.stagger > *:nth-child(1) {
+    animation-delay: 0.02s;
+}
+
+.stagger > *:nth-child(2) {
+    animation-delay: 0.05s;
+}
+
+.stagger > *:nth-child(3) {
+    animation-delay: 0.08s;
+}
+
+.stagger > *:nth-child(4) {
+    animation-delay: 0.11s;
+}
+
+.stagger > *:nth-child(5) {
+    animation-delay: 0.14s;
+}
+
+.stagger > *:nth-child(6) {
+    animation-delay: 0.17s;
+}
+
+.stagger > *:nth-child(7) {
+    animation-delay: 0.20s;
+}
+
+.stagger > *:nth-child(8) {
+    animation-delay: 0.23s;
+}
+
+@keyframes fade-in-up {
+    0% {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Flotación sutil para íconos hero (login, errores, bloqueo de puerta).
+   Usaba la clase .animate-float en 7 vistas pero nunca estuvo definida,
+   así que esos íconos quedaban estáticos. */
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+.animate-float {
+    animation: float 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-float {
+        animation: none !important;
+    }
+}
+
+/* En oscuro una sombra clara casi no se nota sobre el fondo carbón:
+   se usa una sombra negra más profunda para que dropdowns, toasts y los
+   íconos "hero" mantengan sensación de elevación. */
+
+.dark .shadow-glass-lg {
+    box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.6);
+}
+
+/* Marca de avatar / logo del sidebar: degradado con el color de marca.
+   .avatar-mark y .sidebar-brand-mark se usaban en topbar/sidebar/mobile-topbar
+   pero tampoco estaban definidas — el avatar y el logo se veían sin color. */
+
+.avatar-mark,
+.sidebar-brand-mark {
+    background: linear-gradient(135deg, #647d7d 0%, #324e52 100%);
+}
+
+/* ==================================================================== */
+/*  Layout: Sidebar (Admin / RRHH / Jefe de Área)                       */
+/* ==================================================================== */
+
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.app-sidebar {
+    width: 17rem;
+    flex-shrink: 0;
+    background: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    inset-block: 0;
+    left: 0;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+}
+
+.app-sidebar.is-open {
+    transform: translateX(0);
+}
+
+@media (min-width: 1024px) {
+    .app-sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        transform: none;
+    }
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 1.25rem 1.25rem 1rem;
+}
+
+.sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem 0.875rem;
+}
+
+.sidebar-section-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: rgba(226, 234, 245, 0.6);
+    padding: 1rem 0.75rem 0.375rem;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #c2d3e8;
+    transition: background 0.15s ease, color 0.15s ease;
+    position: relative;
+}
+
+.sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+.sidebar-link.is-active {
+    background: var(--sidebar-bg-active);
+    color: #ffffff;
+    box-shadow: inset 3px 0 0 0 #b8792f;
+}
+
+.sidebar-link.is-active .sidebar-icon {
+    color: #f6cbb0;
+}
+
+.sidebar-link .sidebar-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+}
+
+.sidebar-link .sidebar-badge {
+    margin-left: auto;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    background: #b8792f;
+    color: #fff;
+    border-radius: 9999px;
+    padding: 0.0625rem 0.4375rem;
+    min-width: 1.25rem;
+    text-align: center;
+}
+
+.sidebar-footer {
+    padding: 0.875rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(9, 9, 11, 0.6);
+    z-index: 39;
+}
+
+.app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.875rem 1.25rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.app-content {
+    flex: 1;
+    min-width: 0;
+    padding: 1.5rem;
+    max-width: 88rem;
+    margin: 0 auto;
+    width: 100%;
+}
+
+@media (max-width: 640px) {
+    .app-content {
+        padding: 1rem;
+    }
+}
+
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+    color: #71717a;
+    background: transparent;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.icon-btn:hover {
+    background: var(--surface-muted);
+    color: #18181b;
+}
+
+.dark .icon-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #e4e4e7;
+}
+
+/* ==================================================================== */
+/*  Layout: Mobile shell (Trabajador / Vigilante)                       */
+/* ==================================================================== */
+
+/* Fondo de pantalla completa del shell del trabajador
+   (components/trabajador-layout.blade.php). Mismo tono neutro que el
+   resto de la app — sin gradiente propio — para que la única superficie
+   "de marca" siga siendo el header (.glass-nav) y no compita con él. */
+.bg-institucional {
+    background: var(--surface-muted);
+}
+
+/* Header del shell del trabajador: mismo degradado institucional que
+   .app-sidebar (Admin/Jefe/RRHH), para que ambas entradas al sistema
+   compartan una sola "superficie de marca". Los íconos dentro se pintan
+   en blanco vía .icon-chip + los modificadores !bg-white/10 ya puestos
+   en el markup. */
+.glass-nav {
+    background: var(--sidebar-bg);
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+/* Badge/botón circular de ícono: solo geometría, sin fondo/color
+   propios a propósito. Cada lugar que lo usa (header del trabajador,
+   stat-card por tono, logo de acceso, tarjetas de welcome) ya trae su
+   propio bg-* / text-* de Tailwind — si icon-chip impusiera un color acá,
+   esas variantes de color quedarían todas iguales, ya que este archivo
+   no usa @layer y por lo tanto cualquier regla de acá le gana a una
+   utilidad de Tailwind sin `!`. El único caso sin bg-* / text-* propio
+   (botón de cerrar del drawer móvil) hereda el color del contenedor,
+   que es justamente lo que se necesita ahí. */
+.icon-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.mobile-action-bar {
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border-top: 1px solid var(--border-soft);
+}
+
+.mobile-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.mobile-content {
+    padding: 1rem;
+    padding-bottom: 5.5rem;
+    max-width: 40rem;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    display: flex;
+    background: color-mix(in srgb, var(--surface) 85%, transparent);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border-top: 1px solid var(--border-soft);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.125rem;
+    padding: 0.5rem 0.25rem 0.625rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #a1a1aa;
+    position: relative;
+}
+
+.bottom-nav-item svg {
+    width: 1.375rem;
+    height: 1.375rem;
+}
+
+.bottom-nav-item.is-active {
+    color: #b8792f;
+}
+
+.dark .bottom-nav-item.is-active {
+    color: #c6902f;
+}
+
+.bottom-nav-item.is-active span:last-child {
+    font-weight: 700;
+}
+
+.bottom-nav-item .nav-badge {
+    position: absolute;
+    top: 0.125rem;
+    right: calc(50% - 0.9rem);
+    font-size: 0.625rem;
+    font-weight: 700;
+    background: #b8792f;
+    color: #fff;
+    border-radius: 9999px;
+    min-width: 1.05rem;
+    height: 1.05rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.2rem;
+}
+
+@media (min-width: 640px) {
+    .mobile-content {
+        padding: 1.5rem;
+    }
+}
+
+/* Barra de carga global de Livewire (resources/js/livewire-progreso.js).
+   Aparece solo si la respuesta tarda; usa el color de sello. */
+html::after {
+    content: '';
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 3px;
+    z-index: 70;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(90deg, transparent, #b8792f, transparent) no-repeat;
+    background-size: 40% 100%;
+    transition: opacity 0.15s ease;
+}
+
+html.lw-cargando {
+    cursor: progress;
+}
+
+html.lw-cargando::after {
+    opacity: 1;
+    animation: lw-barra 1s ease-in-out infinite;
+}
+
+@keyframes lw-barra {
+    from { background-position: -40% 0; }
+    to   { background-position: 140% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.lw-cargando::after {
+        animation: none;
+        background-size: 100% 100%;
+    }
+}

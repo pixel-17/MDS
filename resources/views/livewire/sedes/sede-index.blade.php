@@ -1,0 +1,36 @@
+<div>
+    <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8 space-y-6">
+        <x-admin.encabezado titulo="Sedes">
+            <x-admin.boton-nuevo :href="route('sedes.crear')">Nueva sede</x-admin.boton-nuevo>
+        </x-admin.encabezado>
+
+        <x-admin.mensajes />
+
+        <div class="flex flex-wrap gap-4">
+            <x-admin.filtro-campo label="Buscar" for="sede-index-buscar">
+                <x-input id="sede-index-buscar" type="text" wire:model.live.debounce.400ms="buscar" placeholder="Nombre o dirección" />
+            </x-admin.filtro-campo>
+        </div>
+
+        <x-admin.tabla :columnas="['Nombre', 'Dirección', 'Radio (m)', 'Trabajadores', 'Activa', '']">
+            @forelse ($sedes as $sede)
+                <tr wire:key="sede-{{ $sede->id }}">
+                    <td class="px-4 py-3">{{ $sede->nombre }}</td>
+                    <td class="px-4 py-3">{{ $sede->direccion }}</td>
+                    <td class="px-4 py-3">{{ $sede->radio_metros }}</td>
+                    <td class="px-4 py-3">{{ $sede->usuarios_count }}</td>
+                    <td class="px-4 py-3"><x-admin.estado :activo="$sede->activo" etiqueta-si="Activa" etiqueta-no="Inactiva" /></td>
+                    <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                        <x-admin.accion-editar :href="route('sedes.editar', $sede)" />
+                        <x-admin.accion-eliminar
+                            mensaje='¿Eliminar la sede "{{ $sede->nombre }}"?'
+                            accion="eliminar({{ $sede->id }})"
+                        />
+                    </td>
+                </tr>
+            @empty
+                <x-admin.fila-vacia :colspan="6">{{ $buscar ? 'Ninguna sede coincide con la búsqueda.' : 'Aún no hay sedes registradas.' }}</x-admin.fila-vacia>
+            @endforelse
+        </x-admin.tabla>
+    </div>
+</div>

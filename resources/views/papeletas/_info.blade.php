@@ -1,0 +1,145 @@
+<div class="glass-card p-6 space-y-5">
+    @if ($papeleta->relationLoaded('trabajador') && $papeleta->trabajador)
+        <div>
+            <dt class="text-gray-500 dark:text-tinta-100/50 text-sm">Trabajador</dt>
+            <dd class="text-gray-900 dark:text-white font-medium">{{ $papeleta->trabajador->nombre_completo }} ({{ $papeleta->regimen }})</dd>
+        </div>
+    @endif
+
+    @if ($papeleta->relationLoaded('motivo') && $papeleta->motivo)
+        <div>
+            <dt class="text-gray-500 dark:text-tinta-100/50 text-sm">Tipo de papeleta</dt>
+            <dd class="text-gray-900 dark:text-white font-medium">{{ $papeleta->motivo->nombre }}</dd>
+        </div>
+    @endif
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+        <div>
+            <dt class="text-gray-500 dark:text-tinta-100/50">Sede</dt>
+            <dd class="text-gray-900 dark:text-white">{{ $papeleta->sede->nombre ?? '—' }}</dd>
+        </div>
+        <div>
+            <dt class="text-gray-500 dark:text-tinta-100/50">Día operativo</dt>
+            <dd class="text-gray-900 dark:text-white">{{ $papeleta->dia_operativo?->format('d/m/Y') }}</dd>
+        </div>
+        <div>
+            <dt class="text-gray-500 dark:text-tinta-100/50">Hora de salida real</dt>
+            <dd class="text-gray-900 dark:text-white">{{ $papeleta->hora_salida_real?->format('d/m/Y H:i') ?? '—' }}</dd>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm border-t border-gray-100 dark:border-white/10 pt-4">
+        <div>
+            <dt class="text-gray-500 dark:text-tinta-100/50">Jefe inmediato</dt>
+            <dd class="text-gray-900 dark:text-white">{{ $papeleta->jefeInmediato?->nombre_completo ?? '—' }}</dd>
+        </div>
+        <div>
+            <dt class="text-gray-500 dark:text-tinta-100/50">Jefe de área</dt>
+            <dd class="text-gray-900 dark:text-white">{{ $papeleta->jefeArea?->nombre_completo ?? '—' }}</dd>
+        </div>
+    </div>
+
+    @if ($papeleta->autorizado_con_rrhh_fuera_horario || $papeleta->justificacion || $papeleta->observacion_subsanada_at || $papeleta->motivo_rechazo || $papeleta->causa_finalizacion_sin_retorno)
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm border-t border-gray-100 dark:border-white/10 pt-4">
+            @if ($papeleta->autorizado_con_rrhh_fuera_horario)
+                <div>
+                    <dt class="text-gray-500 dark:text-tinta-100/50">Revisión posterior de RR. HH.</dt>
+                    <dd class="text-gray-900 dark:text-white">{{ $papeleta->etiquetaPosthoc() }}</dd>
+                </div>
+            @endif
+            @if ($papeleta->justificacion)
+                <div class="sm:col-span-2">
+                    <dt class="text-gray-500 dark:text-tinta-100/50">Justificación</dt>
+                    <dd class="text-gray-900 dark:text-white">{{ $papeleta->justificacion }}</dd>
+                </div>
+            @endif
+            @if ($papeleta->observacion_subsanada_at)
+                <div class="sm:col-span-2">
+                    <dt class="text-gray-500 dark:text-tinta-100/50">Respuesta del trabajador a la observación ({{ $papeleta->observacion_subsanada_at->format('d/m/Y H:i') }})</dt>
+                    <dd class="text-gray-900 dark:text-white">{{ $papeleta->observacion_respuesta }}</dd>
+                </div>
+            @endif
+            @if ($papeleta->motivo_rechazo)
+                <div class="sm:col-span-2">
+                    <dt class="text-gray-500 dark:text-tinta-100/50">Motivo de rechazo</dt>
+                    <dd class="text-red-700 dark:text-red-400">{{ $papeleta->motivo_rechazo }}</dd>
+                </div>
+            @endif
+            @if ($papeleta->causa_finalizacion_sin_retorno)
+                <div class="sm:col-span-2">
+                    <dt class="text-gray-500 dark:text-tinta-100/50">Causa de finalización sin retorno</dt>
+                    <dd class="text-red-700 dark:text-red-400">{{ $papeleta->esAbandono() ? 'Abandono: el trabajador no marcó su retorno antes de que terminara su turno/día' : $papeleta->causa_finalizacion_sin_retorno }}</dd>
+                </div>
+            @endif
+        </div>
+    @endif
+</div>
+
+@if ($papeleta->retorno)
+    <div class="glass-card p-6">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-tinta-50/80 mb-3">
+            {{ $papeleta->retorno->generado_por_abandono ? 'Hora de fin (sin retorno marcado)' : 'Retorno registrado' }}
+        </h3>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div>
+                <dt class="text-gray-500 dark:text-tinta-100/50">{{ $papeleta->retorno->generado_por_abandono ? 'Hora de fin de turno/día' : 'Hora del servidor' }}</dt>
+                <dd class="text-gray-900 dark:text-white">{{ $papeleta->retorno->hora_servidor->format('d/m/Y H:i') }}</dd>
+            </div>
+            @if ($papeleta->retorno->generado_por_abandono)
+                <div class="sm:col-span-2">
+                    <dt class="text-gray-500 dark:text-tinta-100/50">Nota</dt>
+                    <dd class="text-amber-700 dark:text-amber-400">El trabajador no marcó su retorno (abandono): esta hora es la del fin de su turno/día, registrada automáticamente solo para calcular cuánto tiempo estuvo afuera.</dd>
+                </div>
+            @else
+                <div>
+                    <dt class="text-gray-500 dark:text-tinta-100/50">Dentro de radio de sede</dt>
+                    <dd class="text-gray-900 dark:text-white">
+                        <x-radio-sede :dentro="$papeleta->retorno->dentro_de_radio" />
+                    </dd>
+                </div>
+            @endif
+            @if ($papeleta->retorno->marcado_manual)
+                <div class="sm:col-span-2">
+                    <dt class="text-gray-500 dark:text-tinta-100/50">Marcado manual por falla de conectividad</dt>
+                    <dd class="text-gray-900 dark:text-white">{{ $papeleta->retorno->marcadoManualPor?->nombre_completo }} — {{ $papeleta->retorno->justificacion_manual }}</dd>
+                </div>
+            @endif
+            @if ($papeleta->descuento_refrigerio_minutos)
+                <div>
+                    <dt class="text-gray-500 dark:text-tinta-100/50">Descuento de refrigerio</dt>
+                    <dd class="text-gray-900 dark:text-white">{{ $papeleta->descuento_refrigerio_minutos }} min</dd>
+                </div>
+            @endif
+        </dl>
+    </div>
+@endif
+
+@if ($papeleta->sustentos->isNotEmpty())
+    <div class="glass-card p-6">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-tinta-50/80 mb-3">Sustentos</h3>
+        <ul class="text-sm text-gray-700 dark:text-tinta-100/70 space-y-1">
+            @foreach ($papeleta->sustentos as $sustento)
+                <li class="flex items-center justify-between gap-3">
+                    <span class="flex items-center flex-wrap gap-x-1 gap-y-2">
+                        <span>
+                            Presentado {{ $sustento->presentado_at?->format('d/m/Y H:i') ?? '—' }}
+                            · Límite {{ $sustento->fecha_limite?->format('d/m/Y H:i') }}
+                        </span>
+                        @if ($sustento->archivo_path && Auth::user()->can('verSustento', $sustento))
+                            <a href="{{ route('sustentos.archivo', $sustento) }}" class="btn-row">
+                                <x-icon name="document" class="size-3.5" />
+                                Ver archivo
+                            </a>
+                        @endif
+                    </span>
+                    @php [$etiquetaSustento, $clasesSustento] = \App\Support\SustentoEstadoPresentacion::para($sustento->estado); @endphp
+                    <span class="inline-flex items-center text-xs px-2 py-0.5 rounded-full font-semibold ring-1 ring-inset {{ $clasesSustento }}">
+                        {{ $etiquetaSustento }}
+                    </span>
+                </li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+@include('papeletas._archivos', ['papeleta' => $papeleta])

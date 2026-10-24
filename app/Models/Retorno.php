@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Models;
+
+use App\Events\PapeletaActualizada;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Retorno extends Model
+{
+    protected $fillable = [
+        'papeleta_id',
+        'foto_path',
+        'latitud',
+        'longitud',
+        'dentro_de_radio',
+        'hora_servidor',
+        'marcado_manual',
+        'marcado_manual_por_id',
+        'justificacion_manual',
+        'generado_por_abandono',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'latitud' => 'decimal:7',
+            'longitud' => 'decimal:7',
+            'dentro_de_radio' => 'boolean',
+            'hora_servidor' => 'datetime',
+            'marcado_manual' => 'boolean',
+            'generado_por_abandono' => 'boolean',
+        ];
+    }
+
+    public function papeleta(): BelongsTo
+    {
+        return $this->belongsTo(Papeleta::class);
+    }
+
+    public function marcadoManualPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'marcado_manual_por_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn (self $retorno) => PapeletaActualizada::notificar($retorno->papeleta_id));
+    }
+}

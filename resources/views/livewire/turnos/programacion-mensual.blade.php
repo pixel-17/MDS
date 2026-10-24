@@ -1,0 +1,249 @@
+<div>
+    <div class="max-w-4xl mx-auto py-10 sm:px-6 lg:px-8 space-y-6">
+        <div>
+            <h2 class="font-bold text-2xl text-tinta-950 leading-tight tracking-tight">
+                Programar turnos — {{ $trabajador->nombre_completo }}
+            </h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Régimen {{ $trabajador->regimen }}. Elige un turno y haz clic (o arrastra) sobre los días.
+                Lo que guardes aquí reemplaza la programación de ese mes y el mes siguiente no se genera solo
+                sobre él.
+            </p>
+        </div>
+
+        <div
+            wire:key="programacion-{{ $version }}"
+            @mouseup.window="arrastrando = false"
+            x-data="{
+                dias: @js($diasIniciales),
+                fechasMes: @js($fechasMes),
+                original: '',
+                pincel: 'MANANA',
+                arrastrando: false,
+                patron: 'M M M M M M D',
+                desde: @js($fechasMes[0] ?? ''),
+                errorPatron: '',
+                continuar: false,
+                meses: 1,
+                previosMes: @js($previosMes),
+                claves: { M: 'MANANA', T: 'TARDE', N: 'NOCHE', D: 'DESCANSO' },
+                siglas: { MANANA: 'M', TARDE: 'T', NOCHE: 'N', DESCANSO: 'D' },
+                clases: @js(\App\Support\TurnoColores::porCodigo()),
+                init() { this.original = this.firma(); },
+                firma() { return JSON.stringify(Object.entries(this.dias).sort()); },
+                get sucio() { return this.firma() !== this.original; },
+                get sinProgramar() { return this.fechasMes.filter(f => !this.dias[f]).length; },
+                cuenta(codigo) { return this.fechasMes.filter(f => this.dias[f] === codigo).length; },
+                clase(codigo) { return this.clases[codigo] ?? 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 text-gray-400'; },
+                sigla(codigo) { return this.siglas[codigo] ?? '—'; },
+                pintar(fecha) {
+                    if (this.pincel === 'BORRAR') { delete this.dias[fecha]; } else { this.dias[fecha] = this.pincel; }
+                },
+                pasosPatron() {
+                    const pasos = this.patron.toUpperCase().split(/[\s,]+/).filter(Boolean).map(t => this.claves[t]);
+                    if (!pasos.length || pasos.includes(undefined)) {
+                        this.errorPatron = 'Usa solo M, T, N o D separados por espacios. Ej.: M M T T N D';
+                        return null;
+                    }
+                    this.errorPatron = '';
+                    return pasos;
+                },
+                fechaMenos(fecha, dias) {
+                    const d = new Date(fecha + 'T00:00:00');
+                    d.setDate(d.getDate() - dias);
+                    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                },
+                {{-- Misma regla que PatronTurnos::offsetContinuacion (PHP): sigue la rotación donde terminó lo anterior a 'desde'. --}}
+                offsetContinuacion(pasos) {
+                    const n = pasos.length;
+                    const previos = [];
+                    for (let i = n; i >= 1; i--) {
+                        const f = this.fechaMenos(this.desde, i);
+                        previos.push(this.dias[f] ?? this.previosMes[f] ?? null);
+                    }
+                    let mejorPosicion = null, mejorRacha = 0;
+                    for (let posicion = 0; posicion < n; posicion++) {
+                        let racha = 0;
+                        for (let k = 0; k < previos.length; k++) {
+                            const codigo = previos[previos.length - 1 - k];
+                            if (codigo === null || pasos[(((posicion - k) % n) + n) % n] !== codigo) break;
+                            racha++;
+                        }
+                        if (racha > mejorRacha) { mejorRacha = racha; mejorPosicion = posicion; }
+                    }
+                    return mejorPosicion === null ? 0 : (mejorPosicion + 1) % n;
+                },
+                aplicarPatron() {
+                    const pasos = this.pasosPatron();
+                    if (!pasos) return;
+                    let i = this.continuar ? this.offsetContinuacion(pasos) : 0;
+                    for (const f of this.fechasMes.filter(f => f >= this.desde)) { this.dias[f] = pasos[i++ % pasos.length]; }
+                },
+                generarMeses() {
+                    if (!this.pasosPatron()) return;
+                    const n = Math.max(1, Math.min(@js($maxMeses), parseInt(this.meses) || 1));
+                    mssConfirmar('Se guardarán ' + n + ' meses de golpe, a partir del ' + this.desde + '. Lo que ya exista en los meses siguientes se reemplaza. ¿Continuar?', { aceptar: 'Continuar' }).then(ok => {
+                        if (ok) { this.$wire.generarMeses(this.patron, this.desde, n, this.continuar, this.dias); }
+                    });
+                },
+                navegar(accion) {
+                    if (!this.sucio) { this.$wire[accion](); return; } mssConfirmar('Tienes cambios sin guardar. ¿Descartarlos?', { aceptar: 'Descartar', peligro: true }).then(ok => { if (ok) { this.$wire[accion](); } });
+                }
+            }"
+            class="space-y-6"
+        >
+
+            <div class="flex items-center justify-between flex-wrap gap-3">
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="navegar('mesAnterior')" class="px-3 py-1.5 rounded-md border text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" aria-label="Mes anterior">&larr; Anterior</button>
+                    <button type="button" @click="navegar('irAHoy')" class="px-3 py-1.5 rounded-md border text-sm font-semibold text-tinta-700 dark:text-tinta-300 hover:bg-tinta-50 dark:hover:bg-tinta-500/10 transition-colors">Hoy</button>
+                    <span class="text-sm font-semibold w-32 text-center capitalize">{{ $inicioMes->translatedFormat('F Y') }}</span>
+                    <button type="button" @click="navegar('mesSiguiente')" class="px-3 py-1.5 rounded-md border text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" aria-label="Mes siguiente">Siguiente &rarr;</button>
+                </div>
+                <span x-show="sucio" x-cloak class="text-xs font-medium text-amber-700 dark:text-amber-300">Cambios sin guardar</span>
+            </div>
+
+            {{-- Pincel --}}
+            <div class="glass-card p-4 space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-medium mr-1">Turno a pintar:</span>
+                    @foreach ([
+                        'MANANA' => ['M', 'Mañana'],
+                        'TARDE' => ['T', 'Tarde'],
+                        'NOCHE' => ['N', 'Noche'],
+                        'DESCANSO' => ['D', 'Descanso'],
+                        'BORRAR' => ['✕', 'Sin programar'],
+                    ] as $codigo => [$sigla, $nombre])
+                        <button
+                            type="button"
+                            @click="pincel = '{{ $codigo }}'"
+                            :class="[pincel === '{{ $codigo }}' ? 'ring-2 ring-tinta-500 dark:ring-tinta-400 shadow' : 'opacity-80 hover:opacity-100', '{{ $codigo }}' === 'BORRAR' ? 'bg-white dark:bg-gray-900 text-gray-500 border-gray-300 dark:border-gray-700' : clase('{{ $codigo }}')]"
+                            class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition"
+                        >
+                            <span class="font-bold">{{ $sigla }}</span> · {{ $nombre }}
+                            @isset($horas[$codigo])
+                                <span class="opacity-70">({{ $horas[$codigo] }})</span>
+                            @endisset
+                        </button>
+                    @endforeach
+                </div>
+
+                <div class="flex flex-wrap items-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                    <div>
+                        <label for="programacion-mensual-patron" class="block text-xs font-medium mb-1">Repetir patrón</label>
+                        <input id="programacion-mensual-patron" type="text" x-model="patron" class="w-56 rounded-md border-gray-300 dark:bg-gray-800 text-sm" placeholder="M M T T N D">
+                    </div>
+                    <div>
+                        <label for="programacion-mensual-desde" class="block text-xs font-medium mb-1">desde el</label>
+                        <input id="programacion-mensual-desde" type="date" x-model="desde" :min="fechasMes[0]" :max="fechasMes[fechasMes.length - 1]" class="rounded-md border-gray-300 dark:bg-gray-800 text-sm">
+                    </div>
+                    <div>
+                        <label for="programacion-mensual-meses" class="block text-xs font-medium mb-1">Meses</label>
+                        <input id="programacion-mensual-meses" type="number" x-model.number="meses" min="1" max="{{ $maxMeses }}" class="w-20 rounded-md border-gray-300 dark:bg-gray-800 text-sm">
+                    </div>
+                    <button type="button" x-show="meses <= 1" @click="aplicarPatron()" class="px-3 py-2 rounded-md border text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Aplicar hasta fin de mes</button>
+                    <button type="button" x-show="meses > 1" x-cloak @click="generarMeses()" wire:loading.attr="disabled" class="px-3 py-2 rounded-md bg-tinta-800 text-white text-sm disabled:opacity-50">Generar y guardar <span x-text="meses"></span> meses</button>
+                    <button type="button" @click="dias = {}" class="px-3 py-2 rounded-md border text-sm text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800">Limpiar mes</button>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs text-gray-500">Atajos:</span>
+                    @foreach ($predefinidos as $etiqueta => $valor)
+                        <button type="button" wire:key="programacion-mensual-predef-{{ $loop->index }}" @click="patron = @js($valor)" class="rounded-full border px-3 py-1 text-xs hover:bg-gray-50 dark:hover:bg-gray-800">{{ $etiqueta }}</button>
+                    @endforeach
+                    <label class="inline-flex items-center gap-2 text-xs ml-2">
+                        <input type="checkbox" x-model="continuar" class="rounded border-gray-300">
+                        Continuar la rotación donde terminó el mes anterior
+                    </label>
+                </div>
+                <p x-show="meses > 1" x-cloak class="text-xs text-gray-500">
+                    Con más de un mes, el patrón se guarda directamente desde la fecha elegida (máx. {{ $maxMeses }} meses) y reemplaza los meses siguientes.
+                </p>
+                <p x-show="errorPatron" x-text="errorPatron" x-cloak class="text-sm text-red-600"></p>
+            </div>
+
+            {{-- Calendario --}}
+            <div class="glass-card p-4 overflow-x-auto">
+                <table class="min-w-full text-center text-sm border-separate border-spacing-1">
+                    <thead>
+                        <tr class="text-xs uppercase text-gray-500 dark:text-gray-400">
+                            @foreach (['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] as $nombreDia)
+                                <th wire:key="programacion-mensual-th-{{ $loop->index }}" scope="col" class="px-2 py-2">{{ $nombreDia }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($semanas as $semana)
+                            <tr wire:key="programacion-mensual-tr-{{ $loop->index }}">
+                                @foreach ($semana as $fecha)
+                                    <td wire:key="programacion-mensual-td-{{ $loop->index }}" class="align-top p-0">
+                                        @if ($fecha)
+                                            <button
+                                                type="button"
+                                                @mousedown.prevent="arrastrando = true; pintar('{{ $fecha }}')"
+                                                @mouseenter="if (arrastrando) pintar('{{ $fecha }}')"
+                                                @click="pintar('{{ $fecha }}')"
+                                                :class="clase(dias['{{ $fecha }}'])"
+                                                class="w-full h-16 rounded-lg border px-2 py-2 flex flex-col justify-between select-none cursor-pointer transition-colors {{ $fecha === $hoy ? 'ring-2 ring-tinta-500 dark:ring-tinta-400' : '' }}"
+                                                aria-label="{{ \Illuminate\Support\Carbon::parse($fecha)->translatedFormat('l j') }}"
+                                            >
+                                                <span class="text-xs {{ $fecha === $hoy ? 'font-bold' : 'opacity-70' }} text-left">{{ (int) substr($fecha, 8, 2) }}</span>
+                                                <span class="font-semibold text-right" x-text="sigla(dias['{{ $fecha }}'])"></span>
+                                            </button>
+                                        @endif
+                                    </td>
+                                @endforeach
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- Resumen --}}
+            <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600 dark:text-gray-300">
+                <span>Mañana: <strong x-text="cuenta('MANANA')"></strong></span>
+                <span>Tarde: <strong x-text="cuenta('TARDE')"></strong></span>
+                <span>Noche: <strong x-text="cuenta('NOCHE')"></strong></span>
+                <span>Descanso: <strong x-text="cuenta('DESCANSO')"></strong></span>
+                <span>Sin programar: <strong x-text="sinProgramar"></strong></span>
+            </div>
+
+            @error('dias') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+
+            @if ($mensaje)
+                <p class="text-sm text-green-700 dark:text-green-400">{{ $mensaje }}</p>
+            @endif
+
+            @if ($advertencias)
+                <div class="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/30 p-4 space-y-3">
+                    <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">Revisa antes de guardar:</p>
+                    <ul class="list-disc pl-5 text-sm text-amber-800 dark:text-amber-200 space-y-1">
+                        @foreach ($advertencias as $advertencia)
+                            <li wire:key="programacion-mensual-li-{{ $loop->index }}">{{ $advertencia }}</li>
+                        @endforeach
+                    </ul>
+                    <div class="flex items-center gap-3">
+                        @if ($planPendiente !== [])
+                            <button type="button" wire:click="guardarPlanIgualmente" class="inline-flex items-center px-3 py-1.5 bg-amber-600 text-white rounded-md text-sm">Guardar {{ count($planPendiente) }} meses igualmente</button>
+                        @else
+                            <button type="button" @click="$wire.guardarIgualmente(dias)" class="inline-flex items-center px-3 py-1.5 bg-amber-600 text-white rounded-md text-sm">Guardar igualmente</button>
+                        @endif
+                        <button type="button" wire:click="descartarAdvertencias" class="text-sm text-gray-600 dark:text-gray-300">Seguir editando</button>
+                    </div>
+                </div>
+            @endif
+
+            <div class="flex items-center justify-end gap-3">
+                <a href="{{ auth()->user()->hasRole('admin') ? route('turnos.administrar') : route('turnos.calendario.equipo') }}" class="text-sm text-gray-500">Volver</a>
+                <button
+                    type="button"
+                    @click="$wire.guardar(dias)"
+                    wire:loading.attr="disabled"
+                    class="inline-flex items-center px-4 py-2 bg-tinta-800 text-white rounded-md text-sm disabled:opacity-50"
+                >
+                    Guardar programación del mes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

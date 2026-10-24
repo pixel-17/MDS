@@ -1,0 +1,411 @@
+<?php
+
+namespace Tests\Feature\Papeletas;
+
+use App\Actions\Papeleta\AprobarRrhhAction;
+use App\Actions\Papeleta\CancelarPapeletaAction;
+use App\Actions\Papeleta\CrearPapeletaAction;
+use App\Actions\Papeleta\ObservarRrhhAction;
+use App\Exceptions\PapeletaException;
+use App\Models\HistorialPapeleta;
+use App\Models\Motivo;
+use App\Models\Papeleta;
+use App\Models\UnidadOrganica;
+use App\States\Papeleta\AutorizadaYCorriendo;
+use App\States\Papeleta\Cancelada;
+use App\States\Papeleta\Cerrada;
+use App\States\Papeleta\EnJustificacion;
+use App\States\Papeleta\Finalizada;
+use App\States\Papeleta\PendienteJefe;
+use App\States\Papeleta\PendienteRrhh;
+use App\States\Papeleta\Rechazada;
+use App\States\Papeleta\Vencida;
+use Database\Seeders\ConfiguracionSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\CreaEscenarioPapeletas;
+use Tests\TestCase;
+
+/**
+ * Un trabajador solo puede tener UNA papeleta viva a la vez (pendiente,
+ * observada o autorizada y en curso): para crear otra debe cancelar o
+ * finalizar la anterior. Emergencia ya no existe.
+ *
+ * Horario ordinario sembrado por ConfiguracionSeeder: 07:45-16:15,
+ * lunes a viernes. Lunes de referencia: 2026-09-21.
+ */
+class CrearPapeletaTest extends TestCase
+{
+    use CreaEscenarioPapeletas;
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->prepararBase();
+        $this->seed(ConfiguracionSeeder::class);
+    }
+
+    protected function tearDown(): void
+    {
+        $this->travelBack();
+
+        parent::tearDown();
+    }
+
+    private function ir(string $momento): void
+    {
+        $this->travelTo(Carbon::parse($momento));
+    }
+
+    /**
+     * Organigrama mínimo para probar la cascada de disponibilidad:
+     *   Área (jefeArea, 276) -> Oficina (jefeInmediato, 728) -> trabajador
+     */
+    private function armarOrganigrama(string $regimenJefeInmediato = '728', string $regimenJefeArea = '276'): array
+    {
+        $jefeArea = $this->usuarioDePrueba(['regimen' => $regimenJefeArea], ['trabajador']);
+        $jefeInmediato = $this->usuarioDePrueba(['regimen' => $regimenJefeInmediato], ['trabajador']);
+        $trabajador = $this->usuarioDePrueba(['regimen' => $regimenJefeInmediato], ['trabajador']);
+
+        $area = UnidadOrganica::create(['nombre' => 'Área', 'jefe_id' => $jefeArea->id]);
+        $oficina = UnidadOrganica::create(['nombre' => 'Oficina', 'parent_id' => $area->id, 'jefe_id' => $jefeInmediato->id]);
+
+        $jefeArea->update(['unidad_organica_id' => $area->id]);
+        $jefeInmediato->update(['unidad_organica_id' => $oficina->id]);
+        $trabajador->update(['unidad_organica_id' => $oficina->id]);
+
+        return [$jefeArea->fresh(), $jefeInmediato->fresh(), $trabajador->fresh()];
+    }
+
+    public function test_no_puede_crear_otra_papeleta_mientras_tiene_una_en_tramite(): void
+    {
+        [, $jefeInmediato, $trabajador] = $this->armarOrganigrama();
+        $this->turnoDePrueba($trabajador);
+        $this->turnoDePrueba($jefeInmediato); // el jefe 728 también debe tener turno vigente
+        $crear = app(CrearPapeletaAction::class);
+
+        $primera = $crear->ejecutar($trabajador, $this->motivoDe('PARTICULAR'), []);
+
+        try {
+            $crear->ejecutar($trabajador, $this->motivoDe('SALUD'), []);
+            $this->fail('Debió bloquear la segunda papeleta.');
+        } catch (PapeletaException $e) {
+            $this->assertStringContainsString("#{$primera->id}", $e->getMessage());
+            $this->assertStringContainsString('Cancélala', $e->getMessage());
+        }
+
+        $this->assertSame(1, Papeleta::where('trabajador_id', $trabajador->id)->count());
+        $this->assertTrue($primera->fresh()->estado->equals(PendienteJefe::class));
+    }
+
+    public function test_no_puede_crear_otra_papeleta_con_una_autorizada_y_en_curso(): void
+    {
+        [, , $trabajador] = $this->armarOrganigrama();
+        $this->turnoDePrueba($trabajador);
+        $enCurso = $this->papeletaDePrueba($trabajador, AutorizadaYCorriendo::class);
+
+        try {
+            app(CrearPapeletaAction::class)->ejecutar($trabajador, $this->motivoDe('PARTICULAR'), []);
+            $this->fail('Debió bloquear la nueva papeleta.');
+        } catch (PapeletaException $e) {
+            $this->assertStringContainsString("#{$enCurso->id}", $e->getMessage());
+            $this->assertStringContainsString('autorizada y en curso', $e->getMessage());
+        }
+
+        $this->assertSame(1, Papeleta::where('trabajador_id', $trabajador->id)->count());
+    }
+
+    public function test_puede_crear_otra_papeleta_despues_de_cancelar_la_anterior(): void
+    {
+        [, $jefeInmediato, $trabajador] = $this->armarOrganigrama();
+        $this->turnoDePrueba($trabajador);
+        $this->turnoDePrueba($jefeInmediato); // el jefe 728 también debe tener turno vigente
+        $crear = app(CrearPapeletaAction::class);
+
+        $primera = $crear->ejecutar($trabajador, $this->motivoDe('PARTICULAR'), []);
+        app(CancelarPapeletaAction::class)->ejecutar($primera, $trabajador);
+
+        $segunda = $crear->ejecutar($trabajador, $this->motivoDe('SALUD'), []);
+
+        $this->assertSame(2, Papeleta::where('trabajador_id', $trabajador->id)->count());
+        $this->assertTrue($primera->fresh()->estado->equals(Cancelada::class));
+        $this->assertTrue($segunda->estado->equals(PendienteJefe::class));
+    }
+
+    public function test_puede_crear_otra_papeleta_cuando_la_anterior_ya_termino(): void
+    {
+        [, $jefeInmediato, $trabajador] = $this->armarOrganigrama();
+        $this->turnoDePrueba($trabajador);
+        $this->turnoDePrueba($jefeInmediato); // el jefe 728 también debe tener turno vigente
+        $crear = app(CrearPapeletaAction::class);
+
+        foreach ([Cerrada::class, Finalizada::class, Cancelada::class, Vencida::class, Rechazada::class, EnJustificacion::class] as $estado) {
+            $anterior = $this->papeletaDePrueba($trabajador, $estado);
+
+            $nueva = $crear->ejecutar($trabajador, $this->motivoDe('PARTICULAR'), []);
+            $this->assertTrue($nueva->estado->equals(PendienteJefe::class), "No dejó crear tras {$estado}.");
+
+            // Se resuelve la nueva para que no bloquee la siguiente vuelta.
+            $nueva->update(['estado' => Cancelada::class]);
+            $anterior->delete();
+        }
+    }
+
+    public function test_la_papeleta_viva_de_otro_usuario_no_bloquea(): void
+    {
+        [, $jefeInmediato, $trabajador] = $this->armarOrganigrama();
+        $this->turnoDePrueba($trabajador);
+        $this->turnoDePrueba($jefeInmediato); // el jefe 728 también debe tener turno vigente
+        $this->papeletaDePrueba($jefeInmediato, AutorizadaYCorriendo::class);
+
+        $papeleta = app(CrearPapeletaAction::class)->ejecutar($trabajador, $this->motivoDe('PARTICULAR'), []);
+
+        $this->assertTrue($papeleta->estado->equals(PendienteJefe::class));
+    }
+
+    public function test_con_una_papeleta_viva_la_pantalla_de_crear_lleva_a_esa_papeleta(): void
+    {
+        $this->ir('2026-09-21 10:00:00');
+        [, , $trabajador] = $this->armarOrganigrama();
+        $this->turnoDePrueba($trabajador);
+        $viva = $this->papeletaDePrueba($trabajador, PendienteJefe::class);
+
+        $this->actingAs($trabajador)->get(route('trabajador.papeletas.create'))
+            ->assertRedirect(route('trabajador.papeletas.show', $viva))
+            ->assertSessionHas('error');
+
+        $this->actingAs($trabajador)->post(route('trabajador.papeletas.store'), [
+            'motivo_id' => $this->motivoDe('PARTICULAR')->id,
+        ])->assertSessionHas('error');
+
+        $this->assertSame(1, Papeleta::where('trabajador_id', $trabajador->id)->count());
+    }
+
+    public function test_se_puede_crear_la_papeleta_de_salud_con_adjunto_por_http(): void
+    {
+        Storage::fake('local');
+        $this->ir('2026-09-21 10:00:00');
+
+        [, $jefeInmediato, $trabajador] = $this->armarOrganigrama();
+        $this->turnoDePrueba($trabajador);
+        $this->turnoDePrueba($jefeInmediato); // el jefe 728 también debe tener turno vigente
+
+        $this->actingAs($trabajador)->post(route('trabajador.papeletas.store'), [
+            'motivo_id' => $this->motivoDe('SALUD')->id,
+            'adjunto_inicial_path' => UploadedFile::fake()->create('certificado.pdf', 100, 'application/pdf'),
+        ])->assertSessionDoesntHaveErrors();
+
+        $papeleta = Papeleta::where('trabajador_id', $trabajador->id)->latest('id')->first();
+        $this->assertNotNull($papeleta?->adjunto_inicial_path);
+        Storage::disk('local')->assertExists($papeleta->adjunto_inicial_path);
+    }
+
+    public function test_el_adjunto_al_crear_solo_aplica_a_salud_y_se_ignora_en_comision(): void
+    {
+        Storage::fake('local');
+        $this->ir('2026-09-21 10:00:00');
+
+        [, $jefeInmediato, $trabajador] = $this->armarOrganigrama();
+        $this->turnoDePrueba($trabajador);
+        $this->turnoDePrueba($jefeInmediato); // el jefe 728 también debe tener turno vigente
+
+        $this->actingAs($trabajador)->post(route('trabajador.papeletas.store'), [
+            'motivo_id' => $this->motivoDe('COMISION')->id,
+            'adjunto_inicial_path' => UploadedFile::fake()->create('oficio.pdf', 100, 'application/pdf'),
+        ])->assertSessionDoesntHaveErrors();
+
+        $papeleta = Papeleta::where('trabajador_id', $trabajador->id)->latest('id')->first();
+        $this->assertNotNull($papeleta);
+        $this->assertNull($papeleta->adjunto_inicial_path);
+        $this->assertSame([], Storage::disk('local')->allFiles('papeletas/adjuntos-iniciales'));
+    }
+
+    /**
+     * Regla de estructura (2026-09-24): el jefe inmediato (o, para quien
+     * encabeza su propia unidad, su Jefe de Área) SIEMPRE debe existir y
+     * estar activo. En el tope del organigrama no hay nadie arriba: ya
+     * no escala a RRHH ni se autoautoriza (eso se quitó) — se bloquea
+     * por completo, sin importar si RRHH está o no en horario en ese
+     * momento.
+     */
+    public function test_quien_no_tiene_jefe_arriba_no_puede_crear_papeleta(): void
+    {
+        $this->usuarioDePrueba(['regimen' => '276'], ['rrhh']);
+
+        $tope = $this->usuarioDePrueba();
+        $unidad = UnidadOrganica::create(['nombre' => 'Concejo', 'jefe_id' => $tope->id]);
+        $tope->update(['unidad_organica_id' => $unidad->id]);
+        $this->turnoDePrueba($tope);
+
+        $this->expectException(PapeletaException::class);
+
+        app(CrearPapeletaAction::class)->ejecutar($tope->fresh(), $this->motivoDe('PARTICULAR'), []);
+    }
+
+    public function test_jefe_inmediato_728_disponible_manda_a_pendiente_jefe_aunque_jefe_de_area_este_fuera_de_horario(): void
+    {
+        [, $jefeInmediato, $trabajador] = $this->armarOrganigrama(regimenJefeInmediato: '728', regimenJefeArea: '276');
+        $this->ir('2026-09-21 22:00:00'); // jefe de área (276) fuera de horario, pero no importa: decide el jefe inmediato
+        $this->turnoDePrueba($trabajador);
+        $this->turnoDePrueba($jefeInmediato); // el jefe 728 también debe tener turno vigente
+
+        $papeleta = app(CrearPapeletaAction::class)->ejecutar($trabajador, $this->motivoDe('PARTICULAR'), []);
+
+        $this->assertTrue($papeleta->fresh()->estado->equals(PendienteJefe::class));
+        $this->assertSame($jefeInmediato->id, $papeleta->jefe_inmediato_id);
+    }
+
+    /**
+     * El caso concreto planteado: jefe inmediato pide SU PROPIA papeleta
+     * a las 22:00 (728, sin ventana de creación). Su decisor resuelto es
+     * el jefe de área (276), fuera de su horario ordinario a esa hora.
+     * RRHH (276) también fuera de horario. Nadie decide -> el sistema
+     * autoriza y queda para revisión post-hoc, nunca el propio jefe.
+     */
+    public function test_jefe_inmediato_pide_su_propia_papeleta_de_noche_sin_jefe_de_area_ni_rrhh_disponibles(): void
+    {
+        // El sistema solo autoriza por sí solo la papeleta del propio Jefe
+        // de Área (el tope, sin nadie más arriba) cuando RRHH no está
+        // disponible. La de un jefe inmediato esperando a SU Jefe de Área
+        // nunca escala por inacción de este: espera en PendienteJefe,
+        // disponible o no, mientras siga activo (ver DecisorDescansoTest).
+        [$jefeArea, $jefeInmediato] = $this->armarOrganigrama(regimenJefeInmediato: '728', regimenJefeArea: '276');
+        $this->usuarioDePrueba(['regimen' => '276'], ['rrhh']);
+        $this->ir('2026-09-21 22:00:00'); // jefe de área y RRHH (276) fuera de horario
+        $this->turnoDePrueba($jefeInmediato);
+
+        $papeleta = app(CrearPapeletaAction::class)->ejecutar($jefeInmediato, $this->motivoDe('PARTICULAR'), []);
+        $papeleta = $papeleta->fresh();
+
+        $this->assertSame($jefeArea->id, $papeleta->jefe_inmediato_id);
+        $this->assertTrue($papeleta->estado->equals(PendienteJefe::class));
+        $this->assertFalse($papeleta->autorizado_con_rrhh_fuera_horario);
+
+        // Sin historial de "sistema": nunca escaló, solo espera a su Jefe de Área.
+        $historial = HistorialPapeleta::where('papeleta_id', $papeleta->id)->latest('id')->first();
+        $this->assertSame('trabajador', $historial->actor_tipo);
+    }
+
+    public function test_la_papeleta_del_jefe_de_area_va_directo_a_rrhh(): void
+    {
+        $this->ir('2026-09-22 10:00:00'); // martes hábil, dentro del horario ordinario: RRHH "en horario".
+        [$jefeArea] = $this->armarOrganigrama(regimenJefeInmediato: '728', regimenJefeArea: '728');
+        $rrhh = $this->usuarioDePrueba(['regimen' => '276'], ['rrhh']);
+        $this->turnoDePrueba($jefeArea);
+
+        $papeleta = app(CrearPapeletaAction::class)->ejecutar($jefeArea, $this->motivoDe('PARTICULAR'), [])->fresh();
+
+        $this->assertTrue($papeleta->estado->equals(PendienteRrhh::class));
+        $this->assertNull($papeleta->jefe_inmediato_id);
+        $this->assertNull($papeleta->jefe_area_id);
+
+        $historial = HistorialPapeleta::where('papeleta_id', $papeleta->id)->latest('id')->first();
+        $this->assertSame('sistema', $historial->actor_tipo);
+        $this->assertStringContainsString('directo a RRHH', $historial->justificacion);
+
+        // RRHH la puede aprobar, pero no observar (no hay jefe que responda).
+        $this->expectException(PapeletaException::class);
+        app(ObservarRrhhAction::class)->ejecutar($papeleta, $rrhh, 'falta detalle');
+    }
+
+    public function test_rrhh_aprueba_la_papeleta_del_jefe_de_area(): void
+    {
+        $this->ir('2026-09-22 10:00:00'); // martes hábil, dentro del horario ordinario: RRHH "en horario".
+        [$jefeArea] = $this->armarOrganigrama(regimenJefeInmediato: '728', regimenJefeArea: '728');
+        $rrhh = $this->usuarioDePrueba(['regimen' => '276'], ['rrhh']);
+        $this->turnoDePrueba($jefeArea);
+
+        $papeleta = app(CrearPapeletaAction::class)->ejecutar($jefeArea, $this->motivoDe('PARTICULAR'), []);
+        app(AprobarRrhhAction::class)->ejecutar($papeleta, $rrhh);
+
+        $this->assertTrue($papeleta->fresh()->estado->equals(AutorizadaYCorriendo::class));
+    }
+
+    public function test_el_jefe_de_area_no_puede_crear_papeleta_si_no_hay_rrhh_activo(): void
+    {
+        [$jefeArea] = $this->armarOrganigrama(regimenJefeInmediato: '728', regimenJefeArea: '728');
+        $this->turnoDePrueba($jefeArea);
+
+        $this->expectException(PapeletaException::class);
+        $this->expectExceptionMessage('RR. HH. activo');
+
+        app(CrearPapeletaAction::class)->ejecutar($jefeArea, $this->motivoDe('PARTICULAR'), []);
+    }
+
+    public function test_el_jefe_inmediato_sigue_pasando_por_su_jefe_de_area(): void
+    {
+        [$jefeArea, $jefeInmediato] = $this->armarOrganigrama(regimenJefeInmediato: '728', regimenJefeArea: '728');
+        $this->usuarioDePrueba(['regimen' => '276'], ['rrhh']);
+        $this->turnoDePrueba($jefeInmediato);
+        $this->turnoDePrueba($jefeArea);
+
+        $papeleta = app(CrearPapeletaAction::class)->ejecutar($jefeInmediato, $this->motivoDe('PARTICULAR'), [])->fresh();
+
+        $this->assertTrue($papeleta->estado->equals(PendienteJefe::class));
+        $this->assertSame($jefeArea->id, $papeleta->jefe_inmediato_id);
+    }
+
+    public function test_rrhh_no_puede_aprobar_la_papeleta_propia_del_jefe_tope(): void
+    {
+        $tope = $this->usuarioDePrueba([], ['trabajador', 'rrhh']);
+        $unidad = UnidadOrganica::create(['nombre' => 'Concejo', 'jefe_id' => $tope->id]);
+        $tope->update(['unidad_organica_id' => $unidad->id]);
+        $tope = $tope->fresh();
+
+        // Ya no se puede llegar a este estado vía CrearPapeletaAction: el
+        // tope del organigrama bloquea la creación desde el 2026-09-24
+        // (ver test_quien_no_tiene_jefe_arriba_no_puede_crear_papeleta).
+        // Se arma directo en BD para seguir probando que RRHH no puede
+        // aprobarse a sí mismo una papeleta sin jefatura.
+        $papeleta = $this->papeletaDePrueba($tope, PendienteRrhh::class);
+
+        $this->expectException(PapeletaException::class);
+        app(AprobarRrhhAction::class)->ejecutar($papeleta, $tope);
+    }
+
+    public function test_rrhh_no_puede_observar_una_papeleta_sin_jefatura(): void
+    {
+        $tope = $this->usuarioDePrueba();
+        $unidad = UnidadOrganica::create(['nombre' => 'Concejo', 'jefe_id' => $tope->id]);
+        $tope->update(['unidad_organica_id' => $unidad->id]);
+        $tope = $tope->fresh();
+        $rrhh = $this->usuarioDePrueba([], ['rrhh']);
+
+        // Igual que arriba: se arma directo en BD, ya no se llega a este
+        // estado vía CrearPapeletaAction desde que el tope del
+        // organigrama bloquea la creación.
+        $papeleta = $this->papeletaDePrueba($tope, PendienteRrhh::class);
+
+        $this->expectException(PapeletaException::class);
+        app(ObservarRrhhAction::class)->ejecutar($papeleta, $rrhh, 'falta detalle');
+    }
+
+    public function test_no_existe_el_motivo_emergencia(): void
+    {
+        $this->assertFalse(Motivo::where('codigo', 'EMERGENCIA')->exists());
+    }
+
+    public function test_la_bd_ya_no_tiene_columnas_de_emergencia_ni_de_slots(): void
+    {
+        foreach ([
+            'slot_normal_activo',
+            'slot_emergencia_activo',
+            'es_emergencia',
+            'visto_bueno_jefe_emergencia',
+            'visto_bueno_rrhh_emergencia',
+            'subsanacion_emergencia_fecha_limite',
+            'subsanacion_emergencia_adjunto_path',
+        ] as $columna) {
+            $this->assertFalse(Schema::hasColumn('papeletas', $columna), "papeletas.{$columna} debería haberse eliminado");
+        }
+
+        foreach (['permite_bypass_aprobacion', 'participa_regla_exclusividad'] as $columna) {
+            $this->assertFalse(Schema::hasColumn('motivos', $columna), "motivos.{$columna} debería haberse eliminado");
+        }
+    }
+}

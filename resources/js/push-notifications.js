@@ -1,0 +1,139 @@
+
+
+function base64UrlAUint8Array(base64Url) {
+    const padding = '='.repeat((4 - (base64Url.length % 4)) % 4);
+    const base64 = (base64Url + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = window.atob(base64);
+    const salida = new Uint8Array(raw.length);
+
+    for (let i = 0; i < raw.length; ++i) {
+        salida[i] = raw.charCodeAt(i);
+    }
+
+    return salida;
+}
+
+function csrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+}
+
+function vapidPublicKey() {
+    return document.querySelector('meta[name="vapid-public-key"]')?.content ?? '';
+}
+
+async function registrarServiceWorker() {
+    if (!('serviceWorker' in navigator)) {
+        return null;
+    }
+
+    return navigator.serviceWorker.register('/sw.js');
+}
+
+async function suscripcionActual() {
+    const registro = await registrarServiceWorker();
+
+    return registro ? registro.pushManager.getSubscription() : null;
+}
+
+async function suscribir() {
+    const clavePublica = vapidPublicKey();
+
+    if (!clavePublica) {
+        console.warn('VAPID_PUBLIC_KEY no está configurada; no se puede activar push.');
+
+        return false;
+    }
+
+    const permiso = await Notification.requestPermission();
+
+    if (permiso !== 'granted') {
+        return false;
+    }
+
+    const registro = await registrarServiceWorker();
+
+    const suscripcion = await registro.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: base64UrlAUint8Array(clavePublica),
+    });
+
+    const respuesta = await fetch('/push-subscriptions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': csrfToken(),
+        },
+        body: JSON.stringify(suscripcion.toJSON()),
+    });
+
+    if (!respuesta.ok) {
+        console.warn('El servidor rechazó la suscripción push (HTTP ' + respuesta.status + ').');
+        await suscripcion.unsubscribe();
+
+        return false;
+    }
+
+    return true;
+}
+
+async function desuscribir() {
+    const suscripcion = await suscripcionActual();
+
+    if (!suscripcion) {
+        return;
+    }
+
+    await fetch('/push-subscriptions', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': csrfToken(),
+        },
+        body: JSON.stringify({ endpoint: suscripcion.endpoint }),
+    });
+
+    await suscripcion.unsubscribe();
+}
+
+window.msscPushToggle = function () {
+    return {
+        etiqueta: 'Notificaciones push',
+        soportado: 'serviceWorker' in navigator && 'PushManager' in window,
+
+        async init() {
+            if (!this.soportado) {
+                this.etiqueta = 'Push no disponible en este navegador';
+
+                return;
+            }
+
+            const suscripcion = await suscripcionActual();
+            this.etiqueta = suscripcion ? 'Desactivar notificaciones push' : 'Activar notificaciones push';
+        },
+
+        async alternar() {
+            if (!this.soportado) {
+                return;
+            }
+
+            const suscripcion = await suscripcionActual();
+
+            if (suscripcion) {
+                await desuscribir();
+                this.etiqueta = 'Activar notificaciones push';
+            } else {
+                let activado = false;
+
+                try {
+                    activado = await suscribir();
+                } catch (error) {
+                    console.warn('No se pudo activar push:', error);
+                }
+
+                this.etiqueta = activado ? 'Desactivar notificaciones push' : 'No se pudo activar. Reintentar';
+            }
+        },
+    };
+};

@@ -1,0 +1,40 @@
+@props([
+    'action',
+    'label',
+    'confirmText' => null,
+    'color' => 'green',
+    'loadingLabel' => null,
+])
+
+@php
+
+    $colores = [
+        'red' => 'bg-red-600 hover:bg-red-700',
+        'orange' => 'bg-orange-500 hover:bg-orange-600',
+        'green' => 'bg-green-600 hover:bg-green-700',
+        'gray' => 'bg-gray-600 hover:bg-gray-700',
+    ][$color] ?? 'bg-green-600 hover:bg-green-700';
+
+    $loadingLabel ??= $label.'...';
+@endphp
+
+<form
+    method="POST"
+    action="{{ $action }}"
+    x-data="{ enviando: false }"
+    x-on:submit="if ({{ $confirmText ? 'true' : 'false' }}) { $event.preventDefault(); if (enviando) return; mssConfirmar(@js($confirmText), { aceptar: @js($label) }).then(ok => { if (ok) { enviando = true; $el.submit(); } }); return; } enviando = true"
+>
+    @csrf
+
+    <button
+        type="submit"
+        :disabled="enviando"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-transparent text-xs font-semibold rounded-md text-white {{ $colores }} disabled:opacity-60 disabled:cursor-not-allowed"
+    >
+        <svg x-show="enviando" x-cloak class="size-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <span x-text="enviando ? @js($loadingLabel) : @js($label)"></span>
+    </button>
+</form>

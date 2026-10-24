@@ -1,0 +1,262 @@
+<?php
+
+namespace App\Services\Organigrama;
+
+use App\Actions\Organigrama\MoverTrabajadorAction;
+use App\Models\ConfiguracionTurno;
+use App\Models\MovimientoOrganigrama;
+use App\Models\Papeleta;
+use App\Models\UnidadOrganica;
+use App\Models\User;
+use Illuminate\Support\Collection;
+
+class ArmadorOrganigrama
+{
+
+    public const ESTADOS_PENDIENTES = [
+        'pendiente_jefe' => 'Pendiente del jefe',
+        'observada_por_jefe' => 'Observada por el jefe',
+        'pendiente_rrhh' => 'Pendiente de RRHH',
+        'observada_por_rrhh' => 'Observada por RRHH',
+    ];
+
+    public function __construct(
+        private readonly string $buscar = '',
+        private readonly string $sede = '',
+        private readonly bool $verInactivos = false,
+    ) {}
+
+    public function armar(User $usuario): array
+    {
+
+        $unidades = UnidadOrganica::query()
+            ->orderBy('nombre')
+            ->get();
+
+        $porPadre = $unidades->groupBy('parent_id');
+
+        $stats = ['unidades' => 0, 'personas' => 0, 'sin_sede' => 0, 'sin_jefe' => 0];
+
+        $conteoSedes = [];
+
+        $raicesDeAlcance = $this->raicesPara($usuario, $unidades, $porPadre);
+        $enAlcance = $this->idsEnAlcance($raicesDeAlcance, $porPadre);
+
+        $this->cargarRama($unidades, $enAlcance);
+
+        $raices = $raicesDeAlcance
+
+            ->map(function (UnidadOrganica $u) use ($porPadre, &$stats, &$conteoSedes) {
+                return $this->construirNodo($u, $porPadre, $stats, $conteoSedes);
+            })
+            ->filter()
+            ->values();
+
+        return compact('raices', 'stats', 'conteoSedes', 'unidades', 'enAlcance');
+    }
+
+    public function cargarRama(Collection $unidades, array $enAlcance): void
+    {
+        $unidades
+            ->filter(fn (UnidadOrganica $u) => isset($enAlcance[$u->id]))
+            ->loadMissing([
+                'jefe.sede',
+                'miembros' => fn ($q) => $q
+
+                    ->when(! $this->verInactivos, fn ($q) => $q->where('activo', true))
+                    ->with('sede')
+                    ->orderBy('name')
+                    ->orderBy('apellido'),
+            ]);
+    }
+
+    public function fichaDe(?int $personaId, Collection $unidades, array $enAlcance): ?array
+    {
+        if ($personaId === null) {
+            return null;
+        }
+
+        $persona = User::with(['sede', 'unidadOrganica.padre', 'jefeInmediato', 'jefeArea'])
+            ->find($personaId);
+
+        if (! $persona) {
+            return null;
+        }
+
+        $dentro = isset($enAlcance[$persona->unidad_organica_id])
+            || $unidades->contains(fn (UnidadOrganica $u) => isset($enAlcance[$u->id])
+                && $u->esJefeDeLaUnidad($persona));
+
+        if (! $dentro) {
+            return null;
+        }
+
+        $porEstado = Papeleta::query()
+            ->where('trabajador_id', $persona->id)
+            ->whereIn('estado', array_keys(self::ESTADOS_PENDIENTES))
+            ->selectRaw('estado, count(*) as total')
+            ->groupBy('estado')
+            ->pluck('total', 'estado');
+
+        $turno = ConfiguracionTurno::where('user_id', $persona->id)->value('turno');
+
+        return [
+            'persona' => $persona,
+            'encabeza' => $unidades->filter(fn (UnidadOrganica $u) => $u->esJefeDeLaUnidad($persona))->pluck('nombre')->values(),
+            'jefes' => $persona->jefesInmediatos()->map(fn (User $j) => [
+                'nombre' => $j->nombre_completo,
+            ]),
+            'turno' => $turno ? ConfiguracionTurno::etiquetaDeTurno($turno) : null,
+            'pendientes' => collect(self::ESTADOS_PENDIENTES)
+                ->map(fn (string $etiqueta, string $estado) => ['etiqueta' => $etiqueta, 'total' => (int) ($porEstado[$estado] ?? 0)])
+                ->filter(fn (array $fila) => $fila['total'] > 0)
+                ->values(),
+            'pendientes_total' => (int) $porEstado->sum(),
+        ];
+    }
+
+    public function idsEnAlcance(Collection $raicesDeAlcance, Collection $porPadre): array
+    {
+        $enAlcance = [];
+        $pendientes = $raicesDeAlcance->pluck('id')->all();
+
+        while ($pendientes) {
+            $id = array_pop($pendientes);
+
+            if (isset($enAlcance[$id])) {
+                continue;
+            }
+
+            $enAlcance[$id] = true;
+            foreach ($porPadre->get($id, []) as $hijo) {
+                $pendientes[] = $hijo->id;
+            }
+        }
+
+        return $enAlcance;
+    }
+
+    public function historialDe(User $usuario, array $enAlcance, bool $modoEdicion): Collection
+    {
+        $consulta = MovimientoOrganigrama::query()
+            ->with(['trabajador', 'actor', 'unidadAnterior', 'unidadNueva', 'sedeAnterior', 'sedeNueva'])
+            ->latest('id')
+            ->limit(10);
+
+        if (! $usuario->hasRole('admin')) {
+            $ids = array_keys($enAlcance);
+            $consulta->where(fn ($q) => $q->whereIn('unidad_anterior_id', $ids)->orWhereIn('unidad_nueva_id', $ids));
+        }
+
+        $mover = app(MoverTrabajadorAction::class);
+
+        return $consulta->get()->map(fn (MovimientoOrganigrama $m) => [
+            'movimiento' => $m,
+            'puede_deshacer' => $modoEdicion && $mover->puedeDeshacer($usuario, $m),
+        ]);
+    }
+
+    public function raicesPara(User $usuario, Collection $unidades, Collection $porPadre): Collection
+    {
+        if ($usuario->hasRole('admin')) {
+            return $porPadre->get(null, collect());
+        }
+
+        $porId = $unidades->keyBy('id');
+        $esJefeDeArea = $usuario->esJefeDeArea();
+
+        $encabezadas = $unidades
+            ->where('jefe_id', $usuario->id)
+            ->when($esJefeDeArea, fn ($col) => $col->filter(fn (UnidadOrganica $u) => $porPadre->has($u->id)))
+            ->pluck('id')
+            ->all();
+
+        return $unidades
+            ->whereIn('id', $encabezadas)
+            ->filter(function (UnidadOrganica $u) use ($porId, $encabezadas) {
+                for ($p = $porId->get($u->parent_id); $p; $p = $porId->get($p->parent_id)) {
+                    if (in_array($p->id, $encabezadas, true)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            ->values();
+    }
+
+    private function construirNodo(UnidadOrganica $unidad, Collection $porPadre, array &$stats, array &$conteoSedes): ?array
+    {
+        $q = mb_strtolower(trim($this->buscar));
+        $hayFiltroSede = $this->sede !== '';
+
+        $enSede = fn (User $p) => match (true) {
+            ! $hayFiltroSede => true,
+            $this->sede === 'sin' => $p->sede_id === null,
+            default => (int) $p->sede_id === (int) $this->sede,
+        };
+
+        $jefes = collect([$unidad->jefe])
+            ->filter()
+            ->unique('id')
+            ->values();
+
+        $contiene = fn (?string $texto) => $q !== '' && str_contains(mb_strtolower((string) $texto), $q);
+
+        $coincideUnidad = $q !== '' && (
+            $contiene($unidad->nombre)
+            || $jefes->contains(fn (User $j) => $contiene($j->nombre_completo) || $contiene($j->dni))
+        );
+
+        $miembrosBase = $unidad->miembros
+            ->reject(fn (User $m) => $jefes->contains('id', $m->id))
+            ->when(! $this->verInactivos, fn (Collection $c) => $c->where('activo', true))
+            ->when($q !== '' && ! $coincideUnidad, fn (Collection $c) => $c->filter(
+                fn (User $m) => $contiene($m->nombre_completo) || $contiene($m->dni)
+            ))
+            ->values();
+
+        $contados = $miembrosBase->concat(
+            $q === '' || $coincideUnidad ? $jefes : $jefes->filter(fn (User $j) => $contiene($j->nombre_completo) || $contiene($j->dni))
+        );
+        foreach ($contados as $persona) {
+            $clave = $persona->sede_id === null ? 'sin' : (string) $persona->sede_id;
+            $conteoSedes[$clave] = ($conteoSedes[$clave] ?? 0) + 1;
+        }
+
+        $miembros = $miembrosBase->filter($enSede)->values();
+        $jefesEnFiltro = $jefes->filter($enSede)->values();
+
+        $hijos = $porPadre->get($unidad->id, collect())
+            ->map(function (UnidadOrganica $h) use ($porPadre, &$stats, &$conteoSedes) {
+                return $this->construirNodo($h, $porPadre, $stats, $conteoSedes);
+            })
+            ->filter()
+            ->values();
+
+        $pasaBusqueda = $q === '' || $coincideUnidad || $miembros->isNotEmpty() || $hijos->isNotEmpty();
+        $pasaSede = ! $hayFiltroSede || $miembros->isNotEmpty() || $jefesEnFiltro->isNotEmpty() || $hijos->isNotEmpty();
+
+        if (! $pasaBusqueda || ! $pasaSede) {
+            return null;
+        }
+
+        $sinJefe = ! $unidad->jefe?->activo;
+
+        $stats['unidades']++;
+        $stats['personas'] += $miembros->count() + $jefesEnFiltro->count();
+        $stats['sin_sede'] += $miembros->whereNull('sede_id')->count() + $jefesEnFiltro->whereNull('sede_id')->count();
+        $stats['sin_jefe'] += $sinJefe ? 1 : 0;
+
+        return [
+            'unidad' => $unidad,
+            'jefes' => $jefes,
+            'jefes_en_filtro' => $jefesEnFiltro->pluck('id')->all(),
+            'filtro_sede' => $hayFiltroSede,
+            'miembros' => $miembros,
+            'hijos' => $hijos,
+            'total' => $miembros->count() + $jefesEnFiltro->count() + $hijos->sum('total'),
+            'sin_jefe' => $sinJefe,
+        ];
+    }
+}

@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Models;
+
+use App\Events\PapeletaActualizada;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Sustento extends Model
+{
+    protected $fillable = [
+        'papeleta_id',
+        'archivo_path',
+        'fecha_limite',
+        'estado',
+        'presentado_at',
+        'revisado_por_id',
+        'revisado_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'fecha_limite' => 'datetime',
+            'presentado_at' => 'datetime',
+            'revisado_at' => 'datetime',
+        ];
+    }
+
+    public function papeleta(): BelongsTo
+    {
+        return $this->belongsTo(Papeleta::class);
+    }
+
+    public function revisadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'revisado_por_id');
+    }
+
+    protected static function booted(): void
+    {
+
+        static::saved(fn (self $sustento) => PapeletaActualizada::notificar($sustento->papeleta_id));
+    }
+}
