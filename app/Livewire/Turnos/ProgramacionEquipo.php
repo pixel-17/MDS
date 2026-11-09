@@ -64,11 +64,8 @@ class ProgramacionEquipo extends Component
     }
 
     /**
-     * Primer paso: valida, y si hay advertencias las muestra y espera
-     * confirmación (guardarIgualmente); si no, guarda directo.
-     *
-     * @param  array<int|string, array<string, string>>  $cambios  userId => dias (solo filas modificadas)
-     */
+      * @param  array<int|string, array<string, string>>  $cambios  userId => dias (solo filas modificadas)
+      */
     public function guardar(ProgramacionTurnoService $servicio, array $cambios): void
     {
         $this->mensaje = null;
@@ -93,8 +90,8 @@ class ProgramacionEquipo extends Component
     }
 
     /**
-     * @param  array<int|string, array<string, string>>  $cambios
-     */
+      * @param  array<int|string, array<string, string>>  $cambios
+      */
     public function guardarIgualmente(ProgramacionTurnoService $servicio, array $cambios): void
     {
         $this->persistir($servicio, $this->equipo(), $cambios);
@@ -106,9 +103,9 @@ class ProgramacionEquipo extends Component
     }
 
     /**
-     * @param  Collection<int, User>  $equipo
-     * @param  array<int|string, array<string, string>>  $cambios
-     */
+      * @param  Collection<int, User>  $equipo
+      * @param  array<int|string, array<string, string>>  $cambios
+      */
     private function persistir(ProgramacionTurnoService $servicio, Collection $equipo, array $cambios): void
     {
         /** @var User $actor */
@@ -132,12 +129,8 @@ class ProgramacionEquipo extends Component
     }
 
     /**
-     * Trabajadores 728 activos dentro del alcance del jefe, con el id
-     * como clave. Se resuelve de nuevo en cada acción: nunca se confía
-     * en la lista que vio el navegador.
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     private function equipo(): Collection
     {
         /** @var User $actor */

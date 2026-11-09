@@ -408,13 +408,8 @@ class PersonaDrawer extends Component
     }
 
     /**
-     * Unidades activas donde $actor puede ubicar gente: todas (admin), su
-     * área (Jefe de Área: la que encabeza + sub-unidades) o su propia
-     * unidad (Jefe Inmediato "puro": solo la hoja que encabeza), igual que
-     * CrearUsuarioRequest::unidadesDisponibles().
-     *
-     * @return Collection<int, UnidadOrganica>
-     */
+      * @return Collection<int, UnidadOrganica>
+      */
     private function unidadesPermitidas(User $actor): Collection
     {
         if ($this->permitidasMemo !== null) {

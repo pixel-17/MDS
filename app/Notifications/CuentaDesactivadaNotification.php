@@ -22,8 +22,8 @@ class CuentaDesactivadaNotification extends Notification implements ShouldQueue
     }
 
     /**
-     * @return array<int, string>
-     */
+      * @return array<int, string>
+      */
     public function via(User $notifiable): array
     {
         return ['mail'];

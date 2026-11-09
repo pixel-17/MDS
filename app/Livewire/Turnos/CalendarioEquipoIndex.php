@@ -98,11 +98,8 @@ class CalendarioEquipoIndex extends Component
     }
 
     /**
-     * Primer paso: valida, y si hay advertencias las muestra y espera
-     * confirmación (guardarIgualmente); si no, guarda directo.
-     *
-     * @param  array<int|string, array<string, string>>  $cambios  userId => dias (solo filas 728 modificadas)
-     */
+      * @param  array<int|string, array<string, string>>  $cambios  userId => dias (solo filas 728 modificadas)
+      */
     public function guardar(ProgramacionTurnoService $servicio, array $cambios): void
     {
         $this->mensaje = null;
@@ -126,8 +123,8 @@ class CalendarioEquipoIndex extends Component
     }
 
     /**
-     * @param  array<int|string, array<string, string>>  $cambios
-     */
+      * @param  array<int|string, array<string, string>>  $cambios
+      */
     public function guardarIgualmente(ProgramacionTurnoService $servicio, array $cambios): void
     {
         $this->persistir($servicio, $this->equipo728(), $cambios);
@@ -139,9 +136,9 @@ class CalendarioEquipoIndex extends Component
     }
 
     /**
-     * @param  Collection<int, User>  $equipo
-     * @param  array<int|string, array<string, string>>  $cambios
-     */
+      * @param  Collection<int, User>  $equipo
+      * @param  array<int|string, array<string, string>>  $cambios
+      */
     private function persistir(ProgramacionTurnoService $servicio, Collection $equipo, array $cambios): void
     {
         /** @var User $actor */
@@ -155,13 +152,8 @@ class CalendarioEquipoIndex extends Component
     }
 
     /**
-     * Subconjunto 728 activo del equipo, con el id como clave (lo que
-     * esperan ProgramacionTurnoService::validarEquipo/guardarEquipo).
-     * Se resuelve de nuevo en cada acción: nunca se confía en la lista
-     * que vio el navegador.
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     private function equipo728(): Collection
     {
         [$trabajadores, , $soloLectura] = app(EquipoDelJefeService::class)->para($this->jefeVista());
@@ -172,11 +164,8 @@ class CalendarioEquipoIndex extends Component
     }
 
     /**
-     * Trabajadores 276 del equipo que este usuario puede tocar (los de solo lectura
-     * no entran). Se resuelve en cada acción: nunca se confía en lo que vio el navegador.
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     private function equipo276(): Collection
     {
         [$trabajadores, , $soloLectura] = app(EquipoDelJefeService::class)->para($this->jefeVista());
@@ -291,14 +280,8 @@ class CalendarioEquipoIndex extends Component
     }
 
     /**
-     * Días hábiles del horario ordinario (1=lunes .. 7=domingo), tal
-     * como los dejó el Admin en Configuraciones
-     * (HORARIO_ORDINARIO_DIAS_LABORABLES) — puramente informativo,
-     * para que el Jefe vea de un vistazo qué días se trabaja sin tener
-     * que ir a Configuraciones. El Jefe no puede editarlos desde aquí.
-     *
-     * @return array<int, int>
-     */
+      * @return array<int, int>
+      */
     private function diasLaborables276(): array
     {
         return array_map(

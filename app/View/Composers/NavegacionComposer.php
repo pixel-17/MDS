@@ -6,21 +6,7 @@ use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 
-/**
- * Arma la navegación del shell (sidebar para quien gestiona a otros,
- * barra inferior para el trabajador). Antes esto vivía en un @php de
- * ~90 líneas dentro de layouts/app.blade.php, con dos consultas COUNT en
- * cada carga de página. Ahora:
- *
- *  - la estructura de menús se arma aquí (y se puede probar);
- *  - los contadores de las bandejas NO se calculan aquí: cada ítem lleva
- *    `bandeja => 'jefe'|'rrhh'` y el sidebar pinta el componente Livewire
- *    Navegacion\InsigniaBandeja, que se actualiza en vivo.
- *
- * Se registra para 'layouts.app' y 'components.trabajador-layout'
- * (AppServiceProvider). Variables que entrega a la vista: usuario, esAdmin,
- * esRrhh, esJefe, puedeAltaUsuarios, conSidebar, rolLabel, secciones, navItems.
- */
+
 class NavegacionComposer
 {
     public function compose(View $view): void
@@ -66,8 +52,8 @@ class NavegacionComposer
     }
 
     /**
-     * @return array<int, array{label: ?string, items: array<int, array<string, mixed>>}>
-     */
+      * @return array<int, array{label: ?string, items: array<int, array<string, mixed>>}>
+      */
     private function secciones(User $usuario, bool $esAdmin, bool $esRrhh, bool $esJefe, bool $esJefeDeArea, bool $puedeAltaUsuarios): array
     {
         $secciones = [[
@@ -170,14 +156,8 @@ class NavegacionComposer
     }
 
     /**
-     * Barra inferior del shell móvil. Las pantallas del trabajador
-     * (Papeletas, Nueva, Calendario, Perfil) siempre usan este shell, también
-     * para quien gestiona a otros (jefe, RR. HH., admin). A ese usuario se le
-     * agrega "Panel" para volver al shell con sidebar (bandejas, programación
-     * de turnos, reportes); sin él, quedaba atrapado en la vista de trabajador.
-     *
-     * @return array<int, array<string, mixed>>
-     */
+      * @return array<int, array<string, mixed>>
+      */
     private function navegacionDelTrabajador(bool $conSidebar = false): array
     {
         $panel = $conSidebar

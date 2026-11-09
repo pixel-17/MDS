@@ -18,13 +18,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-/**
- * Bandeja de RRHH, migrada de
- * App\Http\Controllers\Rrhh\PapeletaController@index a Livewire puro.
- * Igual que JefeIndex: se re-renderiza sola vía
- * EscuchaNotificacionesEnVivo en cuanto llega una papeleta nueva
- * pendiente, un post-hoc, etc.
- */
+
 #[Layout('layouts.app')]
 #[Title('Bandeja de RRHH')]
 class RrhhIndex extends Component

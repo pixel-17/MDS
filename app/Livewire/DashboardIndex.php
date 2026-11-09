@@ -11,16 +11,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-/**
- * Migrado de un antiguo App\Http\Controllers\DashboardController@index
- * (ya borrado, quedaba sin rutas ni tests desde la migración) a Livewire
- * puro para que los contadores (pendientes, en curso...)
- * se actualicen solos en tiempo real — ver EscuchaNotificacionesEnVivo.
- *
- * Mismo criterio de acceso que aquel Controller: admin/RRHH/jefe ven el
- * dashboard de métricas; el trabajador "plano" no tiene dashboard y
- * sigue yendo directo a su bandeja.
- */
+
 #[Layout('layouts.app')]
 #[Title('Inicio')]
 class DashboardIndex extends Component

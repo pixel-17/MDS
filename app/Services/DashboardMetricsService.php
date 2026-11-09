@@ -64,9 +64,9 @@ class DashboardMetricsService
     private const TTL_SEGUNDOS = 30;
 
     /**
-     * @param  \Closure(): array<string, mixed>  $calcular
-     * @return array<string, mixed>
-     */
+      * @param  \Closure(): array<string, mixed>  $calcular
+      * @return array<string, mixed>
+      */
     private function recordar(string $clave, \Closure $calcular): array
     {
         $version = (int) Cache::get(self::CLAVE_VERSION, 1);
@@ -227,13 +227,8 @@ class DashboardMetricsService
     }
 
     /**
-     * Estados terminales de Papeleta (ver PapeletaState::esTerminal() en
-     * cada clase de app/States/Papeleta) — se repiten aquí como lista
-     * porque esTerminal() es un método de instancia, no estático, y no
-     * vale la pena instanciar cada estado solo para preguntarle esto.
-     *
-     * @return array<class-string>
-     */
+      * @return array<class-string>
+      */
     protected function estadosTerminales(): array
     {
         return [

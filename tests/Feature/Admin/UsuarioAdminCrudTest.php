@@ -40,10 +40,8 @@ class UsuarioAdminCrudTest extends TestCase
     }
 
     /**
-     * Formulario de alta con los datos mínimos válidos para un 276.
-     *
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $datos
+      */
     private function formularioDeAlta(array $datos = [])
     {
         $datos = [

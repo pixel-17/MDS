@@ -28,14 +28,8 @@ class PapeletaActualizada implements ShouldBroadcastNow
     private const TTL_DESTINATARIOS_FIJOS = 60;
 
     /**
-     * Papeletas con un afterCommit ya agendado en este ciclo. Una sola
-     * acción de negocio suele tocar Papeleta + HistorialPapeleta (o
-     * Retorno/Sustento) a la vez, y cada modelo llama notificar() por
-     * su cuenta: sin esto, se dispararía el evento (y sus queries) dos
-     * veces por el mismo cambio.
-     *
-     * @var array<int, true>
-     */
+      * @var array<int, true>
+      */
     private static array $pendientes = [];
 
     /** @param  array<int, int>  $userIds */
@@ -136,11 +130,8 @@ class PapeletaActualizada implements ShouldBroadcastNow
     }
 
     /**
-     * Ids de RRHH y admin. Se consultan una vez por minuto en vez de en cada
-     * cambio de papeleta; olvidarDestinatariosFijos() los renueva al cambiar roles.
-     *
-     * @return array<int, int>
-     */
+      * @return array<int, int>
+      */
     private static function destinatariosFijos(): array
     {
         return Cache::remember(

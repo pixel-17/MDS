@@ -31,18 +31,16 @@ abstract class NotificacionEnVivo extends Notification implements ShouldQueue
     ) {}
 
     /**
-     * @return array<int, string>
-     */
+      * @return array<int, string>
+      */
     public function via(object $notifiable): array
     {
         return ['database', WebPushChannel::class, 'broadcast'];
     }
 
     /**
-     * Claves propias de la subclase que se suman al payload común.
-     *
-     * @return array<string, mixed>
-     */
+      * @return array<string, mixed>
+      */
     protected function datosExtra(): array
     {
         return [];
@@ -55,15 +53,13 @@ abstract class NotificacionEnVivo extends Notification implements ShouldQueue
     abstract protected function textoAccion(): string;
 
     /**
-     * Datos que viajan en el push (el service worker los usa al hacer clic).
-     *
-     * @return array<string, mixed>
-     */
+      * @return array<string, mixed>
+      */
     abstract protected function datosPush(): array;
 
     /**
-     * @return array<string, mixed>
-     */
+      * @return array<string, mixed>
+      */
     protected function payload(): array
     {
         return [
@@ -76,8 +72,8 @@ abstract class NotificacionEnVivo extends Notification implements ShouldQueue
     }
 
     /**
-     * @return array<string, mixed>
-     */
+      * @return array<string, mixed>
+      */
     public function toDatabase(object $notifiable): array
     {
         return $this->payload();

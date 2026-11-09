@@ -8,10 +8,9 @@ use NotificationChannels\WebPush\PushSubscription;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
-     *
-     * @return void
-     */
+      * Run the migrations.
+      * @return void
+      */
     public function up()
     {
         /** @var string|null $connection */
@@ -33,10 +32,9 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
+      * Reverse the migrations.
+      * @return void
+      */
     public function down()
     {
         /** @var string|null $connection */

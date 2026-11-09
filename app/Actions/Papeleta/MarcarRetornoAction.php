@@ -24,8 +24,8 @@ class MarcarRetornoAction
     use ExigeDecisorAjeno;
 
     /**
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $datos
+      */
     public function normal(Papeleta $papeleta, User $trabajador, array $datos): Papeleta
     {
         if ($papeleta->trabajador_id !== $trabajador->id) {
@@ -68,16 +68,8 @@ class MarcarRetornoAction
     }
 
     /**
-     * La fila se relee con lockForUpdate() dentro de la transacción
-     * (mismo criterio que CancelarPapeletaAction). Con esto, dos envíos
-     * casi simultáneos del mismo retorno (doble tap, reintento por mala
-     * señal) ya no pueden pasar ambos el chequeo de "no tiene retorno
-     * todavía": el segundo espera a que el primero confirme, relee, y
-     * recibe el PapeletaException amigable en vez de chocar contra el
-     * unique constraint de `retornos.papeleta_id` con un error crudo.
-     *
-     * @param  array<string, mixed>  $datosRetorno
-     */
+      * @param  array<string, mixed>  $datosRetorno
+      */
     private function ejecutar(Papeleta $papeleta, array $datosRetorno): Papeleta
     {
         return DB::transaction(function () use ($papeleta, $datosRetorno) {
@@ -132,8 +124,8 @@ class MarcarRetornoAction
     }
 
     /**
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $datos
+      */
     private function calcularDentroDeRadio(Papeleta $papeleta, array $datos): ?bool
     {
         if (empty($datos['latitud']) || empty($datos['longitud'])) {

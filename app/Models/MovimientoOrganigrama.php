@@ -7,41 +7,33 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Un movimiento de un trabajador entre unidades orgánicas, hecho desde
- * el organigrama. Registro de solo agregar: lo único que se modifica
- * después de creado es la marca `deshecho_at` / `deshecho_por_id` del
- * original cuando alguien lo deshace (ver MoverTrabajadorAction).
- *
- * `deshecho_*` no están en $fillable a propósito: solo la Action las
- * escribe, con forceFill().
- *
- * @property int $id
- * @property int|null $trabajador_id
- * @property int|null $actor_id
- * @property int|null $unidad_anterior_id
- * @property int|null $unidad_nueva_id
- * @property int|null $sede_anterior_id
- * @property int|null $sede_nueva_id
- * @property int|null $jefe_inmediato_anterior_id
- * @property int|null $jefe_inmediato_nuevo_id
- * @property int|null $jefe_area_anterior_id
- * @property int|null $jefe_area_nuevo_id
- * @property int|null $revierte_id
- * @property Carbon|null $deshecho_at
- * @property int|null $deshecho_por_id
- * @property-read User|null $trabajador
- * @property-read User|null $actor
- * @property-read UnidadOrganica|null $unidadAnterior
- * @property-read UnidadOrganica|null $unidadNueva
- * @property-read Sede|null $sedeAnterior
- * @property-read Sede|null $sedeNueva
- * @property-read User|null $jefeInmediatoAnterior
- * @property-read User|null $jefeInmediatoNuevo
- * @property-read User|null $jefeAreaAnterior
- * @property-read User|null $jefeAreaNuevo
- * @property-read User|null $deshechoPor
- * @property-read MovimientoOrganigrama|null $revierte
- */
+  * @property int $id
+  * @property int|null $trabajador_id
+  * @property int|null $actor_id
+  * @property int|null $unidad_anterior_id
+  * @property int|null $unidad_nueva_id
+  * @property int|null $sede_anterior_id
+  * @property int|null $sede_nueva_id
+  * @property int|null $jefe_inmediato_anterior_id
+  * @property int|null $jefe_inmediato_nuevo_id
+  * @property int|null $jefe_area_anterior_id
+  * @property int|null $jefe_area_nuevo_id
+  * @property int|null $revierte_id
+  * @property Carbon|null $deshecho_at
+  * @property int|null $deshecho_por_id
+  * @property-read User|null $trabajador
+  * @property-read User|null $actor
+  * @property-read UnidadOrganica|null $unidadAnterior
+  * @property-read UnidadOrganica|null $unidadNueva
+  * @property-read Sede|null $sedeAnterior
+  * @property-read Sede|null $sedeNueva
+  * @property-read User|null $jefeInmediatoAnterior
+  * @property-read User|null $jefeInmediatoNuevo
+  * @property-read User|null $jefeAreaAnterior
+  * @property-read User|null $jefeAreaNuevo
+  * @property-read User|null $deshechoPor
+  * @property-read MovimientoOrganigrama|null $revierte
+  */
 class MovimientoOrganigrama extends Model
 {
     const UPDATED_AT = null;
@@ -71,88 +63,88 @@ class MovimientoOrganigrama extends Model
     }
 
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function trabajador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'trabajador_id');
     }
 
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function actor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'actor_id');
     }
 
     /**
-     * @return BelongsTo<UnidadOrganica, $this>
-     */
+      * @return BelongsTo<UnidadOrganica, $this>
+      */
     public function unidadAnterior(): BelongsTo
     {
         return $this->belongsTo(UnidadOrganica::class, 'unidad_anterior_id');
     }
 
     /**
-     * @return BelongsTo<UnidadOrganica, $this>
-     */
+      * @return BelongsTo<UnidadOrganica, $this>
+      */
     public function unidadNueva(): BelongsTo
     {
         return $this->belongsTo(UnidadOrganica::class, 'unidad_nueva_id');
     }
 
     /**
-     * @return BelongsTo<Sede, $this>
-     */
+      * @return BelongsTo<Sede, $this>
+      */
     public function sedeAnterior(): BelongsTo
     {
         return $this->belongsTo(Sede::class, 'sede_anterior_id');
     }
 
     /**
-     * @return BelongsTo<Sede, $this>
-     */
+      * @return BelongsTo<Sede, $this>
+      */
     public function sedeNueva(): BelongsTo
     {
         return $this->belongsTo(Sede::class, 'sede_nueva_id');
     }
 
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function jefeInmediatoAnterior(): BelongsTo
     {
         return $this->belongsTo(User::class, 'jefe_inmediato_anterior_id');
     }
 
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function jefeInmediatoNuevo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'jefe_inmediato_nuevo_id');
     }
 
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function jefeAreaAnterior(): BelongsTo
     {
         return $this->belongsTo(User::class, 'jefe_area_anterior_id');
     }
 
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function jefeAreaNuevo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'jefe_area_nuevo_id');
     }
 
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function deshechoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deshecho_por_id');
@@ -160,8 +152,8 @@ class MovimientoOrganigrama extends Model
 
     
     /**
-     * @return BelongsTo<MovimientoOrganigrama, $this>
-     */
+      * @return BelongsTo<MovimientoOrganigrama, $this>
+      */
     public function revierte(): BelongsTo
     {
         return $this->belongsTo(self::class, 'revierte_id');

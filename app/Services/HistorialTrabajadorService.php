@@ -12,12 +12,8 @@ use Illuminate\Support\Collection;
 class HistorialTrabajadorService
 {
     /**
-     * Trabajadores que $usuario puede buscar: admin/RRHH a cualquiera,
-     * jefe solo a quienes ya ve en su propio equipo (ver
-     * User::equipoDe()).
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     public function trabajadoresVisibles(User $usuario, string $buscar = ''): Collection
     {
         if ($usuario->hasRole('admin') || $usuario->hasRole('rrhh')) {
@@ -58,11 +54,8 @@ class HistorialTrabajadorService
     }
 
     /**
-     * Todo el historial de papeletas del trabajador (cualquier estado,
-     * cualquier fecha), más reciente primero.
-     *
-     * @return Collection<int, array{id: int, dia: \Illuminate\Support\Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<\App\States\Papeleta\PapeletaState>, abandono: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}>
-     */
+      * @return Collection<int, array{id: int, dia: \Illuminate\Support\Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<\App\States\Papeleta\PapeletaState>, abandono: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}>
+      */
     public function historial(User $trabajador): Collection
     {
         $resultado = Papeleta::where('trabajador_id', $trabajador->id)
@@ -94,13 +87,9 @@ class HistorialTrabajadorService
     }
 
     /**
-     * Totales de siempre a partir del historial ya cargado: papeletas
-     * por condición, horas acumuladas (solo las ya cerradas con
-     * retorno) y horas que sí cuentan para descuento.
-     *
-     * @param  Collection<int, array{id: int, dia: \Illuminate\Support\Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<\App\States\Papeleta\PapeletaState>, abandono: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}>  $historial
-     * @return array<string, int>
-     */
+      * @param  Collection<int, array{id: int, dia: \Illuminate\Support\Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<\App\States\Papeleta\PapeletaState>, abandono: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}>  $historial
+      * @return array<string, int>
+      */
     public function resumen(Collection $historial): array
     {
         $conHoras = $historial->filter(fn (array $f) => $f['minutos'] !== null);

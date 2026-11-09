@@ -13,10 +13,8 @@ trait PaginaListasDeBandeja
     protected int $porPaginaBandeja = 10;
 
     /**
-     * Nombres de los paginadores (uno por lista), p. ej. 'porDecidirPage'.
-     *
-     * @return array<int, string>
-     */
+      * @return array<int, string>
+      */
     abstract protected function nombresDePaginadores(): array;
 
     
@@ -28,13 +26,9 @@ trait PaginaListasDeBandeja
     }
 
     /**
-     * Pagina una lista. Si la página pedida ya no existe (p. ej. se
-     * aprobó la última papeleta de la página 2), vuelve a la última
-     * página válida en vez de mostrar la lista vacía.
-     *
-     * @param  Builder<Papeleta>  $consulta
-     * @return LengthAwarePaginator<int, Papeleta>
-     */
+      * @param  Builder<Papeleta>  $consulta
+      * @return LengthAwarePaginator<int, Papeleta>
+      */
     protected function paginarLista(Builder $consulta, string $nombre): LengthAwarePaginator
     {
         $lista = (clone $consulta)->paginate($this->porPaginaBandeja, ['*'], $nombre);

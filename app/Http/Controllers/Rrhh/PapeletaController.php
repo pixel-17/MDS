@@ -36,13 +36,8 @@ class PapeletaController extends Controller
     }
 
     /**
-     * Resumen del mes de la papeleta para el trabajador, para que RRHH
-     * decida sin salir a otro reporte. Excluye la papeleta que se está
-     * mirando. Los minutos salen del mismo servicio que el reporte de
-     * horas acumuladas, así que los totales cuadran con él.
-     *
-     * @return array{mes: string, papeletas: int, rechazadas: int, observaciones: int, minutos: int, minutos_con_descuento: int}
-     */
+      * @return array{mes: string, papeletas: int, rechazadas: int, observaciones: int, minutos: int, minutos_con_descuento: int}
+      */
     private function historialDelMes(Request $request, Papeleta $papeleta, ReporteHorasAcumuladasService $reporte): array
     {
         $mes = $papeleta->dia_operativo->format('Y-m');

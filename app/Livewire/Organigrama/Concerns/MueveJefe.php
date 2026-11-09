@@ -14,12 +14,8 @@ use App\Models\User;
 trait MueveJefe
 {
     /**
-     * Movimiento de un JEFE INMEDIATO a otra área, pendiente de confirmar, o
-     * null. Solo ids (vienen del navegador): MoverJefeInmediatoAction lo
-     * revalida entero. `origen` = padre actual de su unidad (0 = raíz).
-     *
-     * @var array{jefe: int, origen: int, destino: int}|null
-     */
+      * @var array{jefe: int, origen: int, destino: int}|null
+      */
     public ?array $propuestaJefe = null;
 
     
@@ -29,18 +25,13 @@ trait MueveJefe
     public string|int|null $reemplazaDestino = null;
 
     /**
-     * Reemplazo elegido por unidad que deja el jefe: unidad_id => user_id.
-     * Lo revalida MoverJefeComoTrabajadorAction.
-     *
-     * @var array<int|string, int|string|null>
-     */
+      * @var array<int|string, int|string|null>
+      */
     public array $reemplazos = [];
 
     /**
-     * Turno del jefe 728 al pasar a trabajador (los jefes no tienen turno).
-     *
-     * @var array{turno: ?string, fecha_ancla: ?string, dias_trabajo: int|string, dias_descanso: int|string}
-     */
+      * @var array{turno: ?string, fecha_ancla: ?string, dias_trabajo: int|string, dias_descanso: int|string}
+      */
     public array $turnoJefe = ['turno' => null, 'fecha_ancla' => null, 'dias_trabajo' => 6, 'dias_descanso' => 1];
 
     
@@ -95,7 +86,7 @@ trait MueveJefe
         $reemplazos = $this->reemplazos;
         $reemplazaDestino = ($this->reemplazaDestino !== null && $this->reemplazaDestino !== '') ? (int) $this->reemplazaDestino : null;
         $turno = $this->turnoJefe;
-        // $turnoJefe es int|string (nunca null: ver su @var), igual que
+        
         
         
         
@@ -172,12 +163,8 @@ trait MueveJefe
     }
 
     /**
-     * Datos de la ventana de confirmación del movimiento de un jefe
-     * inmediato, o null (se recalcula en cada render; si dejó de ser
-     * válido, no se muestra).
-     *
-     * @return array<string, mixed>|null
-     */
+      * @return array<string, mixed>|null
+      */
     private function vistaPreviaMovimientoJefe(User $usuario): ?array
     {
         if ($this->propuestaJefe === null) {

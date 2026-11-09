@@ -13,9 +13,9 @@ use Illuminate\Support\Collection;
 class ReporteHorasAcumuladasService
 {
     /**
-     * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
-     * @return Builder<Papeleta>
-     */
+      * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
+      * @return Builder<Papeleta>
+      */
     public function query(User $usuario, string $mes, array $filtros = []): Builder
     {
         [$inicio, $fin] = $this->rangoDelMes($mes);
@@ -69,12 +69,9 @@ class ReporteHorasAcumuladasService
     }
 
     /**
-     * Detalle fila por fila (una papeleta = una fila), listo para la
-     * tabla de detalle diario y para el export.
-     *
-     * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
-     * @return Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>
-     */
+      * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
+      * @return Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>
+      */
     public function detalle(User $usuario, string $mes, array $filtros = []): Collection
     {
         $resultado = $this->query($usuario, $mes, $filtros)->get()->map(function (Papeleta $p) {
@@ -108,19 +105,10 @@ class ReporteHorasAcumuladasService
     }
 
     /**
-     * Agregado mensual por trabajador — responde directo la pregunta
-     * "quién salió más / a quién le toca descuento": total de horas,
-     * horas que sí descuentan (motivo->suma_descuento) y cantidad de
-     * papeletas, ordenado de mayor a menor tiempo acumulado.
-     *
-     * Acepta el detalle ya calculado (ver ResumenPapeletasIndex::render,
-     * que necesita este resumen Y el diario en la misma vista) para no
-     * correr la misma query pesada dos veces; si no se pasa, la calcula.
-     *
-     * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
-     * @param  Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>|null  $detalle
-     * @return Collection<int, array{trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, papeletas: int, minutos_totales: int, minutos_con_descuento: int, papeletas_con_descuento: int}>
-     */
+      * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
+      * @param  Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>|null  $detalle
+      * @return Collection<int, array{trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, papeletas: int, minutos_totales: int, minutos_con_descuento: int, papeletas_con_descuento: int}>
+      */
     public function resumenPorTrabajador(User $usuario, string $mes, array $filtros = [], ?Collection $detalle = null): Collection
     {
         return ($detalle ?? $this->detalle($usuario, $mes, $filtros))
@@ -148,17 +136,10 @@ class ReporteHorasAcumuladasService
     }
 
     /**
-     * Agregado diario por trabajador (matriz día x trabajador), para
-     * la vista "por día y por mes" que pidió el usuario: cuántos
-     * minutos acumuló cada trabajador cada día del mes.
-     *
-     * Mismo criterio que resumenPorTrabajador: acepta el detalle ya
-     * calculado para evitar repetir la query.
-     *
-     * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
-     * @param  Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>|null  $detalle
-     * @return Collection<int, array{trabajador_id: int, trabajador: string, dia: string, minutos: int, motivos: string}>
-     */
+      * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
+      * @param  Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>|null  $detalle
+      * @return Collection<int, array{trabajador_id: int, trabajador: string, dia: string, minutos: int, motivos: string}>
+      */
     public function resumenDiarioPorTrabajador(User $usuario, string $mes, array $filtros = [], ?Collection $detalle = null): Collection
     {
         return ($detalle ?? $this->detalle($usuario, $mes, $filtros))
@@ -183,8 +164,8 @@ class ReporteHorasAcumuladasService
     }
 
     /**
-     * @return array{0: Carbon, 1: Carbon}
-     */
+      * @return array{0: Carbon, 1: Carbon}
+      */
     public function rangoDelMes(string $mes): array
     {
         

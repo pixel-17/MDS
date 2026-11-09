@@ -26,10 +26,8 @@ class BajaConReemplazo extends Component
     public ?int $usuarioId = null;
 
     /**
-     * unidad_id => ['modo' => ''|'existente'|'nuevo'|'vacante', 'usuario_id' => ?int, 'nuevo' => [...]].
-     *
-     * @var array<int|string, array<string, mixed>>
-     */
+      * @var array<int|string, array<string, mixed>>
+      */
     public array $decisiones = [];
 
     public ?string $error = null;

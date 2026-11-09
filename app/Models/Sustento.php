@@ -8,22 +8,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Paso 5, motivo Salud: sin sustento al retorno -> RETORNO_PENDIENTE_SUSTENTO,
- * 48h hábiles para justificar. Vence sin nada -> reclasifica a Particular.
- * Si hay adjunto pendiente de revisión, el sistema no cierra solo, espera
- * confirmación humana (por eso 'presentado' está separado de 'aprobado').
- *
- * @property int $id
- * @property int $papeleta_id
- * @property string|null $archivo_path
- * @property Carbon $fecha_limite
- * @property 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado' $estado
- * @property Carbon|null $presentado_at
- * @property int|null $revisado_por_id
- * @property Carbon|null $revisado_at
- * @property-read Papeleta $papeleta
- * @property-read User|null $revisadoPor
- */
+  * @property int $id
+  * @property int $papeleta_id
+  * @property string|null $archivo_path
+  * @property Carbon $fecha_limite
+  * @property 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado' $estado
+  * @property Carbon|null $presentado_at
+  * @property int|null $revisado_por_id
+  * @property Carbon|null $revisado_at
+  * @property-read Papeleta $papeleta
+  * @property-read User|null $revisadoPor
+  */
 class Sustento extends Model
 {
     protected $fillable = [
@@ -46,16 +41,16 @@ class Sustento extends Model
     }
 
     /**
-     * @return BelongsTo<Papeleta, $this>
-     */
+      * @return BelongsTo<Papeleta, $this>
+      */
     public function papeleta(): BelongsTo
     {
         return $this->belongsTo(Papeleta::class);
     }
 
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function revisadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'revisado_por_id');

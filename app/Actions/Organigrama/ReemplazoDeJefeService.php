@@ -14,10 +14,8 @@ use Illuminate\Support\Collection;
 class ReemplazoDeJefeService
 {
     /**
-     * Trabajadores activos de la unidad, sin contar a $jefe.
-     *
-     * @return HasMany<User, UnidadOrganica>
-     */
+      * @return HasMany<User, UnidadOrganica>
+      */
     public function miembrosActivos(
         UnidadOrganica $unidad,
         User $jefe
@@ -38,12 +36,8 @@ class ReemplazoDeJefeService
     }
 
     /**
-     * Quienes pueden relevarlo: los trabajadores activos de la unidad y los
-     * jefes de sus sub-unidades (un jefe de área puede ser relevado por otro
-     * jefe). Solo los que pasan las reglas de cambio de jefe.
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     public function candidatos(UnidadOrganica $unidad, User $jefe, ?bool $requiere = null): Collection
     {
         
@@ -59,12 +53,8 @@ class ReemplazoDeJefeService
     }
 
     /**
-     * Cómputo real de candidatos elegibles, sin pasar por requiereReemplazo()
-     * (que a su vez usa este método): lo usan tanto requiereReemplazo() como
-     * candidatos() para no duplicar la consulta ni recursionar.
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     private function candidatosElegibles(UnidadOrganica $unidad, User $jefe): Collection
     {
         $jefesDeHijos = $unidad->hijos()->whereNotNull('jefe_id')->pluck('jefe_id');
@@ -95,14 +85,9 @@ class ReemplazoDeJefeService
     }
 
     /**
-     * Quién releva a $jefe en $unidad: el elegido, o null si no se elige a
-     * nadie. Dejar reemplazo es SIEMPRE opcional (haya o no candidatos): si
-     * no se elige a nadie, la unidad simplemente se queda sin jefe.
-     *
-     * @param  array<int|string, int|string|null>  $reemplazos
-     *
-     * @throws UsuarioException
-     */
+      * @param  array<int|string, int|string|null>  $reemplazos
+      * @throws UsuarioException
+      */
     public function reemplazoPara(UnidadOrganica $unidad, User $jefe, array $reemplazos): ?int
     {
         if ((int) $unidad->jefe_id !== (int) $jefe->id) {
@@ -135,15 +120,11 @@ class ReemplazoDeJefeService
     }
 
     /**
-     * Jefe actual del destino (distinto de $jefe), o vacío si no tiene.
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     /**
-     * Jefe actual del destino, distinto de $excepto.
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     public function jefesDelDestino(
         UnidadOrganica $destino,
         User $excepto

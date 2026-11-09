@@ -30,21 +30,8 @@ class MoverJefeComoTrabajadorAction
     ) {}
 
     /**
-     * Qué pasaría, sin guardar nada. Lanza UsuarioException si no se puede.
-     *
-     * @return array{
-     *     modo: string,
-     *     jefe: User,
-     *     destino: UnidadOrganica,
-     *     unidades: Collection<int, array{unidad: UnidadOrganica, es_area: bool, personas: int, subunidades: int, requiere_reemplazo: bool, candidatos: Collection<int, User>}>,
-     *     jefes_destino: Collection<int, User>,
-     *     requiere_reemplazar_destino: bool,
-     *     sede: array{actual: ?Sede, propuesta: ?Sede},
-     *     necesita_turno: bool,
-     *     turnos_validos: list<string>,
-     *     avisos: list<string>
-     * }
-     */
+      * @return array{
+      */
     public function previsualizar(User $actor, User $jefe, UnidadOrganica $destino, string $modo = self::COMO_TRABAJADOR): array
     {
         $unidades = $this->validar($actor, $jefe, $destino, $modo);
@@ -111,11 +98,10 @@ class MoverJefeComoTrabajadorAction
     }
 
     /**
-     * @param  array<int|string, int|string|null>  $reemplazos  unidad_id => user_id del reemplazo
-     * @param  array{turno?: ?string, fecha_ancla?: ?string, dias_trabajo?: ?int, dias_descanso?: ?int}|null  $turno  solo para 728 sin turno propio
-     *
-     * @throws UsuarioException
-     */
+      * @param  array<int|string, int|string|null>  $reemplazos  unidad_id => user_id del reemplazo
+      * @param  array{turno?: ?string, fecha_ancla?: ?string, dias_trabajo?: ?int, dias_descanso?: ?int}|null  $turno  solo para 728 sin turno propio
+      * @throws UsuarioException
+      */
     public function ejecutar(
         User $actor,
         int $jefeId,
@@ -187,13 +173,9 @@ class MoverJefeComoTrabajadorAction
     }
 
     /**
-     * Única puerta de reglas de quién y adónde. Devuelve las unidades que
-     * encabeza (jefe_id) y que hay que relevar.
-     *
-     * @return Collection<int, UnidadOrganica>
-     *
-     * @throws UsuarioException
-     */
+      * @return Collection<int, UnidadOrganica>
+      * @throws UsuarioException
+      */
     private function validar(User $actor, User $jefe, UnidadOrganica $destino, string $modo = self::COMO_TRABAJADOR): Collection
     {
         if (! in_array($modo, [self::COMO_TRABAJADOR, self::COMO_JEFE], true)) {
@@ -331,11 +313,10 @@ class MoverJefeComoTrabajadorAction
     }
 
     /**
-     * @param  array{turno?: ?string, fecha_ancla?: ?string, dias_trabajo?: ?int, dias_descanso?: ?int}|null  $turno
-     * @return array{turno: string, fecha_ancla: string, dias_trabajo: int, dias_descanso: int}|null null = no hay que cargar turno
-     *
-     * @throws UsuarioException
-     */
+      * @param  array{turno?: ?string, fecha_ancla?: ?string, dias_trabajo?: ?int, dias_descanso?: ?int}|null  $turno
+      * @return array{turno: string, fecha_ancla: string, dias_trabajo: int, dias_descanso: int}|null null = no hay que cargar turno
+      * @throws UsuarioException
+      */
     private function validarTurno(User $jefe, ?array $turno): ?array
     {
         if (! $this->necesitaTurno($jefe)) {

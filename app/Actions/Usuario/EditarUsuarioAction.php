@@ -8,8 +8,8 @@ use App\Models\User;
 class EditarUsuarioAction
 {
     /**
-     * @param  array{name:string,apellido:string,email:string,sede_id:?int,unidad_organica_id:?int}  $datos
-     */
+      * @param  array{name:string,apellido:string,email:string,sede_id:?int,unidad_organica_id:?int}  $datos
+      */
     public function ejecutar(User $trabajador, array $datos, bool $esJefeDeArea): User
     {
         $trabajador->update([

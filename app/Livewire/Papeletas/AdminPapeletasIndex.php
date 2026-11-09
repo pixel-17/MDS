@@ -184,10 +184,8 @@ class AdminPapeletasIndex extends Component
     }
 
     /**
-     * Para encontrar a alguien (por día o por mes) y abrir su historial completo.
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     private function coincidencias(string $termino): Collection
     {
         if ($termino === '') {

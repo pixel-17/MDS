@@ -11,19 +11,8 @@ use Illuminate\Support\Facades\DB;
 class MoverJefeInmediatoAction
 {
     /**
-     * Qué cambiaría, sin guardar nada. Lanza UsuarioException si el
-     * movimiento no está permitido.
-     *
-     * @return array{
-     *     jefe: User,
-     *     unidad: UnidadOrganica,
-     *     origen: ?UnidadOrganica,
-     *     destino: UnidadOrganica,
-     *     jefe_area: array{antes: ?User, despues: ?User},
-     *     personas: int,
-     *     avisos: list<string>
-     * }
-     */
+      * @return array{
+      */
     public function previsualizar(User $actor, User $jefe, UnidadOrganica $destino): array
     {
         $unidad = $this->validar($actor, $jefe, $destino);
@@ -53,14 +42,8 @@ class MoverJefeInmediatoAction
     }
 
     /**
-     * Ejecuta el movimiento. $confirmado es obligatorio y sin default: no se
-     * mueve a nadie sin pasar por la confirmación.
-     *
-     * $origenEsperadoId es el área en la que la pantalla vio a la unidad
-     * (0 = unidad raíz); si entretanto cambió, se aborta.
-     *
-     * @throws UsuarioException
-     */
+      * @throws UsuarioException
+      */
     public function ejecutar(User $actor, int $jefeId, int $destinoId, int $origenEsperadoId, bool $confirmado): UnidadOrganica
     {
         if (! $confirmado) {
@@ -90,12 +73,9 @@ class MoverJefeInmediatoAction
     }
 
     /**
-     * Única puerta de reglas: previsualizar() y ejecutar() pasan por aquí.
-     *
-     * @return UnidadOrganica la unidad que encabeza $jefe (la que se mueve)
-     *
-     * @throws UsuarioException
-     */
+      * @return UnidadOrganica la unidad que encabeza $jefe (la que se mueve)
+      * @throws UsuarioException
+      */
     private function validar(User $actor, User $jefe, UnidadOrganica $destino): UnidadOrganica
     {
         if (! $actor->hasRole('admin')) {

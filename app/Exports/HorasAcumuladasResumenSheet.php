@@ -53,8 +53,8 @@ class HorasAcumuladasResumenSheet implements FromCollection, ShouldAutoSize, Wit
     }
 
     /**
-     * @param  array{trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, papeletas: int, minutos_totales: int, minutos_con_descuento: int, papeletas_con_descuento: int}  $fila
-     */
+      * @param  array{trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, papeletas: int, minutos_totales: int, minutos_con_descuento: int, papeletas_con_descuento: int}  $fila
+      */
     public function map($fila): array
     {
         $this->contador++;

@@ -12,26 +12,8 @@ use LogicException;
 use OutOfBoundsException;
 
 /**
- * Un nodo del árbol del organigrama: la unidad, su(s) jefe(s), sus
- * trabajadores ya filtrados y sus sub-unidades (de nuevo
- * NodoOrganigrama, de forma recursiva).
- *
- * Es una clase -y no un array con un alias de tipo "NodoOrganigrama"- a
- * propósito: PHPStan no soporta tipos recursivos, ni como @phpstan-type
- * local ni como alias global en phpstan.neon ("Circular definition for
- * type alias NodoOrganigrama" al intentar expandirlo). Una clase, en
- * cambio, puede contener sin problema una colección de instancias de sí
- * misma: ahí ya no hay un alias que resolver, solo un grafo de objetos.
- *
- * Implementa ArrayAccess para que las vistas existentes
- * (_nodo.blade.php, organigrama-arbol.blade.php) sigan leyendo
- * $nodo['hijos'], $nodo['unidad'], etc. sin tener que reescribirlas.
- * Es de solo lectura: offsetSet()/offsetUnset() lanzan, igual que
- * pasaba (en los hechos) con el array inmutable que devolvía antes
- * construirNodo().
- *
- * @implements \ArrayAccess<string, mixed>
- */
+  * @implements \ArrayAccess<string, mixed>
+  */
 final class NodoOrganigrama implements \ArrayAccess
 {
     private const CLAVES = [
@@ -40,11 +22,11 @@ final class NodoOrganigrama implements \ArrayAccess
     ];
 
     /**
-     * @param  Collection<int, User>  $jefes
-     * @param  array<int, int>  $jefesEnFiltro
-     * @param  EloquentCollection<int, User>  $miembros
-     * @param  Collection<int, NodoOrganigrama>  $hijos
-     */
+      * @param  Collection<int, User>  $jefes
+      * @param  array<int, int>  $jefesEnFiltro
+      * @param  EloquentCollection<int, User>  $miembros
+      * @param  Collection<int, NodoOrganigrama>  $hijos
+      */
     public function __construct(
         public readonly UnidadOrganica $unidad,
         public readonly Collection $jefes,

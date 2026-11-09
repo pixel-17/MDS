@@ -9,30 +9,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Horario de UN usuario en UNA fecha, cargado por el admin.
- *
- * Desde el rediseño de régimen 276 (ordinario): esta tabla ya NO se usa
- * para 276 — ese horario es único y global (ver HorarioOrdinarioService,
- * editable en Configuraciones), para no obligar al admin a cargar una
- * fila por cada uno de los ~500 trabajadores 276 todos los días.
- *
- * Para 728 (rotativo) sigue existiendo tal como antes, pero ya NO es
- * opcional: crear una papeleta exige SIEMPRE una fila de turno vigente
- * (que no sea es_descanso) para hoy. Se quitó el interruptor
- * MODO_ESTRICTO_728 que antes permitía desactivar esa exigencia: ahora
- * es la única regla, fija (ver CrearPapeletaAction).
- *
- * @property int $id
- * @property int $user_id
- * @property int|null $sede_id
- * @property Carbon $fecha
- * @property string|null $hora_inicio
- * @property string|null $hora_fin
- * @property bool $es_descanso
- * @property string|null $turno
- * @property-read User $usuario
- * @property-read Sede|null $sede
- */
+  * @property int $id
+  * @property int $user_id
+  * @property int|null $sede_id
+  * @property Carbon $fecha
+  * @property string|null $hora_inicio
+  * @property string|null $hora_fin
+  * @property bool $es_descanso
+  * @property string|null $turno
+  * @property-read User $usuario
+  * @property-read Sede|null $sede
+  */
 class Turno extends Model
 {
     protected static function booted(): void
@@ -74,16 +61,16 @@ class Turno extends Model
     }
 
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
-     * @return BelongsTo<Sede, $this>
-     */
+      * @return BelongsTo<Sede, $this>
+      */
     public function sede(): BelongsTo
     {
         return $this->belongsTo(Sede::class);
@@ -110,8 +97,8 @@ class Turno extends Model
     }
 
     /**
-     * @return array{0: Carbon, 1: Carbon}|null [inicio, fin] absolutos
-     */
+      * @return array{0: Carbon, 1: Carbon}|null [inicio, fin] absolutos
+      */
     private function limites(): ?array
     {
         if ($this->es_descanso || ! $this->hora_inicio || ! $this->hora_fin) {

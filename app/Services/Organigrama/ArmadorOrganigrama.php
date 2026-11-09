@@ -10,20 +10,7 @@ use App\Models\UnidadOrganica;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
-/**
- * Lado de LECTURA del organigrama: consultas, alcance de quien mira,
- * filtros (búsqueda, sede, inactivos), nodos del árbol, ficha e historial.
- * No modifica nada: las ediciones viven en App\Actions\Organigrama y el
- * componente Livewire solo orquesta (estado de UI + confirmaciones).
- *
- * Todo se carga en unas pocas queries y el árbol se arma en memoria (el
- * organigrama es chico, igual que en UnidadOrganica::descendantIds()).
- *
- * Cada nodo del árbol es una instancia de NodoOrganigrama (ver esa
- * clase): no un array con un alias de tipo, porque PHPStan no soporta
- * tipos recursivos (ni @phpstan-type local ni un alias global en
- * phpstan.neon) y 'hijos' vuelve a contener nodos del mismo tipo.
- */
+
 class ArmadorOrganigrama
 {
     
@@ -41,15 +28,8 @@ class ArmadorOrganigrama
     ) {}
 
     /**
-     * Arma todo lo que pinta el árbol para quien mira: nodos raíz ya
-     * filtrados por búsqueda/sede, estadísticas y conteo por sede.
-     *
-     * @return array{raices: Collection<int, NodoOrganigrama>, stats: array<string, int>, conteoSedes: array<int|string, int>, unidades: \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>, enAlcance: array<int, true>}
-     *
-     * NodoOrganigrama aquí ya no es un alias de tipo: es la clase
-     * App\Services\Organigrama\NodoOrganigrama (mismo namespace, por eso
-     * se referencia sin "use").
-     */
+      * @return array{raices: Collection<int, NodoOrganigrama>, stats: array<string, int>, conteoSedes: array<int|string, int>, unidades: \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>, enAlcance: array<int, true>}
+      */
     public function armar(User $usuario): array
     {
         
@@ -86,15 +66,9 @@ class ArmadorOrganigrama
     }
 
     /**
-     * Carga jefes (con sede) y trabajadores SOLO de las
-     * unidades dentro del alcance de quien mira. Un Jefe de Área ya no
-     * trae a todos los trabajadores de la municipalidad para pintar su
-     * rama. Las relaciones quedan en las mismas instancias que usa
-     * $porPadre, así que construirNodo() las ve sin más queries.
-     *
-     * @param  \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>  $unidades
-     * @param  array<int, true>  $enAlcance
-     */
+      * @param  \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>  $unidades
+      * @param  array<int, true>  $enAlcance
+      */
     public function cargarRama(Collection $unidades, array $enAlcance): void
     {
         $unidades
@@ -112,15 +86,10 @@ class ArmadorOrganigrama
     }
 
     /**
-     * Ficha de la persona abierta en el panel lateral, o null. Solo se
-     * arma si la persona cae dentro del alcance de quien mira (admin:
-     * todo; Jefe de Área: su rama): $personaId viene del navegador y no
-     * se confía en él.
-     *
-     * @param  Collection<int, UnidadOrganica>  $unidades
-     * @param  array<int, true>  $enAlcance  ids de unidades dentro del alcance (ver idsEnAlcance)
-     * @return array<string, mixed>|null
-     */
+      * @param  Collection<int, UnidadOrganica>  $unidades
+      * @param  array<int, true>  $enAlcance  ids de unidades dentro del alcance (ver idsEnAlcance)
+      * @return array<string, mixed>|null
+      */
     public function fichaDe(?int $personaId, Collection $unidades, array $enAlcance): ?array
     {
         if ($personaId === null) {
@@ -167,13 +136,10 @@ class ArmadorOrganigrama
     }
 
     /**
-     * Ids de todas las unidades dentro del alcance de quien mira: las
-     * raíces y todo lo que cuelga de ellas.
-     *
-     * @param  Collection<int, UnidadOrganica>  $raicesDeAlcance
-     * @param  \Illuminate\Support\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
-     * @return array<int, true>
-     */
+      * @param  Collection<int, UnidadOrganica>  $raicesDeAlcance
+      * @param  \Illuminate\Support\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
+      * @return array<int, true>
+      */
     public function idsEnAlcance(Collection $raicesDeAlcance, Collection $porPadre): array
     {
         $enAlcance = [];
@@ -197,12 +163,9 @@ class ArmadorOrganigrama
     }
 
     /**
-     * Últimos movimientos visibles para quien mira (admin: todos; Jefe
-     * de Área: los que tocan alguna unidad de su alcance).
-     *
-     * @param  array<int, true>  $enAlcance
-     * @return Collection<int, array{movimiento: MovimientoOrganigrama, puede_deshacer: bool}>
-     */
+      * @param  array<int, true>  $enAlcance
+      * @return Collection<int, array{movimiento: MovimientoOrganigrama, puede_deshacer: bool}>
+      */
     public function historialDe(User $usuario, array $enAlcance, bool $modoEdicion): Collection
     {
         $consulta = MovimientoOrganigrama::query()
@@ -224,12 +187,10 @@ class ArmadorOrganigrama
     }
 
     /**
-     * Unidades desde donde se empieza a pintar.
-     *
-     * @param  Collection<int, UnidadOrganica>  $unidades
-     * @param  \Illuminate\Support\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
-     * @return Collection<int, UnidadOrganica>
-     */
+      * @param  Collection<int, UnidadOrganica>  $unidades
+      * @param  \Illuminate\Support\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
+      * @return Collection<int, UnidadOrganica>
+      */
     public function raicesPara(User $usuario, Collection $unidades, Collection $porPadre): Collection
     {
         if ($usuario->hasRole('admin')) {
@@ -265,14 +226,10 @@ class ArmadorOrganigrama
     }
 
     /**
-     * Arma el nodo de una unidad (y, recursivamente, sus hijos) ya
-     * filtrado por la búsqueda y por la sede. null = ese nodo y todo lo
-     * de abajo quedan fuera del resultado.
-     *
-     * @param  \Illuminate\Support\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
-     * @param  array<string, int>  $stats
-     * @param  array<int|string, int>  $conteoSedes
-     */
+      * @param  \Illuminate\Support\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
+      * @param  array<string, int>  $stats
+      * @param  array<int|string, int>  $conteoSedes
+      */
     private function construirNodo(UnidadOrganica $unidad, Collection $porPadre, array &$stats, array &$conteoSedes): ?NodoOrganigrama
     {
         $q = mb_strtolower(trim($this->buscar));

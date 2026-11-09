@@ -20,33 +20,33 @@ use NotificationChannels\WebPush\HasPushSubscriptions;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
- * @property int $id
- * @property string $name
- * @property string $apellido
- * @property string $dni
- * @property string $email
- * @property Carbon|null $email_verified_at
- * @property string $password
- * @property '276'|'728'|null $regimen
- * @property bool $activo
- * @property int|null $sede_id
- * @property int|null $jefe_inmediato_id
- * @property int|null $jefe_area_id
- * @property int|null $unidad_organica_id
- * @property bool $debe_actualizar_password
- * @property int $volumen_notificacion
- * @property bool $permite_gps
- * @property bool $permite_camara
- * @property-read string $nombre_completo
- * @property-read Sede|null $sede
- * @property-read UnidadOrganica|null $unidadOrganica
- * @property-read User|null $jefeInmediato
- * @property-read User|null $jefeArea
- * @property-read \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica> $unidadesQueEncabeza
- * @property-read \Illuminate\Database\Eloquent\Collection<int, User> $subordinadosInmediatos
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Turno> $turnos
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Papeleta> $papeletas
- */
+  * @property int $id
+  * @property string $name
+  * @property string $apellido
+  * @property string $dni
+  * @property string $email
+  * @property Carbon|null $email_verified_at
+  * @property string $password
+  * @property '276'|'728'|null $regimen
+  * @property bool $activo
+  * @property int|null $sede_id
+  * @property int|null $jefe_inmediato_id
+  * @property int|null $jefe_area_id
+  * @property int|null $unidad_organica_id
+  * @property bool $debe_actualizar_password
+  * @property int $volumen_notificacion
+  * @property bool $permite_gps
+  * @property bool $permite_camara
+  * @property-read string $nombre_completo
+  * @property-read Sede|null $sede
+  * @property-read UnidadOrganica|null $unidadOrganica
+  * @property-read User|null $jefeInmediato
+  * @property-read User|null $jefeArea
+  * @property-read \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica> $unidadesQueEncabeza
+  * @property-read \Illuminate\Database\Eloquent\Collection<int, User> $subordinadosInmediatos
+  * @property-read \Illuminate\Database\Eloquent\Collection<int, Turno> $turnos
+  * @property-read \Illuminate\Database\Eloquent\Collection<int, Papeleta> $papeletas
+  */
 class User extends Authenticatable
 {
     use HasApiTokens;
@@ -61,10 +61,9 @@ class User extends Authenticatable
     use TwoFactorAuthenticatable;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+      * The attributes that are mass assignable.
+      * @var list<string>
+      */
     protected $fillable = [
         'name',
         'apellido',
@@ -84,10 +83,9 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
+      * The attributes that should be hidden for serialization.
+      * @var list<string>
+      */
     protected $hidden = [
         'password',
         'remember_token',
@@ -96,19 +94,16 @@ class User extends Authenticatable
     ];
 
     /**
-     * The accessors to append to the model's array form.
-     *
-     * @var list<string>
-     */
+      * @var list<string>
+      */
     protected $appends = [
         'profile_photo_url',
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+      * Get the attributes that should be cast.
+      * @return array<string, string>
+      */
     protected function casts(): array
     {
         return [
@@ -120,16 +115,16 @@ class User extends Authenticatable
     }
 
     /**
-     * @return BelongsTo<Sede, $this>
-     */
+      * @return BelongsTo<Sede, $this>
+      */
     public function sede(): BelongsTo
     {
         return $this->belongsTo(Sede::class);
     }
 
     /**
-     * @return BelongsTo<UnidadOrganica, $this>
-     */
+      * @return BelongsTo<UnidadOrganica, $this>
+      */
     public function unidadOrganica(): BelongsTo
     {
         return $this->belongsTo(UnidadOrganica::class);
@@ -137,8 +132,8 @@ class User extends Authenticatable
 
     
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function jefeInmediato(): BelongsTo
     {
         return $this->belongsTo(User::class, 'jefe_inmediato_id');
@@ -146,8 +141,8 @@ class User extends Authenticatable
 
     
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function jefeArea(): BelongsTo
     {
         return $this->belongsTo(User::class, 'jefe_area_id');
@@ -155,21 +150,16 @@ class User extends Authenticatable
 
     
     /**
-     * @return HasMany<UnidadOrganica, $this>
-     */
+      * @return HasMany<UnidadOrganica, $this>
+      */
     public function unidadesQueEncabeza(): HasMany
     {
         return $this->hasMany(UnidadOrganica::class, 'jefe_id');
     }
 
     /**
-     * Unidades que este usuario encabeza Y que tienen sub-unidades: solo
-     * esas lo hacen Jefe de Área. Quien encabeza una unidad hoja (sin
-     * sub-oficinas) es Jefe Inmediato "puro": su jefe_id lo pone como
-     * jefe de ESA oficina, no le da mando sobre otras.
-     *
-     * @return HasMany<UnidadOrganica, $this>
-     */
+      * @return HasMany<UnidadOrganica, $this>
+      */
     public function unidadesDeArea(): HasMany
     {
         return $this->unidadesQueEncabeza()->whereHas('hijos');
@@ -194,13 +184,8 @@ class User extends Authenticatable
     private ?string $tipoUsuarioMemo = null;
 
     /**
-     * Clave del tipo de usuario para mostrarlo en pantalla (la más alta que
-     * aplique): admin > rrhh > jefe de área > jefe inmediato > trabajador.
-     * Es solo una etiqueta visual; los permisos siguen en policies y roles.
-     * Se memoiza por instancia (hasta 3 consultas la primera vez).
-     *
-     * @return 'admin'|'rrhh'|'jefe_area'|'jefe_inmediato'|'trabajador'
-     */
+      * @return 'admin'|'rrhh'|'jefe_area'|'jefe_inmediato'|'trabajador'
+      */
     public function tipoUsuario(): string
     {
         return $this->tipoUsuarioMemo ??= match (true) {
@@ -225,8 +210,8 @@ class User extends Authenticatable
 
     
     /**
-     * @return HasMany<User, $this>
-     */
+      * @return HasMany<User, $this>
+      */
     public function subordinadosInmediatos(): HasMany
     {
         return $this->hasMany(User::class, 'jefe_inmediato_id');
@@ -244,13 +229,9 @@ class User extends Authenticatable
     }
 
     /**
-     * Usuarios que son jefe de alguien: encabezan una unidad o figuran como
-     * jefe inmediato de otro usuario. Misma regla que esJefeDeAlguien(), pero
-     * resuelta en SQL para filtrar listas enteras sin 2 consultas por fila.
-     *
-     * @param  Builder<User>  $query
-     * @return Builder<User>
-     */
+      * @param  Builder<User>  $query
+      * @return Builder<User>
+      */
     public function scopeQueEsJefe(Builder $query): Builder
     {
         return $query->where(fn ($q) => $q
@@ -261,13 +242,9 @@ class User extends Authenticatable
     }
 
     /**
-     * Fuente ÚNICA de "mi equipo": trabajadores cuyo jefe inmediato o de
-     * área (columnas explícitas) soy yo y todos los de las unidades que
-     * encabezo (y sus sub-unidades).
-     *
-     * @param  Builder<User>  $query
-     * @return Builder<User>
-     */
+      * @param  Builder<User>  $query
+      * @return Builder<User>
+      */
     public function scopeEquipoDe(Builder $query, User $jefe): Builder
     {
         $unidadIds = $jefe->unidadesQueEncabeza
@@ -286,30 +263,26 @@ class User extends Authenticatable
     }
 
     /**
-     * Equipo del jefe como colección (para selects/buscadores).
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     public function equipo(): Collection
     {
         return User::equipoDe($this)->orderBy('name')->get();
     }
 
     /**
-     * @deprecated usar equipo() / User::equipoDe(); se mantiene por compatibilidad.
-     *
-     * @return Collection<int, User>
-     */
+      * @deprecated usar equipo() / User::equipoDe(); se mantiene por compatibilidad.
+      * @return Collection<int, User>
+      */
     public function trabajadoresComoJefeInmediato(): Collection
     {
         return $this->equipo();
     }
 
     /**
-     * @deprecated usar equipo() / User::equipoDe(); se mantiene por compatibilidad.
-     *
-     * @return Collection<int, User>
-     */
+      * @deprecated usar equipo() / User::equipoDe(); se mantiene por compatibilidad.
+      * @return Collection<int, User>
+      */
     public function trabajadoresParaReportes(): Collection
     {
         return $this->equipo();
@@ -339,11 +312,8 @@ class User extends Authenticatable
     }
 
     /**
-     * Colección con el jefe inmediato de este usuario (0 o 1). Se mantiene
-     * como colección para las vistas que listan "mis jefes".
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     public function jefesInmediatos(): Collection
     {
         return $this->jefe_inmediato_id === null
@@ -352,8 +322,8 @@ class User extends Authenticatable
     }
 
     /**
-     * @return HasMany<Turno, $this>
-     */
+      * @return HasMany<Turno, $this>
+      */
     public function turnos(): HasMany
     {
         return $this->hasMany(Turno::class);
@@ -414,8 +384,8 @@ class User extends Authenticatable
     }
 
     /**
-     * @return HasMany<Papeleta, $this>
-     */
+      * @return HasMany<Papeleta, $this>
+      */
     public function papeletas(): HasMany
     {
         return $this->hasMany(Papeleta::class, 'trabajador_id');

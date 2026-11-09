@@ -19,8 +19,8 @@ class InsigniaBandeja extends Component
     public string $bandeja = 'jefe';
 
     /**
-     * @return array<string, string>
-     */
+      * @return array<string, string>
+      */
     protected function getListeners(): array
     {
         $id = Auth::id();

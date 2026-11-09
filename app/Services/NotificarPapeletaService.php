@@ -226,19 +226,16 @@ class NotificarPapeletaService
     }
 
     /**
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     private function usuariosRrhh(): Collection
     {
         return User::role('rrhh')->get();
     }
 
     /**
-     * El jefe que decide/atiende esta papeleta: el jefe_inmediato_id de la
-     * papeleta (si se reasignó por un cambio de jefatura, ya es el nuevo).
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     private function destinatariosJefe(Papeleta $papeleta): Collection
     {
         return $papeleta->jefeInmediato ? collect([$papeleta->jefeInmediato]) : collect();
@@ -250,9 +247,9 @@ class NotificarPapeletaService
     }
 
     /**
-     * @param  Collection<int, User>  $destinatarios
-     * @param  callable(User): ?string  $url
-     */
+      * @param  Collection<int, User>  $destinatarios
+      * @param  callable(User): ?string  $url
+      */
     private function enviar(Collection $destinatarios, Papeleta $papeleta, string $tipo, string $titulo, string $mensaje, callable $url): void
     {
         foreach ($destinatarios->unique('id') as $destinatario) {

@@ -59,18 +59,8 @@ class JefaturaUnidadService
     }
 
     /**
-     * Qué cambiaría al guardar la unidad con ese jefe y ese padre. null si
-     * la unidad todavía no existe (no hay "antes").
-     *
-     * @return array{
-     *     error: ?string,
-     *     jefe: array{antes: ?User, despues: ?User, cambia: bool, fuera_de_la_unidad: bool},
-     *     padre: array{antes: ?UnidadOrganica, despues: ?UnidadOrganica, cambia: bool},
-     *     personas: int,
-     *     subarbol: int,
-     *     avisos: list<string>
-     * }|null
-     */
+      * @return array{
+      */
     public function previsualizar(?UnidadOrganica $unidad, ?int $jefeId, ?int $parentId, bool $ubicarJefe = false): ?array
     {
         if ($unidad === null) {

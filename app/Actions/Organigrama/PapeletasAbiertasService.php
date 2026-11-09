@@ -25,11 +25,8 @@ class PapeletasAbiertasService
     }
 
     /**
-     * Reasigna las papeletas abiertas de $trabajador a su jefe inmediato y de
-     * área actuales (columnas ya recalculadas de users).
-     *
-     * @return int cantidad de papeletas reasignadas
-     */
+      * @return int cantidad de papeletas reasignadas
+      */
     public function reasignarDeTrabajador(User $trabajador): int
     {
         $jefeId = $trabajador->jefe_inmediato_id;

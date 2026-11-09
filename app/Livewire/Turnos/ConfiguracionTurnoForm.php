@@ -94,18 +94,8 @@ class ConfiguracionTurnoForm extends Component
     }
 
     /**
-     * Calendario REAL del mes en curso (que es el mes que de verdad se
-     * genera al guardar, ver guardar() más arriba) para $trabajador:
-     * misma consulta y misma forma de armar $semanas que
-     * CalendarioIndividualIndex::render(), para que esta pantalla se
-     * vea y se comporte como ese calendario. No es un cálculo
-     * proyectado del ciclo — son los registros `turnos` que ya existen,
-     * así que antes de guardar los días están en blanco (sin turno) y
-     * justo después de guardar aparecen pintados con el color real de
-     * cada turno.
-     *
-     * @return array{inicioMes: Carbon, semanas: array<int, array<int, int|null>>, turnosPorDia: \Illuminate\Support\Collection<int, Turno>, hoy: Carbon}
-     */
+      * @return array{inicioMes: Carbon, semanas: array<int, array<int, int|null>>, turnosPorDia: \Illuminate\Support\Collection<int, Turno>, hoy: Carbon}
+      */
     private function calendarioDelMes(): array
     {
         $inicioMes = now()->startOfMonth();

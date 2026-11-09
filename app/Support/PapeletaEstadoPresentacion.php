@@ -20,9 +20,9 @@ use Spatie\ModelStates\State;
 class PapeletaEstadoPresentacion
 {
     /**
-     * @param  State<Papeleta>|string  $estado
-     * @return array{0: string, 1: string, 2: string} [etiqueta, clases_badge, clase_solida]
-     */
+      * @param  State<Papeleta>|string  $estado
+      * @return array{0: string, 1: string, 2: string} [etiqueta, clases_badge, clase_solida]
+      */
     public static function para(State|string $estado): array
     {
         $clave = $estado instanceof State ? get_class($estado) : (string) $estado;
@@ -35,16 +35,9 @@ class PapeletaEstadoPresentacion
     }
 
     /**
-     * Presentación de una papeleta con causa de abandono. El estado dice si
-     * hay descuento y cómo terminó la justificación:
-     *  - Finalizada    -> abandono justificado (sin descuento)
-     *  - Finalizada    -> abandono sin justificar (con descuento)
-     *  - EnJustificacion -> todavía puede presentar su justificación
-     * Para cualquier otro estado devuelve null (se usa la etiqueta normal).
-     *
-     * @param  State<Papeleta>|string  $estado
-     * @return array{0: string, 1: string, 2: string}|null
-     */
+      * @param  State<Papeleta>|string  $estado
+      * @return array{0: string, 1: string, 2: string}|null
+      */
     public static function porAbandono(State|string $estado): ?array
     {
         $clave = $estado instanceof State ? get_class($estado) : (string) $estado;

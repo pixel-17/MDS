@@ -42,9 +42,9 @@ trait CreaEscenarioPapeletas
     }
 
     /**
-     * @param  array<string, mixed>  $atributos
-     * @param  array<int, string>  $roles
-     */
+      * @param  array<string, mixed>  $atributos
+      * @param  array<int, string>  $roles
+      */
     protected function usuarioDePrueba(array $atributos = [], array $roles = ['trabajador']): User
     {
         $usuario = User::factory()->create([
@@ -61,9 +61,9 @@ trait CreaEscenarioPapeletas
     }
 
     /**
-     * @param  class-string  $estado
-     * @param  array<string, mixed>  $atributos
-     */
+      * @param  class-string  $estado
+      * @param  array<string, mixed>  $atributos
+      */
     protected function papeletaDePrueba(User $trabajador, string $estado = PendienteJefe::class, array $atributos = []): Papeleta
     {
         return Papeleta::create([
@@ -107,14 +107,8 @@ trait CreaEscenarioPapeletas
     }
 
     /**
-     * Turno vigente "de sobra" para el 728 de prueba: cubre el día
-     * completo de `now()` (00:00-23:59:59) para que CrearPapeletaAction
-     * no lo bloquee por falta de turno, sin depender de a qué hora
-     * exacta corre el test. Para probar el cruce de medianoche o el
-     * bloqueo por descanso, pasa horas/es_descanso explícitos.
-     *
-     * @param  array<string, mixed>  $atributos
-     */
+      * @param  array<string, mixed>  $atributos
+      */
     protected function turnoDePrueba(User $trabajador, array $atributos = []): Turno
     {
         return Turno::create([

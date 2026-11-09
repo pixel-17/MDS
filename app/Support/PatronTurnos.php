@@ -27,11 +27,8 @@ final class PatronTurnos
     public const MAX_MESES = 6;
 
     /**
-     * "M M t,t n d" → ['MANANA', 'MANANA', 'TARDE', 'TARDE', 'NOCHE', 'DESCANSO'].
-     * Null si está vacío o trae algo distinto de M, T, N o D.
-     *
-     * @return array<int, string>|null
-     */
+      * @return array<int, string>|null
+      */
     public static function parsear(string $patron): ?array
     {
         $tokens = preg_split('/[\s,]+/', mb_strtoupper(trim($patron)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
@@ -52,23 +49,9 @@ final class PatronTurnos
     }
 
     /**
-     * Posición del patrón con la que arranca el día siguiente al último
-     * de $previos, para que la rotación siga donde terminó el mes anterior.
-     *
-     * $previos son los códigos de los días inmediatamente anteriores, del
-     * más antiguo al más reciente; null = día sin programar. Se busca la
-     * posición cuya racha de coincidencias hacia atrás sea la más larga;
-     * si el último día previo no está programado o no coincide con nada,
-     * devuelve 0 (arranca el patrón desde el principio).
-     *
-     * Con patrones muy repetitivos (M M M M M M D) un solo día previo puede
-     * coincidir con varias posiciones: se toma la primera. Cuantos más días
-     * previos se envíen (idealmente tantos como pasos tiene el patrón),
-     * menos ambigüedad hay.
-     *
-     * @param  array<int, string>  $pasos
-     * @param  array<int, string|null>  $previos
-     */
+      * @param  array<int, string>  $pasos
+      * @param  array<int, string|null>  $previos
+      */
     public static function offsetContinuacion(array $pasos, array $previos): int
     {
         $n = count($pasos);
@@ -103,12 +86,9 @@ final class PatronTurnos
     }
 
     /**
-     * Repite el patrón día por día entre $desde y $hasta (ambos incluidos,
-     * 'Y-m-d'), arrancando en la posición $offset.
-     *
-     * @param  array<int, string>  $pasos
-     * @return array<string, string> 'Y-m-d' => código
-     */
+      * @param  array<int, string>  $pasos
+      * @return array<string, string> 'Y-m-d' => código
+      */
     public static function generar(array $pasos, string $desde, string $hasta, int $offset = 0): array
     {
         $n = count($pasos);

@@ -43,12 +43,8 @@ class ConfiguracionForm extends Component
     }
 
     /**
-     * Las horas se comparan como texto "H:i" (ver HorarioOrdinarioService), así
-     * que "8:00", "25:99" o "8am" no dan un error: dejan el horario roto en
-     * silencio. Cada tipo de clave se valida con su formato.
-     *
-     * @return array<int, string>
-     */
+      * @return array<int, string>
+      */
     public static function reglasParaClave(string $clave): array
     {
         if (preg_match('/(_HORA_(INICIO|FIN)|^BLOQUE_ALMUERZO_(INICIO|FIN))$/', $clave)) {

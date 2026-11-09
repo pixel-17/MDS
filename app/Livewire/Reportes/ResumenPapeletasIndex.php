@@ -21,29 +21,10 @@ use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * Reporte de cierre de mes para RR. HH. (y jefes, parcialmente), en dos
- * pestañas sobre el mismo mes:
- *
- *  - "resumen" (antes ResumenPapeletasIndex): conteos por motivo/unidad
- *    y tiempos de respuesta — "salud del proceso". Solo RR. HH./admin,
- *    igual que antes (Decisiones de RR. HH. se evalúa aparte, no se
- *    toca acá).
- *  - "horas" (antes HorasAcumuladasIndex): horas fuera de sede por
- *    trabajador, para el descuento de planilla, con filtros propios y
- *    exportación a Excel. Mismo alcance que antes: admin/RR. HH. ven
- *    todo, jefe solo su equipo (ReporteHorasAcumuladasService::query()).
- *
- * Antes eran dos pantallas (y una ruta exclusiva de jefe); se fusionan
- * porque ambas sirven la misma tarea de fin de mes, y de paso Resumen
- * de papeletas hereda el export que le faltaba. Cada pestaña calcula
- * SOLO sus propios datos (nada de correr las dos consultas pesadas en
- * cada render) y los catálogos de filtros de la pestaña "horas" están
- * memoizados con #[Computed] para no repetirlos en cada wire:model.live.
- *
- * @property-read Collection<int, User> $trabajadoresDisponibles
- * @property-read Collection<int, Sede> $sedes
- * @property-read Collection<int, Motivo> $motivos
- */
+  * @property-read Collection<int, User> $trabajadoresDisponibles
+  * @property-read Collection<int, Sede> $sedes
+  * @property-read Collection<int, Motivo> $motivos
+  */
 #[Layout('layouts.app')]
 #[Title('Resumen de papeletas')]
 class ResumenPapeletasIndex extends Component
@@ -154,10 +135,8 @@ class ResumenPapeletasIndex extends Component
     }
 
     /**
-     * Trabajadores disponibles para el filtro de la pestaña "horas" (memoizado: una vez por request).
-     *
-     * @return Collection<int, User>
-     */
+      * @return Collection<int, User>
+      */
     #[Computed]
     public function trabajadoresDisponibles(): Collection
     {

@@ -40,12 +40,8 @@ class ProgramacionMensual extends Component
     public ?string $mensaje = null;
 
     /**
-     * Meses generados con un patrón que esperan confirmación por tener
-     * advertencias ('Y-m' => dias). Locked: el navegador no puede
-     * cambiarlo, solo se llena desde generarMeses().
-     *
-     * @var array<string, array<string, string>>
-     */
+      * @var array<string, array<string, string>>
+      */
     #[Locked]
     public array $planPendiente = [];
 
@@ -79,11 +75,8 @@ class ProgramacionMensual extends Component
     }
 
     /**
-     * Primer paso: si hay advertencias las muestra y espera
-     * confirmación (guardarIgualmente); si no, guarda directo.
-     *
-     * @param  array<string, string>  $dias
-     */
+      * @param  array<string, string>  $dias
+      */
     public function guardar(ProgramacionTurnoService $servicio, array $dias): void
     {
         $this->autorizar($this->trabajador);
@@ -100,8 +93,8 @@ class ProgramacionMensual extends Component
     }
 
     /**
-     * @param  array<string, string>  $dias
-     */
+      * @param  array<string, string>  $dias
+      */
     public function guardarIgualmente(ProgramacionTurnoService $servicio, array $dias): void
     {
         $this->autorizar($this->trabajador);
@@ -110,15 +103,8 @@ class ProgramacionMensual extends Component
     }
 
     /**
-     * Repite un patrón durante varios meses (a partir de $desde, dentro
-     * del mes que se está viendo) y lo guarda. $dias es la grilla actual:
-     * lo pintado antes de $desde en este mes se conserva.
-     *
-     * Con advertencias no guarda: las muestra y espera confirmación
-     * (guardarPlanIgualmente), igual que guardar().
-     *
-     * @param  array<string, string>  $dias
-     */
+      * @param  array<string, string>  $dias
+      */
     public function generarMeses(ProgramacionTurnoService $servicio, string $patron, string $desde, int $meses, bool $continuar, array $dias): void
     {
         $this->autorizar($this->trabajador);
@@ -167,8 +153,8 @@ class ProgramacionMensual extends Component
     }
 
     /**
-     * @param  array<string, string>  $dias
-     */
+      * @param  array<string, string>  $dias
+      */
     private function persistir(ProgramacionTurnoService $servicio, array $dias): void
     {
         /** @var User $actor */
@@ -182,8 +168,8 @@ class ProgramacionMensual extends Component
     }
 
     /**
-     * @param  array<string, array<string, string>>  $plan
-     */
+      * @param  array<string, array<string, string>>  $plan
+      */
     private function persistirPlan(ProgramacionTurnoService $servicio, array $plan): void
     {
         /** @var User $actor */

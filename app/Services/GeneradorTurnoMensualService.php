@@ -175,19 +175,8 @@ class GeneradorTurnoMensualService
     }
 
     /**
-     * Ciclo (dias_trabajo/dias_descanso/fecha_ancla) del horario
-     * ordinario global de régimen 276, calculado SIEMPRE desde
-     * HORARIO_ORDINARIO_DIAS_LABORABLES. Única fuente de verdad: tanto
-     * cargarConfiguracion() (que la impone) como la carga por lotes de
-     * CalendarioEquipoIndex la usan, para no tener el cálculo
-     * duplicado y en riesgo de desalinearse.
-     *
-     * $referencia ancla la semana que se usa como base (normalmente
-     * "ahora" o la fecha que mandó el formulario); el resultado siempre
-     * cae en esa semana o la siguiente, nunca antes.
-     *
-     * @return array{dias_trabajo: int, dias_descanso: int, fecha_ancla: Carbon}
-     */
+      * @return array{dias_trabajo: int, dias_descanso: int, fecha_ancla: Carbon}
+      */
     public static function cicloOrdinario276(?Carbon $referencia = null): array
     {
         $referencia ??= now();
@@ -284,13 +273,8 @@ class GeneradorTurnoMensualService
     }
 
     /**
-     * Clave de `configuraciones` donde se EDITA la hora de un turno (la usa
-     * DefinicionTurnos). Mañana/Tarde/Noche: TURNO_<CODIGO>_HORA_*. Día (276)
-     * usa el horario ordinario global, la misma ventana que bloquea
-     * HorarioOrdinarioService, así que no puede divergir.
-     *
-     * @param  'INICIO'|'FIN'  $extremo
-     */
+      * @param  'INICIO'|'FIN'  $extremo
+      */
     public static function claveDeHora(string $turno, string $extremo): string
     {
         return in_array($turno, ['MANANA', 'TARDE', 'NOCHE'], true)
@@ -299,14 +283,8 @@ class GeneradorTurnoMensualService
     }
 
     /**
-     * Horas de cada turno del catálogo, en `configuraciones`.
-     *
-     * Las claves van LITERALES a propósito: ConfiguracionSinDesajusteTest
-     * busca las llamadas a valorDe con texto literal para comprobar que
-     * toda clave sembrada se lea. No construirlas dinámicamente.
-     *
-     * @return array{0: string, 1: string} [hora_inicio, hora_fin] en H:i
-     */
+      * @return array{0: string, 1: string} [hora_inicio, hora_fin] en H:i
+      */
     public function horasDe(string $turno): array
     {
         return match ($turno) {

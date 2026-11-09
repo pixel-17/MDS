@@ -7,26 +7,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Configuración vigente del ciclo de turno de UN trabajador. Ver
- * migración para el detalle de por qué el ciclo se ancla a una fecha
- * en vez de al calendario.
- *
- * Catálogo de turnos válidos, fijo por régimen (no editable por el
- * usuario final, ver GeneradorTurnoMensualService::horasDe para las
- * horas de cada uno):
- * - 728 (rotativo): MANANA, TARDE o NOCHE — el Admin/Jefe elige cuál.
- * - 276 (ordinario): solo DIA — no hay Tarde/Noche para este régimen.
- *
- * @property int $id
- * @property int $user_id
- * @property string $turno
- * @property Carbon $fecha_ancla
- * @property int $dias_trabajo
- * @property int $dias_descanso
- * @property int|null $actualizado_por_id
- * @property-read User $usuario
- * @property-read User|null $actualizadoPor
- */
+  * @property int $id
+  * @property int $user_id
+  * @property string $turno
+  * @property Carbon $fecha_ancla
+  * @property int $dias_trabajo
+  * @property int $dias_descanso
+  * @property int|null $actualizado_por_id
+  * @property-read User $usuario
+  * @property-read User|null $actualizadoPor
+  */
 class ConfiguracionTurno extends Model
 {
     protected $table = 'configuraciones_turno';
@@ -52,28 +42,24 @@ class ConfiguracionTurno extends Model
     public const TURNO_276 = 'DIA';
 
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
-     * @return BelongsTo<User, $this>
-     */
+      * @return BelongsTo<User, $this>
+      */
     public function actualizadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'actualizado_por_id');
     }
 
     /**
-     * Turnos que puede elegir el Admin/Jefe para este trabajador,
-     * según su régimen. Fuente única de verdad de la regla "276 solo
-     * tiene Día" — evitar repetir este if en el form y en el servicio.
-     *
-     * @return array<int, string>
-     */
+      * @return array<int, string>
+      */
     public static function turnosValidosPara(User $trabajador): array
     {
         return $trabajador->regimen === '728' ? self::TURNOS_728 : [self::TURNO_276];

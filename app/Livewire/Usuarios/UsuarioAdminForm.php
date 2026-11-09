@@ -247,11 +247,8 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-     * Un administrador no lleva régimen, no puede ser también trabajador, y
-     * no puede dárselo a quien encabeza una unidad sin antes reasignarla.
-     *
-     * @param  list<int>  $roles
-     */
+      * @param  list<int>  $roles
+      */
     private function validarRoles(array $roles, int $adminId, int $trabajadorId): bool
     {
         
@@ -307,16 +304,9 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-     * Igual que MoverTrabajadorAction::validar(): quien encabeza una unidad
-     * (jefe_id) no se mueve de unidad_organica_id por este formulario sin
-     * reasignar antes esa jefatura, o queda «duplicado» en el organigrama:
-     * sigue de jefe en la unidad vieja (jefe_id no se tocó) y aparece
-     * también como miembro en la nueva. El caso «se le da el rol admin»
-     * ya lo bloquea validarRoles() antes de llegar aquí.
-     *
-     * @param  array<string, mixed>  $datos
-     * @param  list<int>  $roles
-     */
+      * @param  array<string, mixed>  $datos
+      * @param  list<int>  $roles
+      */
     private function validarUnidad(array $datos, int $adminId, array $roles): bool
     {
         if (in_array($adminId, $roles, true)) {
@@ -337,10 +327,8 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-     * Si es el único RR. HH. activo, no se lo puede desactivar ni quitarle el rol.
-     *
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $datos
+      */
     private function validarUnicoRrhhActivo(array $datos): bool
     {
         if (! $this->usuario?->esUnicoRrhhActivo()) {
@@ -366,10 +354,8 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-     * Si es el único administrador activo, no se lo puede desactivar ni quitarle el rol.
-     *
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $datos
+      */
     private function validarUnicoAdminActivo(array $datos): bool
     {
         if (! $this->usuario?->esUnicoAdminActivo()) {
@@ -395,11 +381,8 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-     * Mismas reglas que desactivar desde la lista o el organigrama (jefe
-     * con personas a cargo, etc.).
-     *
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $datos
+      */
     private function validarDesactivacion(array $datos): bool
     {
         if (! ($this->usuario?->activo && ! $datos['activo'])) {
@@ -431,10 +414,10 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-     * @param  array<string, mixed>  $datos
-     * @param  list<int>  $roles
-     * @return array<string, mixed>
-     */
+      * @param  array<string, mixed>  $datos
+      * @param  list<int>  $roles
+      * @return array<string, mixed>
+      */
     private function construirAtributos(array $datos, array $roles, int $adminId): array
     {
         return [
@@ -451,12 +434,9 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-     * Crea o actualiza al usuario, sincroniza roles y carga el turno si
-     * corresponde. Debe correr dentro de DB::transaction (ver guardar()).
-     *
-     * @param  array<string, mixed>  $atributos
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $atributos
+      * @param  array<string, mixed>  $datos
+      */
     private function guardarUsuario(array $atributos, array $datos, bool $requiereTurno, GeneradorTurnoMensualService $generador, bool $debeRetirarTurno): void
     {
         if ($this->usuario) {

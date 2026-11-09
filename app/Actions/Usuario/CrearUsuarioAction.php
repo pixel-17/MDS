@@ -19,8 +19,8 @@ class CrearUsuarioAction
     ) {}
 
     /**
-     * @param  array{name:string,apellido:string,dni:string,email:string,regimen:string,sede_id:?int,unidad_organica_id:?int,tipo:string,turno?:?string,fecha_ancla?:?string,dias_trabajo?:?int,dias_descanso?:?int}  $datos
-     */
+      * @param  array{name:string,apellido:string,dni:string,email:string,regimen:string,sede_id:?int,unidad_organica_id:?int,tipo:string,turno?:?string,fecha_ancla?:?string,dias_trabajo?:?int,dias_descanso?:?int}  $datos
+      */
     public function ejecutar(User $creador, array $datos, bool $esJefeDeArea): User
     {
         $esJefeInmediatoNuevo = $esJefeDeArea && $datos['tipo'] === 'jefe_inmediato';
@@ -135,15 +135,8 @@ class CrearUsuarioAction
     }
 
     /**
-     * Sede del usuario nuevo (nunca null para un jefe inmediato):
-     * - Jefe inmediato creado por Jefe de Área: la elige el formulario
-     *   (puede ser otra sede); si por algún motivo no llega, cae a la
-     *   del creador en vez de quedar vacía.
-     * - Trabajador: por defecto la sede de su jefe inmediato (jefe_id de
-     *   la unidad) o, si no hay, la del creador. No se elige a mano.
-     *
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $datos
+      */
     private function resolverSede(User $creador, array $datos, bool $esJefeDeArea, bool $esJefeInmediatoNuevo): ?int
     {
         if ($esJefeInmediatoNuevo) {

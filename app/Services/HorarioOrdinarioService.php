@@ -46,8 +46,8 @@ class HorarioOrdinarioService
     }
 
     /**
-     * @return array{0: string, 1: string} [hora_inicio, hora_fin] en formato H:i
-     */
+      * @return array{0: string, 1: string} [hora_inicio, hora_fin] en formato H:i
+      */
     private function ventanaDeHoy(): array
     {
         return [

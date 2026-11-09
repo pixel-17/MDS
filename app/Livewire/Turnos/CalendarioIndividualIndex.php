@@ -43,15 +43,8 @@ class CalendarioIndividualIndex extends Component
     }
 
     /**
-     * Tiempo real: cuando alguien guarda el horario de este trabajador,
-     * HorarioActualizado llega por Reverb a su canal privado y Livewire
-     * vuelve a renderizar el calendario. Solo se suscribe el propio
-     * trabajador: el canal App.Models.User.{id} solo lo autoriza a él
-     * (routes/channels.php). Admin viendo el calendario de otro se
-     * apoya en el refresco periódico de la vista (wire:poll).
-     *
-     * @return array<string, string>
-     */
+      * @return array<string, string>
+      */
     public function getListeners(): array
     {
         if (auth()->id() !== $this->trabajador->id) {

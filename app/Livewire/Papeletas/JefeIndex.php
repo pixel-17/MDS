@@ -16,19 +16,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-/**
- * Bandeja del Jefe Inmediato, migrada de
- * App\Http\Controllers\Jefe\PapeletaController@index a Livewire puro.
- * Decidir es siempre responsabilidad del Jefe Inmediato: no hay
- * escalamiento a Jefe de Área, así que esta bandeja solo muestra lo
- * que el jefe autenticado puede decidir (deJefeInmediato).
- * Se re-renderiza sola en cuanto le llega una PapeletaNotification
- * (papeleta nueva por decidir, observación de RRHH, etc.) — ver
- * EscuchaNotificacionesEnVivo.
- *
- * Las acciones (aprobar/rechazar/observar/...) siguen siendo del
- * Controller original vía <form>; solo el listado necesitaba vivo.
- */
+
 #[Layout('layouts.app')]
 #[Title('Bandeja de Jefe')]
 class JefeIndex extends Component

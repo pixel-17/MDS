@@ -27,8 +27,8 @@ class CrearPapeletaAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $datos
+      */
     public function ejecutar(User $trabajador, Motivo $motivo, array $datos): Papeleta
     {
         $this->validarMotivoYRegimen($trabajador, $motivo, $datos);
@@ -62,11 +62,8 @@ class CrearPapeletaAction
     }
 
     /**
-     * Validaciones que no dependen de jefatura ni de turno: régimen
-     * asignado, motivo vigente y justificación cuando el motivo la exige.
-     *
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $datos
+      */
     private function validarMotivoYRegimen(User $trabajador, Motivo $motivo, array $datos): void
     {
         
@@ -88,12 +85,8 @@ class CrearPapeletaAction
     }
 
     /**
-     * Resuelve a quién le corresponde decidir esta papeleta: directo a RRHH
-     * (jefe de área), o jefe inmediato (y, si quien crea es él mismo jefe de
-     * su unidad, su disponibilidad real para decidir ahora).
-     *
-     * @return array{directoARrhh: bool, jefeInmediatoId: ?int, jefeAreaId: ?int, esJefeInmediatoDeLaUnidad: bool, rrhhEnHorario: bool}
-     */
+      * @return array{directoARrhh: bool, jefeInmediatoId: ?int, jefeAreaId: ?int, esJefeInmediatoDeLaUnidad: bool, rrhhEnHorario: bool}
+      */
     private function resolverJefatura(User $trabajador): array
     {
         $unidad = $trabajador->unidadOrganica;
@@ -157,9 +150,9 @@ class CrearPapeletaAction
     }
 
     /**
-     * @param  array{directoARrhh: bool, rrhhEnHorario: bool}  $jefatura
-     * @return class-string<PendienteJefe|PendienteRrhh|AutorizadaYCorriendo>
-     */
+      * @param  array{directoARrhh: bool, rrhhEnHorario: bool}  $jefatura
+      * @return class-string<PendienteJefe|PendienteRrhh|AutorizadaYCorriendo>
+      */
     private function determinarEstadoInicial(array $jefatura): string
     {
         
@@ -183,13 +176,9 @@ class CrearPapeletaAction
     }
 
     /**
-     * Crea la papeleta y su historial inicial. Debe correr dentro de
-     * DB::transaction (ver ejecutar()): revalida bajo lock que el
-     * trabajador sigue sin papeleta viva antes de insertar.
-     *
-     * @param  array<string, mixed>  $datos
-     * @param  array{directoARrhh: bool, jefeInmediatoId: ?int, jefeAreaId: ?int, esJefeInmediatoDeLaUnidad: bool}  $jefatura
-     */
+      * @param  array<string, mixed>  $datos
+      * @param  array{directoARrhh: bool, jefeInmediatoId: ?int, jefeAreaId: ?int, esJefeInmediatoDeLaUnidad: bool}  $jefatura
+      */
     private function crearPapeletaConHistorial(
         User $trabajador,
         Motivo $motivo,
@@ -248,13 +237,8 @@ class CrearPapeletaAction
     }
 
     /**
-     * Historial explicativo del sistema cuando la papeleta no quedó en el
-     * flujo "normal" (PendienteJefe): siempre y únicamente el caso del
-     * propio Jefe de Área, que no tiene a nadie más arriba y por eso va
-     * directo a RRHH (ver determinarEstadoInicial()).
-     *
-     * @param  array{directoARrhh: bool}  $jefatura
-     */
+      * @param  array{directoARrhh: bool}  $jefatura
+      */
     private function registrarHistorialDeEscalamiento(Papeleta $papeleta, array $jefatura, bool $autorizaSistema): void
     {
         if ($jefatura['directoARrhh']) {

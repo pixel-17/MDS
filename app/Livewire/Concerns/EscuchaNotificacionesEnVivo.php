@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Auth;
 trait EscuchaNotificacionesEnVivo
 {
     /**
-     * @return array<string, string>
-     */
+      * @return array<string, string>
+      */
     protected function getListeners(): array
     {
         $id = Auth::id();

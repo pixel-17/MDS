@@ -156,8 +156,8 @@ class ProcesarVencimientosPapeletas extends Command
     }
 
     /**
-     * @return array<class-string>
-     */
+      * @return array<class-string>
+      */
     private function estadosNoTerminalesPreAutorizacion(): array
     {
         return [

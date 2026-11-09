@@ -25,11 +25,8 @@ class TurnoColores
     }
 
     /**
-     * Misma paleta indexada por el código que usan los pinceles de
-     * programación (Alpine): MANANA, TARDE, NOCHE, DESCANSO.
-     *
-     * @return array<string, string>
-     */
+      * @return array<string, string>
+      */
     public static function porCodigo(): array
     {
         $mapa = self::porSigla();

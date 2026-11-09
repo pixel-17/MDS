@@ -28,12 +28,8 @@ class ProgramacionTurnoService
     public function __construct(private GeneradorTurnoMensualService $generador) {}
 
     /**
-     * Reemplaza por completo la programación del mes de $trabajador.
-     * Los días que no vienen en $dias quedan sin turno (se borra la
-     * fila si existía).
-     *
-     * @param  array<string, string>  $dias
-     */
+      * @param  array<string, string>  $dias
+      */
     public function guardarMes(User $trabajador, int $anio, int $mes, array $dias, User $actor): void
     {
         if (! $actor->puedeGestionarTurnoDe($trabajador)) {
@@ -96,21 +92,10 @@ class ProgramacionTurnoService
     }
 
     /**
-     * Calcula (sin guardar) qué quedaría al repetir un patrón durante
-     * $meses meses seguidos, empezando en $desde.
-     *
-     * - Del mes de $desde se conservan los días anteriores a $desde que
-     *   ya vienen pintados en $diasActuales (lo que el usuario ve en la
-     *   grilla, aunque no lo haya guardado).
-     * - Los meses siguientes se generan completos (reemplazan lo que
-     *   hubiera en ellos al guardar).
-     * - Con $continuar, el patrón sigue donde terminó lo anterior a
-     *   $desde (grilla + lo guardado en la base) en vez de empezar de cero.
-     *
-     * @param  array<int, string>  $pasos  ver PatronTurnos::parsear()
-     * @param  array<string, string>  $diasActuales  días del mes de $desde tal como están en pantalla
-     * @return array<string, array<string, string>> 'Y-m' => dias, un elemento por mes
-     */
+      * @param  array<int, string>  $pasos  ver PatronTurnos::parsear()
+      * @param  array<string, string>  $diasActuales  días del mes de $desde tal como están en pantalla
+      * @return array<string, array<string, string>> 'Y-m' => dias, un elemento por mes
+      */
     public function planPatron(User $trabajador, array $pasos, string $desde, int $meses, bool $continuar, array $diasActuales = []): array
     {
         $inicio = (Carbon::createFromFormat('Y-m-d', $desde) ?: throw new \RuntimeException('Fecha inicial inválida.'))->startOfDay();
@@ -157,24 +142,17 @@ class ProgramacionTurnoService
     }
 
     /**
-     * Advertencias del plan completo, con las rachas contadas de corrido
-     * entre un mes y el siguiente.
-     *
-     * @param  array<string, array<string, string>>  $plan
-     * @return array<int, string>
-     */
+      * @param  array<string, array<string, string>>  $plan
+      * @return array<int, string>
+      */
     public function advertenciasPlan(array $plan): array
     {
         return $this->advertencias($plan === [] ? [] : array_merge(...array_values($plan)));
     }
 
     /**
-     * Guarda todos los meses de un plan en una sola transacción: si uno
-     * falla la validación, no se escribe ninguno. Cada mes reemplaza por
-     * completo el anterior (ver guardarMes).
-     *
-     * @param  array<string, array<string, string>>  $plan  'Y-m' => dias
-     */
+      * @param  array<string, array<string, string>>  $plan  'Y-m' => dias
+      */
     public function guardarPlan(User $trabajador, array $plan, User $actor): void
     {
         foreach ($plan as $clave => $dias) {
@@ -194,12 +172,9 @@ class ProgramacionTurnoService
     }
 
     /**
-     * Guarda varios trabajadores del mismo mes en una sola transacción:
-     * si uno falla la validación, no se escribe ninguno.
-     *
-     * @param  Collection<int, User>  $equipo  trabajadores que el actor puede ver, con el id como clave
-     * @param  array<int|string, array<string, string>>  $porUsuario  userId => dias (solo los que cambiaron)
-     */
+      * @param  Collection<int, User>  $equipo  trabajadores que el actor puede ver, con el id como clave
+      * @param  array<int|string, array<string, string>>  $porUsuario  userId => dias (solo los que cambiaron)
+      */
     public function guardarEquipo(Collection $equipo, int $anio, int $mes, array $porUsuario, User $actor): void
     {
         $this->validarEquipo($equipo, $anio, $mes, $porUsuario);
@@ -220,9 +195,9 @@ class ProgramacionTurnoService
     }
 
     /**
-     * @param  Collection<int, User>  $equipo
-     * @param  array<int|string, array<string, string>>  $porUsuario
-     */
+      * @param  Collection<int, User>  $equipo
+      * @param  array<int|string, array<string, string>>  $porUsuario
+      */
     public function validarEquipo(Collection $equipo, int $anio, int $mes, array $porUsuario): void
     {
         foreach ($porUsuario as $userId => $dias) {
@@ -245,12 +220,10 @@ class ProgramacionTurnoService
     }
 
     /**
-     * Advertencias de todo el equipo, cada una prefijada con el nombre.
-     *
-     * @param  Collection<int, User>  $equipo
-     * @param  array<int|string, array<string, string>>  $porUsuario
-     * @return array<int, string>
-     */
+      * @param  Collection<int, User>  $equipo
+      * @param  array<int|string, array<string, string>>  $porUsuario
+      * @return array<int, string>
+      */
     public function advertenciasEquipo(Collection $equipo, array $porUsuario): array
     {
         $horas = $this->horas();
@@ -279,12 +252,9 @@ class ProgramacionTurnoService
     }
 
     /**
-     * Advertencias (no bloqueantes) de la programación: descanso corto
-     * entre turnos y rachas largas sin descanso.
-     *
-     * @param  array<string, string>  $dias
-     * @return array<int, string>
-     */
+      * @param  array<string, string>  $dias
+      * @return array<int, string>
+      */
     public function advertencias(array $dias): array
     {
         $horas = $this->horas();
@@ -293,13 +263,10 @@ class ProgramacionTurnoService
     }
 
     /**
-     * Lógica pura (sin base de datos ni configuración) para poder
-     * probarla de forma aislada.
-     *
-     * @param  array<string, string>  $dias
-     * @param  array<string, array{0: string, 1: string}>  $horas  código => [inicio, fin] en H:i
-     * @return array<int, string>
-     */
+      * @param  array<string, string>  $dias
+      * @param  array<string, array{0: string, 1: string}>  $horas  código => [inicio, fin] en H:i
+      * @return array<int, string>
+      */
     public static function calcularAdvertencias(array $dias, array $horas): array
     {
         ksort($dias);
@@ -374,8 +341,8 @@ class ProgramacionTurnoService
     }
 
     /**
-     * @param  array<string, string>  $dias
-     */
+      * @param  array<string, string>  $dias
+      */
     public function validar(User $trabajador, int $anio, int $mes, array $dias): void
     {
         if ($trabajador->regimen !== '728') {

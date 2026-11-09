@@ -19,8 +19,8 @@ class AlertaPosthocService
     public const HORAS_DEFECTO = 24;
 
     /**
-     * @return bool true si se envió una alerta en esta corrida
-     */
+      * @return bool true si se envió una alerta en esta corrida
+      */
     public function evaluar(): bool
     {
         $total = $this->pendientes()->count();
@@ -53,12 +53,8 @@ class AlertaPosthocService
     }
 
     /**
-     * Revisiones que están en manos de RRHH: las que nunca se revisaron
-     * ('pendiente') y las que el jefe ya respondió ('respondida'). Las
-     * 'observada' esperan al jefe, no a RRHH, y no cuentan aquí.
-     *
-     * @return Builder<Papeleta>
-     */
+      * @return Builder<Papeleta>
+      */
     private function pendientes(): Builder
     {
         return Papeleta::where('autorizado_con_rrhh_fuera_horario', true)

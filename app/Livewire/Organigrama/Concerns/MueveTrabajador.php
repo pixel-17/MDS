@@ -17,16 +17,8 @@ use Illuminate\Support\Collection;
 trait MueveTrabajador
 {
     /**
-     * Movimiento pendiente de confirmar, o null. Solo guarda ids; viene
-     * del navegador, así que MoverTrabajadorAction lo revalida entero al
-     * confirmar y la vista previa se recalcula en cada render.
-     *
-     * `cambiar_sede` (aceptar la sede del jefe del destino) es la decisión
-     * de la ventana de confirmación; es solo un booleano: la sede concreta
-     * la decide el servidor.
-     *
-     * @var array{trabajador: int, origen: int, destino: int, cambiar_sede: bool}|null
-     */
+      * @var array{trabajador: int, origen: int, destino: int, cambiar_sede: bool}|null
+      */
     public ?array $propuesta = null;
 
     
@@ -181,13 +173,8 @@ trait MueveTrabajador
     }
 
     /**
-     * Datos de la ventana de confirmación del movimiento propuesto, o
-     * null. Se recalcula en cada render con MoverTrabajadorAction (que
-     * valida permisos y régimen): si la propuesta dejó de ser válida,
-     * simplemente no se muestra.
-     *
-     * @return array<string, mixed>|null
-     */
+      * @return array<string, mixed>|null
+      */
     private function vistaPreviaMovimiento(User $usuario): ?array
     {
         if ($this->propuesta === null) {
@@ -216,15 +203,11 @@ trait MueveTrabajador
     }
 
     /**
-     * Unidades a las que se puede proponer mover a la persona de la ficha:
-     * activas, dentro del alcance de quien mira y distintas de la actual.
-     * Solo es una lista para elegir; las reglas las valida el servidor.
-     *
-     * @param  array<string, mixed>|null  $ficha
-     * @param  Collection<int, UnidadOrganica>  $unidades
-     * @param  array<int, true>  $enAlcance
-     * @return list<array{id: int, label: string, hint: string}>
-     */
+      * @param  array<string, mixed>|null  $ficha
+      * @param  Collection<int, UnidadOrganica>  $unidades
+      * @param  array<int, true>  $enAlcance
+      * @return list<array{id: int, label: string, hint: string}>
+      */
     private function destinosParaMover(?array $ficha, Collection $unidades, array $enAlcance): array
     {
         if (! $this->modoEdicion || $ficha === null) {

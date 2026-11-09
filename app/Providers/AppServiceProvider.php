@@ -21,16 +21,16 @@ use Illuminate\Support\ServiceProvider;
 class AppServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
-     */
+      * Register any application services.
+      */
     public function register(): void
     {
         
     }
 
     /**
-     * Bootstrap any application services.
-     */
+      * Bootstrap any application services.
+      */
     public function boot(): void
     {
         
@@ -61,18 +61,9 @@ class AppServiceProvider extends ServiceProvider
         
         View::composer(['layouts.app', 'components.trabajador-layout'], NavegacionComposer::class);
 
-        /*
-         * sede-mapa-leaflet (JS + CSS, ~150 kB) solo lo necesita el
-         * formulario de Sede, y se carga con import() dinámico para no
-         * ir en el bundle general (ver resources/js/sede-mapa.js). Pero
-         * @vite() de Laravel precarga en TODA página el CSS (y a veces
-         * el JS) de cualquier chunk que aparezca en "dynamicImports" del
-         * manifest, para evitar flash de estilos sin aplicar cuando el
-         * import dinámico resuelva — eso es justamente lo que hacía que
-         * estos dos archivos aparecieran en cada acción/página, aunque
-         * no hubiera ningún mapa en pantalla. Se excluye ese chunk del
-         * preload: solo se pedirá cuando el mapa realmente se use.
-         */
+        /**
+          * @vite() de Laravel precarga en TODA página el CSS (y a veces
+          */
 
     }
 }

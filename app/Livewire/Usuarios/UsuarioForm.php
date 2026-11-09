@@ -192,11 +192,8 @@ class UsuarioForm extends Component
     }
 
     /**
-     * IDs de todas las unidades donde el actor actúa como Jefe de Área:
-     * las que encabeza + todos sus descendientes.
-     *
-     * @return array<int, int>
-     */
+      * @return array<int, int>
+      */
     protected function idsDeArea(?User $actor = null): array
     {
         $actor ??= Auth::user();
@@ -324,11 +321,8 @@ class UsuarioForm extends Component
     }
 
     /**
-     * Alta por Jefe de Área o Jefe Inmediato. Delega en CrearUsuarioAction,
-     * que ya conoce las reglas de reingreso, jefatura de unidad y sede heredada.
-     *
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $datos
+      */
     protected function guardarComoJefe(array $datos): void
     {
         /** @var User $actor */
@@ -372,14 +366,8 @@ class UsuarioForm extends Component
     }
 
     /**
-     * Jefe Inmediato editando a uno de los suyos: nombre, apellido, correo
-     * y (desde ahora) activo/desactivado, con las mismas guardias que ya
-     * aplican a admin y Jefe de Área (no desactivarse a sí mismo —no aplica
-     * aquí—, no al único RR. HH. activo, resolver jefaturas pendientes si
-     * encabezara alguna unidad).
-     *
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $datos
+      */
     protected function guardarComoJefeInmediato(array $datos): void
     {
         if ($this->usuario === null) {
@@ -447,10 +435,8 @@ class UsuarioForm extends Component
     }
 
     /**
-     * Admin (alta/edición completa) o Jefe de Área editando (sin roles ni contraseña).
-     *
-     * @param  array<string, mixed>  $datos
-     */
+      * @param  array<string, mixed>  $datos
+      */
     protected function guardarComoAdminOArea(array $datos, GeneradorTurnoMensualService $generador): void
     {
         $esAdmin = $this->esAdmin();
