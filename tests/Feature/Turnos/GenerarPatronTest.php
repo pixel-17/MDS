@@ -14,10 +14,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Generar el calendario de un trabajador 728 repitiendo un patrón:
- * un mes en el navegador, varios meses desde el servidor.
- */
+
 class GenerarPatronTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -50,10 +47,10 @@ class GenerarPatronTest extends TestCase
         );
 
         $this->assertSame(['2026-10', '2026-11'], array_keys($plan));
-        $this->assertSame('NOCHE', $plan['2026-10']['2026-10-05']); // anterior a "desde": se conserva
+        $this->assertSame('NOCHE', $plan['2026-10']['2026-10-05']); 
         $this->assertSame('MANANA', $plan['2026-10']['2026-10-10']);
         $this->assertSame('DESCANSO', $plan['2026-10']['2026-10-11']);
-        $this->assertSame('MANANA', $plan['2026-10']['2026-10-20']); // el patrón pisa lo posterior a "desde"
+        $this->assertSame('MANANA', $plan['2026-10']['2026-10-20']); 
         $this->assertCount(30, $plan['2026-11']);
     }
 
@@ -71,7 +68,7 @@ class GenerarPatronTest extends TestCase
         $admin = $this->usuarioDePrueba([], ['admin']);
         $trabajador = $this->usuarioDePrueba(['activo' => true]);
 
-        // Octubre terminó en M M T T.
+        
         $this->servicio()->guardarMes($trabajador, 2026, 10, [
             '2026-10-28' => 'MANANA',
             '2026-10-29' => 'MANANA',
@@ -106,7 +103,7 @@ class GenerarPatronTest extends TestCase
         try {
             $this->servicio()->guardarPlan($trabajador, [
                 '2026-10' => ['2026-10-01' => 'MANANA'],
-                '2026-11' => ['2026-12-01' => 'MANANA'], // fecha fuera de su mes
+                '2026-11' => ['2026-12-01' => 'MANANA'], 
             ], $admin);
             $this->fail('Debió lanzar ValidationException.');
         } catch (ValidationException) {
@@ -134,7 +131,7 @@ class GenerarPatronTest extends TestCase
         $admin = $this->usuarioDePrueba([], ['admin']);
         $trabajador = $this->usuarioDePrueba(['activo' => true]);
 
-        // Tarde → Mañana del día siguiente deja solo 8 h de descanso.
+        
         $componente = Livewire::actingAs($admin)
             ->test(ProgramacionMensual::class, ['trabajador' => $trabajador])
             ->set('anio', 2026)

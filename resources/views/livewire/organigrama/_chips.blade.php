@@ -1,4 +1,3 @@
-
 <span class="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] text-gray-700 dark:bg-white/10 dark:text-tinta-50/80">{{ $persona->regimen ?? '—' }}</span>
 
 @if ($persona->sede_id === null)

@@ -8,10 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * La ficha de RRHH muestra, junto a la decisión, el resumen del mes del
- * trabajador (sin contar la papeleta que se está mirando).
- */
+
 class RrhhFichaHistorialMesTest extends TestCase
 {
     use CreaEscenarioPapeletas;

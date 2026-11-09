@@ -1,8 +1,7 @@
 <div>
     <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8 space-y-6">
         <x-admin.encabezado titulo="Usuarios">
-            <x-admin.boton-nuevo :href="route('usuarios-admin.crear', ['tipo' => 'admin'])">Nuevo administrador</x-admin.boton-nuevo>
-            <x-admin.boton-nuevo :href="route('usuarios-admin.crear')">Nuevo usuario</x-admin.boton-nuevo>
+            <x-admin.boton-nuevo :href="route('usuarios-admin.crear')">Nuevo administrador / RR. HH.</x-admin.boton-nuevo>
         </x-admin.encabezado>
 
         <x-admin.mensajes />
@@ -41,10 +40,17 @@
                     <td class="px-4 py-3">{{ $usuario->roles->pluck('name')->join(', ') }}</td>
                     <td class="px-4 py-3"><x-admin.estado :activo="$usuario->activo" /></td>
                     <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                        <a href="{{ $usuario->regimen === '728' ? route('turnos.programacion', $usuario) : route('turnos.calendario.individual-de', $usuario) }}" class="btn-row">
-                            <x-icon name="calendar" class="size-3.5" />
-                            Calendario
-                        </a>
+                        @if ($usuario->regimen === '728')
+                            <a href="{{ route('turnos.programacion', $usuario) }}" class="btn-row">
+                                <x-icon name="calendar" class="size-3.5" />
+                                Programar horario
+                            </a>
+                        @elseif ($usuario->regimen !== null)
+                            <a href="{{ route('turnos.configuracion', $usuario) }}" class="btn-row">
+                                <x-icon name="calendar" class="size-3.5" />
+                                Programar horario
+                            </a>
+                        @endif
                         <x-admin.accion-editar :href="route('usuarios-admin.editar', $usuario)" />
                         @if ($usuario->activo)
                             <x-admin.accion-eliminar

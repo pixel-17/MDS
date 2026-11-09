@@ -15,12 +15,10 @@
 @endphp
 
 <x-app-layout title="Perfil">
-
     <div class="mx-auto w-full max-w-3xl">
 
         <x-tarjeta-identidad :user="$perfil" class="mb-6" />
 
-        {{-- ── Secciones ────────────────────────────────────────── --}}
         <div class="min-w-0 flex-1 space-y-4">
             @if ($ver('informacion'))
                 @livewire('profile.update-profile-information-form')

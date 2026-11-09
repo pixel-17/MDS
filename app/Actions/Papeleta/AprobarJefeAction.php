@@ -13,6 +13,7 @@ use App\States\Papeleta\PendienteJefe;
 use App\States\Papeleta\PendienteRrhh;
 use Illuminate\Support\Facades\DB;
 
+
 class AprobarJefeAction
 {
     use ExigeDecisorAjeno;
@@ -25,7 +26,7 @@ class AprobarJefeAction
     public function ejecutar(Papeleta $papeleta, User $quienAprueba, string $actorTipo = 'jefe_inmediato'): Papeleta
     {
         $papeleta = DB::transaction(function () use ($papeleta, $quienAprueba, $actorTipo) {
-
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             $this->exigirDecisorAjeno($actual, $quienAprueba);
@@ -34,6 +35,8 @@ class AprobarJefeAction
                 throw new PapeletaException('Esta papeleta ya no está pendiente de decisión del jefe.');
             }
 
+            
+            
             if ($actual->estado->equals(ObservadaPorJefe::class)) {
                 throw new PapeletaException('Esta papeleta espera la respuesta del trabajador a tu observación: aprueba cuando responda o recházala.');
             }
@@ -51,7 +54,7 @@ class AprobarJefeAction
                     if (! $rrhhEnHorario) {
                         $p->autorizado_con_rrhh_fuera_horario = true;
                         $p->hora_salida_real = now();
-                        $p->revision_posthoc_estado = 'pendiente';
+                        $p->revision_posthoc_estado = 'pendiente'; 
                     }
                 },
             );

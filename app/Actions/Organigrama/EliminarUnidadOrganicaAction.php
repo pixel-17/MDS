@@ -7,6 +7,7 @@ use App\Models\UnidadOrganica;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 
+
 class EliminarUnidadOrganicaAction
 {
     /** @throws UsuarioException */
@@ -26,8 +27,9 @@ class EliminarUnidadOrganicaAction
 
         try {
             $unidad->delete();
-        } catch (QueryException $e) {
-
+        } catch (QueryException $e) { // @phpstan-ignore catch.neverThrown (el stub de delete() no declara el throw, pero el driver de BD sí puede lanzarlo)
+            
+            
             if (! str_starts_with((string) $e->getCode(), '23')) {
                 throw $e;
             }

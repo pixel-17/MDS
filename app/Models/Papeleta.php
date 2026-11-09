@@ -11,12 +11,77 @@ use App\States\Papeleta\PapeletaState;
 use App\States\Papeleta\PendienteJefe;
 use App\States\Papeleta\PendienteRrhh;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 use Spatie\ModelStates\HasStates;
 
+/**
+ * @property int $id
+ * @property int|null $en_revision_por_id
+ * @property Carbon|null $en_revision_desde
+ * @property int $trabajador_id
+ * @property int $motivo_id
+ * @property int $sede_id
+ * @property '276'|'728' $regimen
+ * @property Carbon $dia_operativo
+ * @property Carbon|null $fin_turno_at
+ * @property PapeletaState $estado
+ * @property int|null $jefe_inmediato_id
+ * @property int|null $resuelto_por_jefe_id
+ * @property Carbon|null $jefe_resuelto_at
+ * @property int $contador_observaciones_jefe
+ * @property bool $observacion_requiere_adjunto
+ * @property string|null $observacion_adjunto_path
+ * @property Carbon|null $observacion_subsanada_at
+ * @property string|null $observacion_respuesta
+ * @property Carbon|null $reloj_jefe_at
+ * @property int|null $jefe_area_id
+ * @property int|null $resuelto_por_rrhh_id
+ * @property Carbon|null $rrhh_resuelto_at
+ * @property int $contador_observaciones_rrhh
+ * @property bool $autorizado_con_rrhh_fuera_horario
+ * @property 'no_aplica'|'pendiente'|'observada'|'respondida'|'aprobada'|'observada_firme'|'no_aprobada' $revision_posthoc_estado
+ * @property int|null $revision_posthoc_por_id
+ * @property Carbon|null $revision_posthoc_at
+ * @property int $contador_observaciones_posthoc
+ * @property string|null $posthoc_observacion
+ * @property string|null $posthoc_respuesta
+ * @property string|null $posthoc_adjunto_path
+ * @property Carbon|null $posthoc_respondida_at
+ * @property Carbon|null $hora_salida_real
+ * @property int $descuento_refrigerio_minutos
+ * @property int|null $rechazada_por_id
+ * @property string|null $motivo_rechazo
+ * @property Carbon|null $cancelada_at
+ * @property Carbon|null $vencida_at
+ * @property string|null $causa_finalizacion_sin_retorno
+ * @property bool $requiere_visto_bueno
+ * @property Carbon|null $regularizacion_fecha_limite
+ * @property int|null $motivo_original_id
+ * @property string|null $justificacion
+ * @property Carbon|null $hora_retorno_estimado
+ * @property string|null $adjunto_inicial_path
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $trabajador
+ * @property-read Motivo $motivo
+ * @property-read Motivo|null $motivoOriginal
+ * @property-read Sede $sede
+ * @property-read User|null $jefeInmediato
+ * @property-read User|null $resueltoPorJefe
+ * @property-read User|null $jefeArea
+ * @property-read User|null $resueltoPorRrhh
+ * @property-read User|null $revisionPosthocPor
+ * @property-read User|null $rechazadaPor
+ * @property-read User|null $enRevisionPor
+ * @property-read Retorno|null $retorno
+ * @property-read Collection<int, Sustento> $sustentos
+ * @property-read Collection<int, HistorialPapeleta> $historial
+ */
 class Papeleta extends Model
 {
     use HasStates;
@@ -94,10 +159,19 @@ class Papeleta extends Model
 
     protected static function booted(): void
     {
-
+        
+        
         static::saved(fn (self $papeleta) => PapeletaActualizada::notificar($papeleta->id));
     }
 
+    /**
+     * Único punto de cambio de estado. Valida contra
+     * PapeletaState::config() (antes las Actions asignaban
+     * `->estado = new X(...)` y ninguna transición inválida se bloqueaba).
+     * No guarda: el llamador sigue haciendo save() dentro de su transacción.
+     *
+     * @param  class-string<PapeletaState>  $destino
+     */
     public function transicionarA(string $destino): void
     {
         if (! $this->estado->canTransitionTo($destino)) {
@@ -111,6 +185,16 @@ class Papeleta extends Model
         $this->estado = new $destino($this);
     }
 
+    /**
+     * Único camino para mover una papeleta de estado dejando rastro: valida la
+     * transición, aplica los cambios de columnas que la acompañan, guarda y
+     * escribe la fila de HistorialPapeleta. Debe llamarse dentro de la
+     * transacción que ya tiene la fila bloqueada (lockForUpdate).
+     *
+     * @param  class-string<PapeletaState>  $destino
+     * @param  \Closure(self): void|null  $cambios  Columnas extra a fijar antes de guardar (en la papeleta).
+     * @param  array{motivo_anterior_id?: int|null, motivo_nuevo_id?: int|null, metadata?: array<string, mixed>|null}|null  $camposHistorial  Columnas propias de HistorialPapeleta (no de la papeleta), p. ej. cuando la transición cambia de motivo.
+     */
     public function transicionarConHistorial(
         string $destino,
         ?int $actorId,
@@ -142,11 +226,13 @@ class Papeleta extends Model
         ]);
     }
 
+    
     public function esAbandono(): bool
     {
         return $this->causa_finalizacion_sin_retorno === 'abandono_no_marcado';
     }
 
+    
     public const ESTADOS_VIVOS = [
         PendienteJefe::class,
         ObservadaPorJefe::class,
@@ -155,16 +241,22 @@ class Papeleta extends Model
         AutorizadaYCorriendo::class,
     ];
 
+    /**
+     * @param  Builder<Papeleta>  $query
+     * @return Builder<Papeleta>
+     */
     public function scopeVivas(Builder $query): Builder
     {
         return $query->whereState('estado', self::ESTADOS_VIVOS);
     }
 
+    
     public static function vivaDe(User $trabajador): ?self
     {
         return static::where('trabajador_id', $trabajador->id)->vivas()->latest('id')->first();
     }
 
+    
     public function mensajeDeBloqueoParaNueva(): string
     {
         if ($this->estado->equals(AutorizadaYCorriendo::class)) {
@@ -174,6 +266,15 @@ class Papeleta extends Model
         return "Ya tienes la papeleta #{$this->id} en trámite. Cancélala o espera su resolución antes de crear otra.";
     }
 
+    /**
+     * Papeletas cuyo turno/día ya terminó según fin_turno_at. Las que no
+     * tienen fin_turno_at (legadas) se incluyen siempre: ahí decide
+     * DeterminadorFinDeTurno en PHP. Permite que los comandos del minuto
+     * filtren en SQL (índice estado + fin_turno_at) en vez de cargar todas.
+     *
+     * @param  Builder<Papeleta>  $query
+     * @return Builder<Papeleta>
+     */
     public function scopeConTurnoTerminado(Builder $query): Builder
     {
         return $query->where(fn (Builder $q) => $q
@@ -181,6 +282,12 @@ class Papeleta extends Model
             ->orWhere('papeletas.fin_turno_at', '<', now()));
     }
 
+    /**
+     * Complemento de scopeConTurnoTerminado: turno aún vigente (o legada sin fin_turno_at).
+     *
+     * @param  Builder<Papeleta>  $query
+     * @return Builder<Papeleta>
+     */
     public function scopeConTurnoSinTerminar(Builder $query): Builder
     {
         return $query->where(fn (Builder $q) => $q
@@ -188,11 +295,28 @@ class Papeleta extends Model
             ->orWhere('papeletas.fin_turno_at', '>=', now()));
     }
 
+    /**
+     * Papeletas que el usuario decide como jefe inmediato: las que tienen su
+     * id en jefe_inmediato_id. Es UN solo jefe por papeleta; si la jefatura
+     * de la unidad cambia, las papeletas abiertas se reasignan al jefe nuevo
+     * (ver ReasignarPapeletasAbiertasAction) y solo él las decide.
+     *
+     * @param  Builder<Papeleta>  $query
+     * @return Builder<Papeleta>
+     */
     public function scopeDeJefeInmediato(Builder $query, User $jefe): Builder
     {
         return $query->where('papeletas.jefe_inmediato_id', $jefe->id);
     }
 
+    /**
+     * Papeletas del turno vigente: las que aún no terminan según
+     * fin_turno_at. Sin fin_turno_at (papeletas viejas) se usa el día
+     * operativo de hoy. Lo usan "Mis papeletas" y la bandeja del Jefe.
+     *
+     * @param  Builder<Papeleta>  $query
+     * @return Builder<Papeleta>
+     */
     public function scopeDelTurnoVigente(Builder $query): Builder
     {
         return $query->where(fn (Builder $q) => $q
@@ -202,6 +326,15 @@ class Papeleta extends Model
                 ->whereDate('papeletas.dia_operativo', today())));
     }
 
+    /**
+     * Fuente única de "papeletas de mi equipo" para reportes y dashboards.
+     * Une las columnas fotografiadas (historial estable si cambia el
+     * organigrama) con el equipo vivo, que sí incluye a los trabajadores
+     * a las unidades hijas.
+     *
+     * @param  Builder<Papeleta>  $query
+     * @return Builder<Papeleta>
+     */
     public function scopeDeEquipoDe(Builder $query, User $jefe): Builder
     {
         return $query->where(fn (Builder $q) => $q
@@ -210,16 +343,19 @@ class Papeleta extends Model
             ->orWhereIn('papeletas.trabajador_id', User::equipoDe($jefe)->select('users.id')));
     }
 
+    
     public function tieneComoJefeInmediatoA(User $user): bool
     {
         return $this->jefe_inmediato_id !== null && (int) $this->jefe_inmediato_id === (int) $user->id;
     }
 
+    
     public function sinJefatura(): bool
     {
         return $this->jefe_inmediato_id === null && $this->jefe_area_id === null;
     }
 
+    
     public function puedeResponderPosthoc(User $user): bool
     {
         return $this->autorizado_con_rrhh_fuera_horario
@@ -229,6 +365,7 @@ class Papeleta extends Model
             && (int) $this->trabajador_id !== (int) $user->id;
     }
 
+    
     public function etiquetaPosthoc(): string
     {
         return match ($this->revision_posthoc_estado) {
@@ -242,71 +379,113 @@ class Papeleta extends Model
         };
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function trabajador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'trabajador_id');
     }
 
+    /**
+     * @return BelongsTo<Motivo, $this>
+     */
     public function motivo(): BelongsTo
     {
         return $this->belongsTo(Motivo::class);
     }
 
+    /**
+     * @return BelongsTo<Motivo, $this>
+     */
     public function motivoOriginal(): BelongsTo
     {
         return $this->belongsTo(Motivo::class, 'motivo_original_id');
     }
 
+    /**
+     * @return BelongsTo<Sede, $this>
+     */
     public function sede(): BelongsTo
     {
         return $this->belongsTo(Sede::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function jefeInmediato(): BelongsTo
     {
         return $this->belongsTo(User::class, 'jefe_inmediato_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function resueltoPorJefe(): BelongsTo
     {
         return $this->belongsTo(User::class, 'resuelto_por_jefe_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function jefeArea(): BelongsTo
     {
         return $this->belongsTo(User::class, 'jefe_area_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function resueltoPorRrhh(): BelongsTo
     {
         return $this->belongsTo(User::class, 'resuelto_por_rrhh_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function revisionPosthocPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'revision_posthoc_por_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function rechazadaPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rechazada_por_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function enRevisionPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'en_revision_por_id');
     }
 
+    /**
+     * @return HasOne<Retorno, $this>
+     */
     public function retorno(): HasOne
     {
         return $this->hasOne(Retorno::class);
     }
 
+    /**
+     * @return HasMany<Sustento, $this>
+     */
     public function sustentos(): HasMany
     {
         return $this->hasMany(Sustento::class);
     }
 
+    /**
+     * @return HasMany<HistorialPapeleta, $this>
+     */
     public function historial(): HasMany
     {
         return $this->hasMany(HistorialPapeleta::class);

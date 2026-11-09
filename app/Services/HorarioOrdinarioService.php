@@ -5,14 +5,17 @@ namespace App\Services;
 use App\Models\Configuracion;
 use Illuminate\Support\Carbon;
 
+
 class HorarioOrdinarioService
 {
     public function __construct(private CalculadorDiasHabiles $diasHabiles) {}
 
+    
     public const HORA_INICIO_DEFECTO = '07:45';
 
     public const HORA_FIN_DEFECTO = '16:15';
 
+    
     public function estaDentroDeVentana(?Carbon $momento = null): bool
     {
         $momento ??= now();
@@ -28,6 +31,7 @@ class HorarioOrdinarioService
         return $momento->greaterThanOrEqualTo($inicio) && $momento->lessThanOrEqualTo($this->finDelDia($momento));
     }
 
+    
     public function finDelDia(Carbon $fecha): Carbon
     {
         [, $horaFin] = $this->ventanaDeHoy();
@@ -35,6 +39,7 @@ class HorarioOrdinarioService
         return $fecha->copy()->setTimeFromTimeString($horaFin)->endOfMinute();
     }
 
+    
     public function yaTerminoElDia(Carbon $fecha): bool
     {
         return now()->greaterThan($this->finDelDia($fecha));

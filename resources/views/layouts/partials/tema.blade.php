@@ -1,4 +1,3 @@
-
 <meta name="theme-color" content="#1b2b34">
 <script>
     (function () {

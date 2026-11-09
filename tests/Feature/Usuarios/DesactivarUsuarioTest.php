@@ -10,10 +10,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * "Desactivar" nunca borra: papeletas.trabajador_id tiene cascadeOnDelete
- * y borrar al usuario se llevaría su historial.
- */
+
 class DesactivarUsuarioTest extends TestCase
 {
     use CreaEscenarioPapeletas;

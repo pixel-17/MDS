@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-
+    
     public function up(): void
     {
         Schema::create('turnos', function (Blueprint $table) {
@@ -18,6 +18,11 @@ return new class extends Migration
             $table->time('hora_fin')->nullable();
             $table->boolean('es_descanso')->default(false);
 
+            
+            
+            
+            
+            
             $table->string('turno', 10)->nullable();
 
             $table->timestamps();

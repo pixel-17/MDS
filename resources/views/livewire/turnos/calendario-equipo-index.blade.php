@@ -8,8 +8,9 @@
             @else
                 Solo los trabajadores de los que eres jefe inmediato.
             @endif
-            Los de régimen 728 se pintan directo en la grilla (M/T/N/D); los de horario ordinario (276) se descansan por
-            día de semana con el panel "Días de descanso" de abajo.
+            Los de régimen 728 se pintan directo en la grilla (M/T/N/D); los de horario ordinario (276) trabajan los
+            días que configuró el Admin (ver panel de abajo). Para crear o cambiar el horario de un 276 en
+            particular, usa su "Crear/editar horario" individual.
         </p>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -21,14 +22,14 @@
             @endforeach
         </div>
 
-        @if ($esJefeDeArea)
-            <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+        @if ($soloLectura !== [])
+            <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-gray-600 dark:text-gray-400">
                 <span class="inline-flex items-center gap-1.5">
-                    <span class="size-3 rounded-sm bg-tinta-50 border border-tinta-200 dark:bg-tinta-500/10 dark:border-tinta-500/30"></span>
+                    <span class="h-3 w-1.5 rounded-sm bg-sello-500"></span>
                     Tu equipo directo
                 </span>
                 <span class="inline-flex items-center gap-1.5">
-                    <span class="size-3 rounded-sm bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700"></span>
+                    <span class="h-3 w-1.5 rounded-sm border border-dashed border-amber-400 bg-amber-50 dark:bg-amber-500/10"></span>
                     Jefes de otras sub-unidades (referencia)
                 </span>
             </div>
@@ -99,7 +100,6 @@
             }"
             class="space-y-6"
         >
-
             <div class="flex items-center justify-between flex-wrap gap-3">
                 <h2 class="font-bold text-2xl text-tinta-950 leading-tight tracking-tight">
                     @if ($vistaAdmin)
@@ -120,35 +120,29 @@
             </span>
 
             @if ($equipo276->isNotEmpty())
-
-                <div class="glass-card p-4 space-y-3">
+                <div class="glass-card p-4 space-y-2">
                     <div class="flex items-center gap-2">
                         <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full {{ \App\Support\TurnoColores::para('DIA') }} text-xs font-bold">{{ $equipo276->count() }}</span>
-                        <span class="text-sm font-semibold">PROGRAMA A TUS TRABAJADORES QUE TRABAJAN SOLO DE DIA </span>
+                        <span class="text-sm font-semibold">TRABAJADORES DE HORARIO ORDINARIO (DÍA)</span>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-3">
-                        <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Que dia Descansa:</span>
-                        @foreach ([1 => 'L', 2 => 'M', 3 => 'M', 4 => 'J', 5 => 'V', 6 => 'S', 7 => 'D'] as $iso => $letra)
-                            <label class="inline-flex items-center gap-1 text-sm">
-                                <input type="checkbox" wire:model="diasSemanaDescanso276" value="{{ $iso }}" class="rounded border-gray-300">
-                                {{ $letra }}
-                            </label>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Trabajan:</span>
+                        @foreach ([1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'] as $iso => $nombre)
+                            <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium
+                                {{ in_array($iso, $diasLaborables276, true) ? \App\Support\TurnoColores::para('DIA') : 'bg-gray-50 text-gray-400 border-gray-200 dark:bg-gray-900 dark:border-gray-800' }}">
+                                {{ $nombre }}
+                            </span>
                         @endforeach
-                        <button type="button" wire:click="aplicarDescansoSemana276" wire:loading.attr="disabled" class="px-3 py-2 rounded-md bg-tinta-700 text-white text-sm font-semibold hover:bg-tinta-800 disabled:opacity-50">
-                            Aplicar a todos los {{ $equipo276->count() }}
-                        </button>
                     </div>
                     <p class="text-xs text-gray-500">
-                        Marca los días de la semana en que descansa el régimen 276 (ej. sábado y domingo) y aplícalo a todo tu equipo 276 de una vez.
-                        Deben ser días consecutivos dentro de la semana; para descansos salteados de un solo trabajador, usa su configuración de turno individual.
+                        Lo configura el Admin en Configuraciones y aplica por igual a todo el régimen 276. Para crear o
+                        cambiar el horario de un trabajador en particular, usa su "Crear/editar horario" individual.
                     </p>
-                    @error('diasSemanaDescanso276') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
             @endif
 
             @if (count($uids728) > 0)
-
                 <div class="glass-card p-4 space-y-3">
                     <div class="flex items-center gap-2">
                         <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-tinta-100 dark:bg-tinta-900 text-tinta-800 dark:text-tinta-200 text-xs font-bold">{{ count($uids728) }}</span>
@@ -210,9 +204,9 @@
                 <table class="min-w-full border-separate border-spacing-1 text-sm">
                     <thead>
                         <tr class="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
-                            <th scope="col" class="px-3 py-2 sticky left-0 bg-white dark:bg-gray-900">Trabajador</th>
+                            <th scope="col" class="px-3 py-2 sticky left-0 z-20 bg-white dark:bg-gray-900">Trabajador</th>
                             @foreach ($fechas as $fecha)
-                                <th wire:key="calendario-equipo-th-{{ $loop->index }}" scope="col" class="px-1 py-1 text-center font-medium {{ $fecha->toDateString() === $hoy->toDateString() ? 'text-tinta-700 dark:text-tinta-300 font-bold' : ($fecha->isWeekend() ? 'text-rose-500' : '') }}">
+                                <th wire:key="calendario-equipo-th-{{ $loop->index }}" scope="col" class="px-1 py-1 text-center font-medium {{ $fecha->toDateString() === $hoy->toDateString() ? 'text-tinta-700 dark:text-tinta-300 font-bold' : (in_array($fecha->toDateString(), $noLaborables) ? 'text-rose-500' : '') }}">
                                     <div>{{ $fecha->day }}</div>
                                     <div class="text-[10px] normal-case opacity-70">{{ mb_substr($fecha->translatedFormat('D'), 0, 1) }}</div>
                                 </th>
@@ -226,36 +220,49 @@
                         @click.self="celda($event, false)"
                     >
                         @forelse ($trabajadores as $trabajador)
-                            @php($esOtroJefe = in_array($trabajador->id, $idsJefes, true))
-                            <tr wire:key="fila-{{ $trabajador->id }}" @class(['bg-tinta-50/70 dark:bg-tinta-500/[0.06]' => ! $esOtroJefe])>
+                            @php($esSoloReferencia = in_array($trabajador->id, $soloLectura, true))
+                            @php($esJefe = in_array($trabajador->id, $idsJefes, true))
+                            @php($esTrabajadorPropio = ! $esSoloReferencia && ! $esJefe)
+                            <tr wire:key="fila-{{ $trabajador->id }}" @class([
+                                'bg-sello-50/50 dark:bg-sello-500/[0.07]' => $esTrabajadorPropio,
+                                'bg-amber-50/30 dark:bg-amber-500/[0.04]' => $esSoloReferencia,
+                            ])>
                                 <td @class([
-                                    'px-3 py-2 sticky left-0 whitespace-nowrap align-middle',
-                                    'bg-tinta-50 dark:bg-tinta-950' => ! $esOtroJefe,
-                                    'bg-white dark:bg-gray-900' => $esOtroJefe,
+                                    'px-3 py-2 sticky left-0 z-20 whitespace-nowrap align-middle border-l-4',
+                                    'bg-sello-50 dark:bg-sello-950 border-sello-500 dark:border-sello-400' => $esTrabajadorPropio,
+                                    'bg-amber-50 dark:bg-gray-900 border-dashed border-amber-400 dark:border-amber-500/60' => $esSoloReferencia,
+                                    'bg-white dark:bg-gray-900 border-transparent' => $esJefe && ! $esSoloReferencia,
                                 ])>
-                                    @if (in_array($trabajador->id, $soloLectura, true))
+                                    @if ($esSoloReferencia)
                                         <span class="text-tinta-800 dark:text-tinta-200">{{ $trabajador->nombre_completo }}</span>
                                     @else
-                                        <a href="{{ route('turnos.calendario.individual-de', $trabajador) }}" class="text-tinta-800 dark:text-tinta-200 hover:underline" title="Ver calendario de {{ $trabajador->nombre_completo }}">
+                                        <a href="{{ route('usuarios.editar', $trabajador) }}" class="text-tinta-800 dark:text-tinta-200 hover:underline" title="Editar trabajador {{ $trabajador->nombre_completo }}">
                                             {{ $trabajador->nombre_completo }}
                                         </a>
                                     @endif
                                     <span class="text-xs text-gray-500">({{ $trabajador->regimen }})</span>
-                                    @if ($trabajador->regimen === '276' && ! in_array($trabajador->id, $soloLectura, true))
+                                    @if ($trabajador->regimen === '276' && ! $esSoloReferencia)
                                         @php($cfg276 = $configs276->get($trabajador->id))
-                                        <div class="mt-0.5 text-[11px] {{ $cfg276 ? 'text-gray-500 dark:text-gray-400' : 'text-amber-700 dark:text-amber-300' }}">
+                                        <div class="mt-0.5 text-[11px]">
                                             @if ($cfg276)
-                                                <span>descansa {{ $cfg276->dias_descanso }} día(s) por semana</span>
-                                                @if ($proximoDescanso276 = ($proximosDescansos276[$trabajador->id] ?? null))
-                                                    <span class="text-gray-300 dark:text-gray-600">·</span>
-                                                    <span>próx. descanso {{ ucfirst(mb_substr($proximoDescanso276->translatedFormat('D'), 0, 3)) }} {{ $proximoDescanso276->day }}</span>
-                                                @endif
+                                                <span class="text-gray-500 dark:text-gray-400">horario cargado</span>
                                             @else
-                                                <span>Sin días de descanso aplicados todavía</span>
+                                                <button
+                                                    type="button"
+                                                    wire:click="cargarHorario276({{ $trabajador->id }})"
+                                                    wire:loading.attr="disabled"
+                                                    class="inline-flex items-center gap-1 rounded px-2 py-0.5 bg-tinta-700 text-white text-[11px] font-medium hover:bg-tinta-800 disabled:opacity-50 transition"
+                                                    title="Asigna automáticamente el horario ordinario configurado por el Admin"
+                                                >
+                                                    <span wire:loading wire:target="cargarHorario276({{ $trabajador->id }})">Cargando…</span>
+                                                    <span wire:loading.remove wire:target="cargarHorario276({{ $trabajador->id }})">⚡ Cargar horario ordinario</span>
+                                                </button>
                                             @endif
                                         </div>
                                     @endif
-                                    @if (in_array($trabajador->id, $idsJefes, true))
+                                    @if ($esSoloReferencia)
+                                        <span class="ml-1 inline-flex items-center rounded bg-amber-100 dark:bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-800 dark:text-amber-300">Solo referencia</span>
+                                    @elseif (in_array($trabajador->id, $idsJefes, true))
                                         <span class="ml-1 inline-flex items-center rounded bg-tinta-100 dark:bg-tinta-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-tinta-800 dark:text-tinta-200">Jefe</span>
                                     @endif
                                 </td>
@@ -268,7 +275,7 @@
                                                 data-u="{{ $trabajador->id }}"
                                                 data-f="{{ $f }}"
                                                 :class="clase(dias['{{ $trabajador->id }}']['{{ $f }}'])"
-                                                class="w-9 h-9 flex items-center justify-center rounded-md border text-xs font-semibold select-none cursor-pointer transition-colors {{ $f === $hoy->toDateString() ? 'ring-2 ring-tinta-500 dark:ring-tinta-400' : ($fecha->isWeekend() ? 'ring-1 ring-rose-300 dark:ring-rose-800' : '') }}"
+                                                class="w-9 h-9 flex items-center justify-center rounded-md border text-xs font-semibold select-none cursor-pointer transition-colors {{ $f === $hoy->toDateString() ? 'ring-2 ring-tinta-500 dark:ring-tinta-400' : (in_array($f, $noLaborables) ? 'ring-1 ring-rose-300 dark:ring-rose-800' : '') }}"
                                                 aria-label="{{ $trabajador->nombre_completo }}, {{ $fecha->translatedFormat('l j') }}"
                                             ><span x-text="sigla(dias['{{ $trabajador->id }}']['{{ $f }}'])"></span></button>
                                         </td>
@@ -286,7 +293,7 @@
                                                 class="relative w-9 h-9 flex items-center justify-center rounded-md border text-xs font-semibold transition-all
                                                     {{ $turno ? $turno->claseColor() : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 text-gray-300' }}
                                                     {{ $turno ? 'cursor-pointer hover:shadow-md hover:-translate-y-0.5' : '' }}
-                                                    {{ $esHoyCol ? 'ring-2 ring-tinta-500 dark:ring-tinta-400' : ($fechaCelda->isWeekend() ? 'ring-1 ring-rose-300 dark:ring-rose-800' : '') }}"
+                                                    {{ $esHoyCol ? 'ring-2 ring-tinta-500 dark:ring-tinta-400' : (in_array($fechaCelda->toDateString(), $noLaborables) ? 'ring-1 ring-rose-300 dark:ring-rose-800' : '') }}"
                                             >
                                                 {{ $turno?->etiqueta() ?? '—' }}
 

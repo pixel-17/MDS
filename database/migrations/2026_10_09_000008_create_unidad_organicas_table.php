@@ -6,13 +6,14 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-
+    
     public function up(): void
     {
         Schema::create('unidad_organicas', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
 
+            
             $table->enum('tipo', [
                 'alta_direccion',
                 'consultivo',
@@ -27,6 +28,7 @@ return new class extends Migration
             $table->foreignId('parent_id')->nullable()
                 ->constrained('unidad_organicas')->restrictOnDelete();
 
+            
             $table->foreignId('jefe_id')->nullable()
                 ->constrained('users')->nullOnDelete();
 

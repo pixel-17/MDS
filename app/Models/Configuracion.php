@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 
+
 class Configuracion extends Model
 {
     protected $table = 'configuraciones';
@@ -15,6 +16,7 @@ class Configuracion extends Model
         'descripcion',
     ];
 
+    
     public static function valorDe(string $clave, mixed $default = null): mixed
     {
         return Cache::rememberForever(

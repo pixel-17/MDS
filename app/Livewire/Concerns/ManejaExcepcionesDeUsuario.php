@@ -7,9 +7,10 @@ namespace App\Livewire\Concerns;
 use App\Exceptions\UsuarioException;
 use Closure;
 
+
 trait ManejaExcepcionesDeUsuario
 {
-
+    
     protected function intentar(Closure $accion, Closure $alFallar): bool
     {
         try {

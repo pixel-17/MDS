@@ -10,6 +10,7 @@ use App\States\Papeleta\ObservadaPorJefe;
 use App\States\Papeleta\PendienteJefe;
 use Illuminate\Support\Facades\DB;
 
+
 class SubsanarObservacionAction
 {
     public function __construct(private NotificarPapeletaService $notificar) {}
@@ -27,7 +28,7 @@ class SubsanarObservacionAction
         }
 
         $papeleta = DB::transaction(function () use ($papeleta, $trabajador, $respuesta, $adjuntoPath) {
-
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             if (! $actual->estado->equals(ObservadaPorJefe::class)) {

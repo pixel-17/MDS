@@ -5,6 +5,7 @@ namespace App\Http\Requests\Papeleta;
 use App\Models\Sustento;
 use Illuminate\Foundation\Http\FormRequest;
 
+
 class SubirSustentoRequest extends FormRequest
 {
     public function authorize(): bool
@@ -15,9 +16,10 @@ class SubirSustentoRequest extends FormRequest
             return false;
         }
 
-        return $sustento->papeleta->trabajador_id === $this->user()->id;
+        return $sustento->papeleta->trabajador_id === $this->user()?->id;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [

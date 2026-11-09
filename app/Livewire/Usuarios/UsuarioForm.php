@@ -9,14 +9,13 @@ use App\Actions\Usuario\CrearUsuarioAction;
 use App\Actions\Usuario\EditarUsuarioAction;
 use App\Events\PapeletaActualizada;
 use App\Exceptions\UsuarioException;
-use App\Models\ConfiguracionTurno;
+use App\Livewire\Usuarios\Concerns\TieneRolesDeUsuario;
 use App\Models\Sede;
 use App\Models\UnidadOrganica;
 use App\Models\User;
 use App\Services\GeneradorTurnoMensualService;
 use App\Support\ReglasDatosUsuario;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -26,13 +25,17 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Spatie\Permission\Models\Role;
 
+
 #[Layout('layouts.app')]
 #[Title('Usuario')]
 class UsuarioForm extends Component
 {
+    use TieneRolesDeUsuario;
+
     #[Locked]
     public ?User $usuario = null;
 
+    
     #[Locked]
     public string $alcance = 'admin';
 
@@ -48,45 +51,43 @@ class UsuarioForm extends Component
 
     public string $regimen = '';
 
+    
+    public string $turno = '';
+
     public ?int $sedeId = null;
 
     public ?int $unidadOrganicaId = null;
 
+    /** @var array<int, int|string> */
     public array $rolesSeleccionados = [];
 
     public bool $activo = true;
 
+    
     public string $tipo = 'trabajador';
 
-    /** Modo «Nuevo administrador» (?tipo=admin). Fijado en mount(). */
+    
     #[Locked]
     public bool $nuevoAdmin = false;
 
+    
     #[Locked]
     public bool $volverAlOrganigrama = false;
 
-    public string $turno = '';
-
-    public string $fechaAncla = '';
-
-    public int $diasTrabajo = 6;
-
-    public int $diasDescanso = 1;
-
-    // ─────────────────────────────────────────────────────────────────
-    // Boot
-    // ─────────────────────────────────────────────────────────────────
+    
+    
+    
 
     public function mount(?User $usuario = null): void
     {
         $existente = $usuario?->exists ? $usuario : null;
 
         $this->alcance = $this->resolverAlcance($existente);
-
+        
+        
         $this->volverAlOrganigrama = request()->query('volver') === 'organigrama';
 
         if ($existente) {
-            $this->fechaAncla = now()->toDateString();
             $this->usuario = $existente;
             $this->name = $existente->name;
             $this->apellido = $existente->apellido;
@@ -98,19 +99,10 @@ class UsuarioForm extends Component
             $this->rolesSeleccionados = $existente->roles->pluck('id')->all();
             $this->activo = $existente->activo;
 
-            $config = ConfiguracionTurno::where('user_id', $existente->id)->first();
-
-            if ($config) {
-                $this->turno = $config->turno;
-                $this->fechaAncla = $config->fecha_ancla->toDateString();
-                $this->diasTrabajo = $config->dias_trabajo;
-                $this->diasDescanso = $config->dias_descanso;
-            }
-
             return;
         }
 
-        // ── Alta nueva ──────────────────────────────────────────────
+        
 
         if ($this->esAdmin() && request()->query('tipo') === 'admin') {
             $this->nuevoAdmin = true;
@@ -121,11 +113,10 @@ class UsuarioForm extends Component
         }
 
         if ($this->esEquipo()) {
-            $this->regimen = (string) (Auth::user()->regimen ?? '');
-
             return;
         }
 
+        
         $unidadId = request()->integer('unidad') ?: null;
 
         if ($unidadId && $this->esArea() && ! in_array($unidadId, $this->idsDeArea(), true)) {
@@ -141,21 +132,28 @@ class UsuarioForm extends Component
 
         if ($this->esArea()) {
             $this->regimen = (string) (Auth::user()->regimen ?? '');
-            $this->sedeId ??= Auth::user()->sede_id;
+            $this->sedeId ??= Auth::user()?->sede_id;
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // Alcance
-    // ─────────────────────────────────────────────────────────────────
+    
+    
+    
 
+    
     protected function resolverAlcance(?User $objetivo): string
     {
         /** @var User $actor */
         $actor = Auth::user();
 
-        //
-
+        
+        
+        
+        
+        
+        
+        
+        
         if ($actor->hasRole('admin') && ($objetivo || request()->query('tipo') === 'admin' || $this->nuevoAdmin)) {
             return 'admin';
         }
@@ -193,9 +191,20 @@ class UsuarioForm extends Component
         return $this->alcance === 'equipo';
     }
 
+    /**
+     * IDs de todas las unidades donde el actor actúa como Jefe de Área:
+     * las que encabeza + todos sus descendientes.
+     *
+     * @return array<int, int>
+     */
     protected function idsDeArea(?User $actor = null): array
     {
         $actor ??= Auth::user();
+
+        if ($actor === null) {
+            return [];
+        }
+
         $ids = collect();
 
         foreach ($actor->unidadesDeArea as $u) {
@@ -206,87 +215,18 @@ class UsuarioForm extends Component
         return $ids->map(fn ($id) => (int) $id)->unique()->values()->all();
     }
 
-    // ─────────────────────────────────────────────────────────────────
+    
+    
+    
+    
+    
+    
 
-    // ─────────────────────────────────────────────────────────────────
+    
+    
+    
 
-    protected function esSoloAdmin(): bool
-    {
-        $adminId = (int) Role::where('name', 'admin')->value('id');
-        $roles = array_map('intval', $this->rolesSeleccionados);
-
-        return $adminId > 0 && $roles !== [] && array_diff($roles, [$adminId]) === [];
-    }
-
-    protected function incluyeAdmin(): bool
-    {
-        $adminId = (int) Role::where('name', 'admin')->value('id');
-
-        return $adminId > 0 && in_array($adminId, array_map('intval', $this->rolesSeleccionados), true);
-    }
-
-    protected function admiteConfiguracionTurno(): bool
-    {
-        if ($this->regimen !== '728') {
-            return false;
-        }
-
-        if ($this->esEquipo()) {
-            return false;
-        }
-
-        if ($this->usuario === null && $this->esArea() && $this->tipo === 'jefe_inmediato') {
-            return false;
-        }
-
-        if (! $this->usuario) {
-            return true;
-        }
-
-        if ($this->cambioDeRegimen()) {
-            return true;
-        }
-
-        return ! ConfiguracionTurno::where('user_id', $this->usuario->id)->exists();
-    }
-
-    protected function cambioDeRegimen(): bool
-    {
-        return $this->usuario !== null
-            && ($this->usuario->regimen ?? '') !== ''
-            && $this->regimen !== (string) $this->usuario->regimen;
-    }
-
-    public function updatedRegimen(): void
-    {
-        if ($this->cambioDeRegimen()) {
-            $this->turno = '';
-        }
-    }
-
-    protected function regimenEsperado(): ?string
-    {
-        if ($this->esEquipo()) {
-            return Auth::user()->regimen;
-        }
-
-        if (! $this->esArea() || ($this->usuario === null && $this->tipo === 'jefe_inmediato')) {
-            return null;
-        }
-
-        $unidad = UnidadOrganica::with('jefe')->find($this->unidadOrganicaId);
-
-        if (! $unidad?->jefe || $unidad->jefe_id === $this->usuario?->id) {
-            return null;
-        }
-
-        return $unidad->jefe->regimen;
-    }
-
-    // ─────────────────────────────────────────────────────────────────
-
-    // ─────────────────────────────────────────────────────────────────
-
+    /** @return array<string, mixed> */
     protected function rules(): array
     {
         $creando = $this->usuario === null;
@@ -297,6 +237,7 @@ class UsuarioForm extends Component
             'email' => ReglasDatosUsuario::email($this->usuario?->id),
         ];
 
+        
         if ($creando || ! $this->esEquipo()) {
             $reglas['dni'] = ReglasDatosUsuario::dni(
                 $this->usuario?->id,
@@ -304,6 +245,7 @@ class UsuarioForm extends Component
             );
         }
 
+        
         if (! $this->esEquipo() || $creando) {
             $reglas['regimen'] = [
                 $this->esAdmin() && $this->esSoloAdmin() ? 'nullable' : 'required',
@@ -334,20 +276,18 @@ class UsuarioForm extends Component
             }
         }
 
+        
+        
         if ($this->esEquipo() && ! $creando) {
             $reglas['activo'] = ['boolean'];
-        }
-
-        if ($this->admiteConfiguracionTurno() && $this->turno !== '') {
-            $reglas['turno'] = ['required', 'in:'.implode(',', ConfiguracionTurno::turnosValidosPara(new User(['regimen' => $this->regimen])))];
-            $reglas['fechaAncla'] = ['required', 'date'];
-            $reglas['diasTrabajo'] = ['required', 'integer', 'min:1', 'max:30'];
-            $reglas['diasDescanso'] = ['required', 'integer', 'min:1', 'max:30'];
+            $reglas['sedeId'] = ['nullable', 'exists:sedes,id'];
+            $reglas['regimen'] = ['required', 'in:276,728'];
         }
 
         return $reglas;
     }
 
+    /** @var array<string, string> */
     protected $messages = [
         'rolesSeleccionados.required' => 'Selecciona al menos un rol: un usuario sin rol no puede usar el sistema.',
         'rolesSeleccionados.min' => 'Selecciona al menos un rol: un usuario sin rol no puede usar el sistema.',
@@ -357,16 +297,14 @@ class UsuarioForm extends Component
         'sedeId.required' => 'Indica la sede: es necesaria para los cierres.',
     ];
 
-    // ─────────────────────────────────────────────────────────────────
-    // Guardar
-    // ─────────────────────────────────────────────────────────────────
+    
+    
+    
 
     public function guardar(GeneradorTurnoMensualService $generador): void
     {
-
+        
         $this->alcance = $this->resolverAlcance($this->usuario);
-
-        $requiereTurno = $this->admiteConfiguracionTurno() && $this->turno !== '';
 
         $datos = $this->validate();
 
@@ -382,30 +320,26 @@ class UsuarioForm extends Component
             return;
         }
 
-        $this->guardarComoAdminOArea($datos, $requiereTurno, $generador);
+        $this->guardarComoAdminOArea($datos, $generador);
     }
 
+    /**
+     * Alta por Jefe de Área o Jefe Inmediato. Delega en CrearUsuarioAction,
+     * que ya conoce las reglas de reingreso, jefatura de unidad y sede heredada.
+     *
+     * @param  array<string, mixed>  $datos
+     */
     protected function guardarComoJefe(array $datos): void
     {
         /** @var User $actor */
         $actor = Auth::user();
         $esArea = $this->esArea();
 
-        $esperado = $this->regimenEsperado();
-
-        if ($esperado !== null && $this->regimen !== $esperado) {
-            $this->addError('regimen', "El régimen debe coincidir con el del jefe inmediato de esa unidad (régimen {$esperado}).");
-
-            return;
-        }
-
         if ($esArea) {
             abort_unless($actor->can('crearEnUnidad', [User::class, (int) $this->unidadOrganicaId]), 403);
         } else {
             abort_unless($actor->can('puedeCrearAlgo', User::class), 403);
         }
-
-        $conTurno = $this->admiteConfiguracionTurno() && $this->turno !== '';
 
         try {
             $nuevo = app(CrearUsuarioAction::class)->ejecutar($actor, [
@@ -417,10 +351,10 @@ class UsuarioForm extends Component
                 'sede_id' => $esArea ? $this->sedeId : null,
                 'unidad_organica_id' => $esArea ? $this->unidadOrganicaId : null,
                 'tipo' => $esArea ? $this->tipo : 'trabajador',
-                'turno' => $conTurno ? $this->turno : null,
-                'fecha_ancla' => $conTurno ? $this->fechaAncla : null,
-                'dias_trabajo' => $conTurno ? $this->diasTrabajo : null,
-                'dias_descanso' => $conTurno ? $this->diasDescanso : null,
+                'turno' => null,
+                'fecha_ancla' => null,
+                'dias_trabajo' => null,
+                'dias_descanso' => null,
             ], $esArea);
         } catch (UsuarioException $e) {
             $this->addError('dni', $e->getMessage());
@@ -430,21 +364,39 @@ class UsuarioForm extends Component
 
         session()->flash('mensaje', "Usuario {$nuevo->nombre_completo} creado correctamente.");
 
-        if ($nuevo->regimen === '728' && ! $conTurno && $this->tipo !== 'jefe_inmediato') {
+        if ($nuevo->regimen === '728' && $this->tipo !== 'jefe_inmediato') {
             session()->flash('warning', "{$nuevo->nombre_completo} es 728 y todavía no tiene turno: cárgalo en Turnos; hasta entonces no podrá crear papeletas.");
         }
 
         $this->redirectRoute('usuarios.index', navigate: false);
     }
 
+    /**
+     * Jefe Inmediato editando a uno de los suyos: nombre, apellido, correo
+     * y (desde ahora) activo/desactivado, con las mismas guardias que ya
+     * aplican a admin y Jefe de Área (no desactivarse a sí mismo —no aplica
+     * aquí—, no al único RR. HH. activo, resolver jefaturas pendientes si
+     * encabezara alguna unidad).
+     *
+     * @param  array<string, mixed>  $datos
+     */
     protected function guardarComoJefeInmediato(array $datos): void
     {
-        abort_unless(Auth::user()->can('editar', $this->usuario), 403);
+        if ($this->usuario === null) {
+            return;
+        }
 
-        $activo = (bool) ($datos['activo'] ?? $this->usuario->activo);
+        $usuario = $this->usuario;
 
-        if ($this->usuario->activo && ! $activo) {
-            $motivo = app(CambiarEstadoUsuarioAction::class)->motivoParaNoDesactivar(Auth::user(), $this->usuario);
+        /** @var User $actor */
+        $actor = Auth::user();
+
+        abort_unless($actor->can('editar', $usuario), 403);
+
+        $activo = (bool) ($datos['activo'] ?? $usuario->activo);
+
+        if ($usuario->activo && ! $activo) {
+            $motivo = app(CambiarEstadoUsuarioAction::class)->motivoParaNoDesactivar($actor, $usuario);
 
             if ($motivo !== null) {
                 $this->addError('activo', $motivo);
@@ -452,7 +404,7 @@ class UsuarioForm extends Component
                 return;
             }
 
-            $cargo = app(CambiarEstadoUsuarioAction::class)->jefaturasPorResolver($this->usuario);
+            $cargo = app(CambiarEstadoUsuarioAction::class)->jefaturasPorResolver($usuario);
 
             if ($cargo->isNotEmpty()) {
                 $this->addError('activo', 'Tiene personas a cargo: desactívalo desde Usuarios para elegir su reemplazo.');
@@ -461,44 +413,60 @@ class UsuarioForm extends Component
             }
         }
 
-        $debeRetirarTurno = $this->usuario->activo && ! $activo;
+        $debeRetirarTurno = $usuario->activo && ! $activo;
 
-        DB::transaction(function () use ($datos, $activo, $debeRetirarTurno) {
-            app(EditarUsuarioAction::class)->ejecutar($this->usuario, [
+        DB::transaction(function () use ($datos, $activo, $debeRetirarTurno, $usuario) {
+            app(EditarUsuarioAction::class)->ejecutar($usuario, [
                 'name' => $datos['name'],
                 'apellido' => $datos['apellido'],
                 'email' => $datos['email'],
+                'sede_id' => $usuario->sede_id,
+                'unidad_organica_id' => $usuario->unidad_organica_id,
             ], false);
 
-            $this->usuario->update(['activo' => $activo]);
+            
+            $usuario->update([
+                'sede_id' => $datos['sedeId'] ?? $usuario->sede_id,
+                'regimen' => $datos['regimen'] ?? $usuario->regimen,
+            ]);
+
+            $usuario->update(['activo' => $activo]);
 
             if (! $activo) {
-                $this->usuario->tokens()->delete();
+                $usuario->tokens()->delete();
             }
 
             if ($debeRetirarTurno) {
-                app(GeneradorTurnoMensualService::class)->retirarTurno($this->usuario);
+                app(GeneradorTurnoMensualService::class)->retirarTurno($usuario);
             }
         });
 
-        session()->flash('mensaje', "Usuario {$this->usuario->nombre_completo} actualizado.");
+        session()->flash('mensaje', "Usuario {$usuario->nombre_completo} actualizado.");
 
         $this->redirectRoute('usuarios.index', navigate: false);
     }
 
-    protected function guardarComoAdminOArea(array $datos, bool $requiereTurno, GeneradorTurnoMensualService $generador): void
+    /**
+     * Admin (alta/edición completa) o Jefe de Área editando (sin roles ni contraseña).
+     *
+     * @param  array<string, mixed>  $datos
+     */
+    protected function guardarComoAdminOArea(array $datos, GeneradorTurnoMensualService $generador): void
     {
         $esAdmin = $this->esAdmin();
         $adminId = (int) Role::where('name', 'admin')->value('id');
         $trabajadorId = (int) Role::where('name', 'trabajador')->value('id');
 
+        
         $roles = $esAdmin
             ? array_map('intval', $datos['rolesSeleccionados'])
-            : $this->usuario->roles->pluck('id')->map(fn ($id) => (int) $id)->all();
+            : ($this->usuario->roles ?? collect())->pluck('id')->map(fn ($id) => (int) $id)->all();
 
         $activo = ($esAdmin || $this->esArea())
-            ? (bool) ($datos['activo'] ?? $this->usuario?->activo ?? true)
+            ? (bool) ($datos['activo'] ?? $this->usuario->activo ?? true)
             : true;
+
+        
 
         if ($esAdmin) {
             if ($this->esSoloAdmin() && $this->regimen !== '') {
@@ -550,6 +518,12 @@ class UsuarioForm extends Component
             }
         }
 
+        
+        
+        
+        
+        
+        
         if ($this->usuario
             && $this->usuario->unidad_organica_id !== null
             && (int) $datos['unidadOrganicaId'] !== (int) $this->usuario->unidad_organica_id
@@ -560,8 +534,13 @@ class UsuarioForm extends Component
             return;
         }
 
+        
+
         if ($this->usuario?->activo && ! $activo) {
-            $motivo = app(CambiarEstadoUsuarioAction::class)->motivoParaNoDesactivar(Auth::user(), $this->usuario);
+            /** @var User $actor */
+            $actor = Auth::user();
+
+            $motivo = app(CambiarEstadoUsuarioAction::class)->motivoParaNoDesactivar($actor, $this->usuario);
 
             if ($motivo !== null) {
                 $this->addError('activo', $motivo);
@@ -578,15 +557,7 @@ class UsuarioForm extends Component
             }
         }
 
-        $esperado = $this->regimenEsperado();
-
-        if ($esperado !== null && $this->regimen !== $esperado) {
-            $this->addError('regimen', "El régimen debe coincidir con el del jefe inmediato (régimen {$esperado}).");
-
-            return;
-        }
-
-        // ── Persistencia ─────────────────────────────────────────────
+        
 
         $atributos = [
             'name' => $datos['name'],
@@ -596,21 +567,22 @@ class UsuarioForm extends Component
         ];
 
         if (! $this->esArea() || $this->usuario === null) {
-
+            
             $atributos['dni'] = $datos['dni'];
             $atributos['regimen'] = $datos['regimen'] ?: null;
             $atributos['sede_id'] = $datos['sedeId'];
             $atributos['unidad_organica_id'] = in_array($adminId, $roles, true) ? null : $datos['unidadOrganicaId'];
         } else {
-
+            
             $atributos['sede_id'] = $datos['sedeId'];
             $atributos['unidad_organica_id'] = $datos['unidadOrganicaId'];
+            $atributos['regimen'] = $datos['regimen'] ?: null;
         }
 
         $debeRetirarTurno = $this->usuario !== null
             && ($this->cambioDeRegimen() || ($this->usuario->activo && ! $activo));
 
-        DB::transaction(function () use ($atributos, $datos, $requiereTurno, $generador, $debeRetirarTurno, $esAdmin, $activo, $roles) {
+        DB::transaction(function () use ($atributos, $datos, $generador, $debeRetirarTurno, $esAdmin, $activo, $roles) {
             if ($this->usuario) {
                 if ($esAdmin && filled($datos['password'] ?? null)) {
                     $atributos['password'] = Hash::make($datos['password']);
@@ -637,39 +609,34 @@ class UsuarioForm extends Component
                 $this->usuario->syncRoles($roles);
                 PapeletaActualizada::olvidarDestinatariosFijos();
             }
-
-            if ($requiereTurno && $activo) {
-                $generador->cargarConfiguracion(
-                    trabajador: $this->usuario,
-                    turno: $datos['turno'],
-                    fechaAncla: Carbon::parse($datos['fechaAncla']),
-                    actor: Auth::user(),
-                    diasTrabajo: $datos['diasTrabajo'],
-                    diasDescanso: $datos['diasDescanso'],
-                );
-            }
         });
+
+        if ($this->usuario === null) {
+            return;
+        }
 
         session()->flash('mensaje', $this->usuario->wasRecentlyCreated ? 'Usuario creado.' : 'Usuario actualizado.');
 
         $this->redirectRoute($esAdmin ? 'usuarios-admin.index' : 'usuarios.index', navigate: false);
     }
 
-    // ─────────────────────────────────────────────────────────────────
+    
+    
+    
 
-    // ─────────────────────────────────────────────────────────────────
-
+    
     protected function sedeHeredada(): ?string
     {
         if ($this->usuario !== null || ! $this->esArea() || $this->tipo !== 'trabajador') {
             return null;
         }
 
-        return UnidadOrganica::with('jefe.sede')->find($this->unidadOrganicaId)?->jefe?->sede?->nombre
-            ?? Auth::user()->sede?->nombre
+        return UnidadOrganica::with('jefe.sede')->find($this->unidadOrganicaId)?->jefe?->sede->nombre
+            ?? Auth::user()?->sede->nombre
             ?? 'Sin sede';
     }
 
+    
     protected function buscarCuentaExistente(): ?User
     {
         if (! $this->esAdmin() || $this->usuario !== null || strlen($this->dni) !== 8) {
@@ -697,12 +664,8 @@ class UsuarioForm extends Component
                     ->get()
                 : collect(),
             'esAdminRol' => $this->esAdmin() && $this->incluyeAdmin(),
-            'requiereTurno' => $this->usuario !== null && $this->admiteConfiguracionTurno(),
-            'opcionesTurno' => $this->regimen
-                ? ConfiguracionTurno::turnosValidosPara(new User(['regimen' => $this->regimen]))
-                : [],
             'sedeHeredada' => $this->sedeHeredada(),
-            'sedeDelCreador' => Auth::user()->sede?->nombre,
+            'sedeDelCreador' => Auth::user()?->sede?->nombre,
         ]);
     }
 }

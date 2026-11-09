@@ -15,15 +15,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Recorrido HTTP completo con TODOS los roles (trabajador, jefe inmediato,
- * jefe de área, RRHH y admin) sobre la regla: la papeleta solo le llega al
- * jefe inmediato si el jefe tiene turno vigente. Lunes 2026-09-21, 10:00
- * (dentro del horario de RRHH).
- *
- * Organigrama: Área (jefe de área, 276) -> Oficina (jefe inmediato, 728)
- * -> trabajador 276. Más un RRHH, un admin y un trabajador ajeno.
- */
+
 class FlujoPapeletaPorRolesTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -86,12 +78,7 @@ class FlujoPapeletaPorRolesTest extends TestCase
         ]);
     }
 
-    /**
-     * El turno del DECISOR (jefe inmediato o de área) ya no se valida al
-     * crear la papeleta (ver CrearPapeletaAction::resolverJefatura): solo
-     * se exige turno vigente a quien la está creando. Sin turno cargado
-     * en el jefe, la papeleta igual se crea y queda esperando su decisión.
-     */
+    
     public function test_sin_turno_en_el_jefe_la_papeleta_igual_se_crea_y_le_llega(): void
     {
         $this->solicitar()->assertSessionDoesntHaveErrors();
@@ -114,7 +101,7 @@ class FlujoPapeletaPorRolesTest extends TestCase
     {
         $this->turnoDePrueba($this->jefeInmediato);
 
-        // 1) Trabajador crea.
+        
         $respuesta = $this->solicitar()->assertSessionDoesntHaveErrors();
         $papeleta = Papeleta::where('trabajador_id', $this->trabajador->id)->firstOrFail();
         $respuesta->assertRedirect(route('trabajador.papeletas.show', $papeleta));
@@ -124,30 +111,30 @@ class FlujoPapeletaPorRolesTest extends TestCase
         $this->actingAs($this->trabajador)->get(route('trabajador.papeletas.index'))->assertOk();
         $this->actingAs($this->trabajador)->get(route('trabajador.papeletas.show', $papeleta))->assertOk();
 
-        // 2) Solo su jefe inmediato la tiene en bandeja; un ajeno no.
+        
         $this->actingAs($this->jefeInmediato)->get(route('jefe.papeletas.index'))->assertOk()
             ->assertSee($this->trabajador->name);
         $this->actingAs($this->jefeInmediato)->get(route('jefe.papeletas.show', $papeleta))->assertOk();
         $this->actingAs($this->ajeno)->get(route('jefe.papeletas.show', $papeleta))->assertForbidden();
         $this->assertSame(0, Papeleta::deJefeInmediato($this->ajeno)->count());
 
-        // 3) Un ajeno no puede aprobarla.
+        
         $this->actingAs($this->ajeno)->post(route('jefe.papeletas.aprobar', $papeleta))->assertForbidden();
         $this->assertTrue($papeleta->fresh()->estado->equals(PendienteJefe::class));
 
-        // 4) El jefe inmediato aprueba -> pasa a RRHH (en horario).
+        
         $this->actingAs($this->jefeInmediato)->post(route('jefe.papeletas.aprobar', $papeleta))
             ->assertSessionDoesntHaveErrors();
         $this->assertTrue($papeleta->fresh()->estado->equals(PendienteRrhh::class));
 
-        // 5) RRHH la ve y la autoriza.
+        
         $this->actingAs($this->rrhh)->get(route('rrhh.papeletas.index'))->assertOk();
         $this->actingAs($this->rrhh)->get(route('rrhh.papeletas.show', $papeleta))->assertOk();
         $this->actingAs($this->rrhh)->post(route('rrhh.papeletas.aprobar', $papeleta))
             ->assertSessionDoesntHaveErrors();
         $this->assertTrue($papeleta->fresh()->estado->equals(AutorizadaYCorriendo::class));
 
-        // 6) Admin: solo lectura.
+        
         $this->actingAs($this->admin)->get(route('admin.papeletas.index'))->assertOk();
         $this->actingAs($this->admin)->get(route('admin.papeletas.show', $papeleta))->assertOk();
         $this->actingAs($this->admin)->post(route('jefe.papeletas.aprobar', $papeleta))->assertForbidden();
@@ -157,17 +144,17 @@ class FlujoPapeletaPorRolesTest extends TestCase
     {
         $papeleta = $this->papeletaDePrueba($this->trabajador);
 
-        // RRHH y admin no son "trabajador": no tienen pantalla de crear.
+        
         $this->actingAs($this->rrhh)->get(route('trabajador.papeletas.index'))->assertForbidden();
         $this->actingAs($this->admin)->get(route('trabajador.papeletas.index'))->assertForbidden();
 
-        // Trabajador y jefe no entran a RRHH ni a admin.
+        
         $this->actingAs($this->trabajador)->get(route('rrhh.papeletas.index'))->assertForbidden();
         $this->actingAs($this->jefeInmediato)->get(route('rrhh.papeletas.index'))->assertForbidden();
         $this->actingAs($this->jefeInmediato)->get(route('admin.papeletas.index'))->assertForbidden();
         $this->actingAs($this->jefeArea)->get(route('admin.papeletas.show', $papeleta))->assertForbidden();
 
-        // Admin y RRHH no aprueban como RRHH/jefe respectivamente.
+        
         $this->actingAs($this->admin)->post(route('rrhh.papeletas.aprobar', $papeleta))->assertForbidden();
     }
 }

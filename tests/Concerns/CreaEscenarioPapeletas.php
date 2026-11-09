@@ -14,11 +14,7 @@ use Database\Seeders\RoleSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 
-/**
- * Armado mínimo de datos para probar el flujo de papeletas sin depender
- * de horarios ni de la hora real: las papeletas se crean directamente en
- * el estado que interesa (no pasan por CrearPapeletaAction).
- */
+
 trait CreaEscenarioPapeletas
 {
     private ?Sede $sedeCompartida = null;
@@ -27,7 +23,7 @@ trait CreaEscenarioPapeletas
     {
         $this->seed([RoleSeeder::class, MotivoSeeder::class]);
 
-        // Las Actions notifican al terminar; aquí solo importa el efecto en BD.
+        
         Notification::fake();
     }
 
@@ -83,11 +79,7 @@ trait CreaEscenarioPapeletas
         ]);
     }
 
-    /**
-     * "Jefe de Área" es quien encabeza una unidad CON unidades hijas
-     * (User::unidadesDeArea()). Para armar ese escenario, la unidad recibe
-     * una sub-unidad vacía (sin jefe, así no genera avisos de turnos).
-     */
+    
     protected function conUnidadHija(UnidadOrganica $unidad): UnidadOrganica
     {
         return UnidadOrganica::create([
@@ -96,13 +88,7 @@ trait CreaEscenarioPapeletas
         ]);
     }
 
-    /**
-     * Crea un jefe y una UnidadOrganica mínima, y asigna al trabajador a
-     * ella (jefe_id de la unidad = este jefe). Necesario desde que
-     * jefaturasDe() dejó de tener un fallback: sin unidad_organica_id no
-     * hay jefe_inmediato_id que resolver, y la papeleta nunca llega a
-     * PendienteJefe (cae a PendienteRrhh o AutorizadaYCorriendo).
-     */
+    
     protected function conJefeDePrueba(User $trabajador, ?User $jefe = null): User
     {
         $jefe ??= User::factory()->create([
@@ -143,16 +129,7 @@ trait CreaEscenarioPapeletas
         ]);
     }
 
-    /**
-     * Igual que turnoDePrueba(), pero para ventanas angostas (MANANA,
-     * TARDE, NOCHE) donde si no se congela el reloj el test queda
-     * vigente o no según la hora real en que corra el CI. Congela el
-     * tiempo al punto medio de la ventana del turno (resolviendo el
-     * cruce de medianoche si hora_fin <= hora_inicio, ej. NOCHE
-     * 22:00-06:00) para que el turno esté SIEMPRE vigente al volver de
-     * esta llamada, sin que quien escribe el test tenga que calcularlo
-     * a mano. Recuerda encadenar travelBack() en tearDown().
-     */
+    
     protected function turnoVigenteDePrueba(
         User $trabajador,
         string $codigo,
@@ -171,7 +148,7 @@ trait CreaEscenarioPapeletas
         $finAt = Carbon::parse("{$fecha} {$horaFin}");
 
         if ($finAt->lessThanOrEqualTo($inicioAt)) {
-            $finAt->addDay(); // cruza medianoche (ej. NOCHE 22:00-06:00)
+            $finAt->addDay(); 
         }
 
         $this->travelTo($inicioAt->copy()->addSeconds((int) ($inicioAt->diffInSeconds($finAt) / 2)));

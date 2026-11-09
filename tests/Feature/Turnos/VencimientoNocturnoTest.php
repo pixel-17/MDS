@@ -11,12 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Régimen 728: una papeleta de un turno que cruza medianoche (Noche 22:00-06:00)
- * no puede vencer antes de que termine el turno. Su dia_operativo es el día en
- * que EMPEZÓ el turno, así que antes vencía a las 00:00, o al minuto siguiente
- * si se creaba pasada la medianoche.
- */
+
 class VencimientoNocturnoTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -31,7 +26,7 @@ class VencimientoNocturnoTest extends TestCase
         parent::setUp();
 
         $this->prepararBase();
-        $this->trabajador = $this->usuarioDePrueba(); // régimen 728
+        $this->trabajador = $this->usuarioDePrueba(); 
     }
 
     private function turno(string $inicio, string $fin, string $codigo): void
@@ -47,11 +42,7 @@ class VencimientoNocturnoTest extends TestCase
         ]);
     }
 
-    /**
-     * Igual que CrearPapeletaAction: el fin del turno se fija UNA vez, al
-     * crear la papeleta (fin_turno_at). Sin turno cargado queda NULL y
-     * DeterminadorFinDeTurno usa el cierre del día operativo.
-     */
+    
     private function papeleta()
     {
         $turno = Turno::where('user_id', $this->trabajador->id)->whereDate('fecha', self::DIA)->first();

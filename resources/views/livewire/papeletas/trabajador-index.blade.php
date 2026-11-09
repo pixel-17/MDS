@@ -1,5 +1,4 @@
 <div class="space-y-5">
-
     <div class="space-y-1">
         <div class="inline-flex rounded-lg overflow-hidden border border-gray-300 dark:border-white/15" role="group" aria-label="Qué papeletas ver">
             <button type="button" wire:click="$set('verTodas', false)" aria-pressed="{{ $verTodas ? 'false' : 'true' }}"

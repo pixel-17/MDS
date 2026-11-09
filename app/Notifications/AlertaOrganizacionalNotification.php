@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+
 class AlertaOrganizacionalNotification extends NotificacionEnVivo
 {
     protected function etiquetaPush(): string
@@ -14,6 +15,7 @@ class AlertaOrganizacionalNotification extends NotificacionEnVivo
         return 'Ver';
     }
 
+    /** @return array<string, mixed> */
     protected function datosPush(): array
     {
         return $this->url ? ['url' => $this->url] : [];

@@ -9,12 +9,15 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
+
 abstract class NotificacionEnVivo extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    
     public int $tries = 3;
 
+    /** @return int[] segundos de espera entre cada intento */
     public function backoff(): array
     {
         return [10, 60, 300];
@@ -35,15 +38,27 @@ abstract class NotificacionEnVivo extends Notification implements ShouldQueue
         return ['database', WebPushChannel::class, 'broadcast'];
     }
 
+    /**
+     * Claves propias de la subclase que se suman al payload común.
+     *
+     * @return array<string, mixed>
+     */
     protected function datosExtra(): array
     {
         return [];
     }
 
+    
     abstract protected function etiquetaPush(): string;
 
+    
     abstract protected function textoAccion(): string;
 
+    /**
+     * Datos que viajan en el push (el service worker los usa al hacer clic).
+     *
+     * @return array<string, mixed>
+     */
     abstract protected function datosPush(): array;
 
     /**
@@ -68,6 +83,7 @@ abstract class NotificacionEnVivo extends Notification implements ShouldQueue
         return $this->payload();
     }
 
+    
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
         return new BroadcastMessage([

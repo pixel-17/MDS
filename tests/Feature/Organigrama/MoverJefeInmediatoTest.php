@@ -13,14 +13,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Mover un jefe inmediato a otra área (se mueve su unidad con su gente) y
- * la regla de que no se mueve a nadie a una unidad sin jefe inmediato.
- *
- * Escenario: Gerencia (Gina) → Oficina A (Omar, con Carla) y Oficina B
- * (Beto). Aparte: Otra gerencia (Ajena) con Sub otra (JefeSub), y
- * Gerencia vacía, un área SIN jefe.
- */
+
 class MoverJefeInmediatoTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -79,7 +72,7 @@ class MoverJefeInmediatoTest extends TestCase
         return app(MoverJefeInmediatoAction::class);
     }
 
-    // ---- Action ------------------------------------------------------------
+    
 
     public function test_el_admin_mueve_al_jefe_y_su_gente_cambia_de_jefe_de_area(): void
     {
@@ -165,7 +158,7 @@ class MoverJefeInmediatoTest extends TestCase
         $this->mover()->ejecutar($this->admin, $this->omar->id, $this->otraGerencia->id, $this->otraGerencia->id, true);
     }
 
-    // ---- Trabajadores: el destino debe tener jefe inmediato -----------------
+    
 
     public function test_no_se_mueve_a_un_trabajador_a_una_unidad_sin_jefe_inmediato(): void
     {
@@ -185,7 +178,7 @@ class MoverJefeInmediatoTest extends TestCase
         app(MoverTrabajadorAction::class)->ejecutar($this->admin, $this->carla->id, $this->oficinaB->id, $this->oficinaA->id, true);
     }
 
-    // ---- Pantalla del organigrama ------------------------------------------
+    
 
     public function test_arrastrar_un_jefe_abre_la_confirmacion_y_solo_al_confirmar_se_mueve(): void
     {
@@ -200,15 +193,15 @@ class MoverJefeInmediatoTest extends TestCase
 
         $this->assertSame($this->gerencia->id, $this->oficinaA->fresh()->parent_id);
 
-        // Mover a un jefe ofrece varios modos y nunca se elige por él: sin
-        // modo, la propuesta sigue abierta y pide que lo elija.
+        
+        
         $componente
             ->call('confirmarMovimientoJefe')
             ->assertSet('mensajeError', 'Elige cómo quieres mover a la persona.');
 
         $this->assertSame($this->gerencia->id, $this->oficinaA->fresh()->parent_id);
 
-        // El aviso de éxito es un toast de Alpine (cliente): se comprueba el estado.
+        
         $componente
             ->set('modoJefe', 'unidad')
             ->call('confirmarMovimientoJefe')
@@ -224,10 +217,10 @@ class MoverJefeInmediatoTest extends TestCase
             ->test(OrganigramaArbol::class)
             ->call('alternarEdicion')
             ->call('proponerMovimiento', $this->omar->id, $this->areaSinJefe->id)
-            // Mover como trabajador/jefe sigue siendo posible, así que la
-            // propuesta se abre; lo rechazado es mover la unidad entera.
+            
+            
             ->assertSet('propuestaJefe.destino', $this->areaSinJefe->id)
-            // Con una única forma posible queda marcada sola; nunca la de mover la unidad.
+            
             ->assertSet('modoJefe', fn (string $modo) => $modo !== 'unidad')
             ->assertSee('no tiene jefe de área activo');
 

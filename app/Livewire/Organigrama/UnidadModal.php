@@ -18,6 +18,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+
 class UnidadModal extends Component
 {
     use ManejaExcepcionesDeUsuario;
@@ -38,6 +39,7 @@ class UnidadModal extends Component
 
     public bool $activo = true;
 
+    
     public bool $pasarJefe = true;
 
     public ?string $error = null;
@@ -71,6 +73,7 @@ class UnidadModal extends Component
         $this->abierto = false;
     }
 
+    
     protected function autorizarAccion(?int $id, ?int $parentId): User
     {
         /** @var User|null $actor */
@@ -92,6 +95,7 @@ class UnidadModal extends Component
         return $actor;
     }
 
+    /** @return array<string, mixed> */
     protected function rules(): array
     {
         return [
@@ -118,8 +122,11 @@ class UnidadModal extends Component
             return;
         }
 
+        /** @var User $actor */
+        $actor = auth()->user();
+
         if (! $this->intentar(
-            fn () => $guardar->ejecutar(auth()->user(), $unidad, [
+            fn () => $guardar->ejecutar($actor, $unidad, [
                 'nombre' => $datos['nombre'],
                 'tipo' => $datos['tipo'] ?: null,
                 'parent_id' => $datos['parentId'],
@@ -148,8 +155,11 @@ class UnidadModal extends Component
             return;
         }
 
+        /** @var User $actor */
+        $actor = auth()->user();
+
         if (! $this->intentar(
-            fn () => $eliminar->ejecutar(auth()->user(), $unidad),
+            fn () => $eliminar->ejecutar($actor, $unidad),
             fn ($e) => $this->error = $e->getMessage(),
         )) {
             return;
@@ -171,9 +181,15 @@ class UnidadModal extends Component
 
         $unidad = $this->unidadId ? UnidadOrganica::find($this->unidadId) : null;
 
+        
+        
+        
+        $unidadId = $unidad?->id;
+        $descendientes = $unidad?->descendantIds() ?? [];
+
         $padres = $esAdmin
             ? UnidadOrganica::orderBy('nombre')
-                ->when($unidad, fn ($q) => $q->whereKeyNot($unidad->id)->whereNotIn('id', $unidad->descendantIds()))
+                ->when($unidadId, fn ($q) => $q->whereKeyNot($unidadId)->whereNotIn('id', $descendientes))
                 ->get(['id', 'nombre'])
                 ->map(fn ($u) => ['id' => $u->id, 'label' => $u->nombre, 'hint' => null])
                 ->all()
@@ -187,7 +203,7 @@ class UnidadModal extends Component
             ->orderBy('name')->orderBy('apellido');
 
         if (! $esAdmin) {
-
+            
             $reglas = app(ReglasOrganigrama::class);
             $padreActual = $this->parentId ? UnidadOrganica::find($this->parentId) : null;
             $areaId = $padreActual ? $reglas->areaDe($actor, $padreActual) : null;
@@ -203,16 +219,16 @@ class UnidadModal extends Component
             ->all();
 
         return view('livewire.organigrama.unidad-modal', [
-
+            
             'vista' => app(JefaturaUnidadService::class)->previsualizar($unidad, $this->jefeId, $this->parentId, $this->pasarJefe),
             'padres' => $padres,
             'jefes' => $jefes,
-
+            
             'resumen' => $unidad ? [
                 'personas' => $unidad->miembros()->count(),
                 'hijos' => $unidad->hijos()->count(),
             ] : null,
-
+            
             'contexto' => $unidad
                 ? $unidad->padre?->nombre
                 : ($this->parentId ? 'Dentro de '.UnidadOrganica::whereKey($this->parentId)->value('nombre') : 'Unidad raíz'),

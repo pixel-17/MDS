@@ -11,12 +11,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * CRUD de Unidades orgánicas: jerarquía padre/hijo sin ciclos y un único
- * jefe por unidad (jefe_id).
- * Los modelos van con ->fresh() al montar el formulario por los defaults de
- * BD (activo) que create() no trae.
- */
+
 class UnidadOrganicaCrudTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -158,8 +153,8 @@ class UnidadOrganicaCrudTest extends TestCase
 
     public function test_una_unidad_con_sub_unidades_no_se_borra_se_desactiva(): void
     {
-        // El borrado está restringido (migración restringir_borrado_de_unidades_organicas):
-        // las hijas NO quedan huérfanas, la unidad se desactiva y conserva su lugar.
+        
+        
         $raiz = $this->unidad('Gerencia');
         $hija = $this->unidad('Subgerencia', ['parent_id' => $raiz->id]);
 

@@ -121,7 +121,6 @@
         @endif
 
         @if ($tab === 'horas')
-            {{-- ============================= FILTROS ============================= --}}
             <div class="glass-card p-4 space-y-4 print:hidden">
                 <div class="flex flex-wrap gap-4 items-end">
                     <div>
@@ -141,7 +140,7 @@
 
                     <div class="max-w-xs">
                         <label for="horas-acumuladas-index-sedeId" class="block text-sm font-medium mb-1">Sede</label>
-                        <select id="horas-acumuladas-index-sedeId" wire:model.live="sedeId" class="w-full rounded-md border-gray-300 dark:bg-gray-800">
+                        <select id="horas-acumuladas-index-sedeId" wire:model.live="sedeId" class="w-full rounded-md border-gray-300 dark:bg-gray-800 dark:[color-scheme:dark]">
                             <option value="">Todas</option>
                             @foreach ($sedes as $sede)
                                 <option value="{{ $sede->id }}">{{ $sede->nombre }}</option>
@@ -151,7 +150,7 @@
 
                     <div class="max-w-xs">
                         <label for="horas-acumuladas-index-motivoId" class="block text-sm font-medium mb-1">Motivo</label>
-                        <select id="horas-acumuladas-index-motivoId" wire:model.live="motivoId" class="w-full rounded-md border-gray-300 dark:bg-gray-800">
+                        <select id="horas-acumuladas-index-motivoId" wire:model.live="motivoId" class="w-full rounded-md border-gray-300 dark:bg-gray-800 dark:[color-scheme:dark]">
                             <option value="">Todos</option>
                             @foreach ($motivos as $motivo)
                                 <option value="{{ $motivo->id }}">{{ $motivo->nombre }}</option>
@@ -161,7 +160,7 @@
 
                     <div class="max-w-xs">
                         <label for="horas-acumuladas-index-regimen" class="block text-sm font-medium mb-1">Régimen</label>
-                        <select id="horas-acumuladas-index-regimen" wire:model.live="regimen" class="w-full rounded-md border-gray-300 dark:bg-gray-800">
+                        <select id="horas-acumuladas-index-regimen" wire:model.live="regimen" class="w-full rounded-md border-gray-300 dark:bg-gray-800 dark:[color-scheme:dark]">
                             <option value="">Todos</option>
                             <option value="276">276 (día)</option>
                             <option value="728">728 (rotativo)</option>
@@ -180,7 +179,6 @@
                 </div>
             </div>
 
-            {{-- ============================= RESUMEN EN TARJETAS ============================= --}}
             @php
                 $fmtHoras = fn (int $min) => intdiv($min, 60).'h '.str_pad($min % 60, 2, '0', STR_PAD_LEFT).'m';
                 $mayor = $resumen->first();
@@ -232,7 +230,6 @@
                 </button>
             </div>
 
-            {{-- ============================= RESUMEN MENSUAL ============================= --}}
             @if ($vista === 'resumen')
                 <div class="glass-card overflow-x-auto">
                     <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800">

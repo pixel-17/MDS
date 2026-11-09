@@ -13,6 +13,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
+
 class ProcesarVencimientoSustentos extends Command
 {
     protected $signature = 'papeletas:procesar-vencimiento-sustentos';
@@ -21,7 +22,9 @@ class ProcesarVencimientoSustentos extends Command
 
     public function handle(ReclasificarAParticularAction $reclasificar, NotificarPapeletaService $notificar): int
     {
-
+        
+        
+        
         Sustento::where('estado', 'pendiente')
             ->where('fecha_limite', '<=', now())
             ->whereHas('papeleta', fn ($q) => $q->whereState('estado', EnJustificacion::class))
@@ -30,10 +33,16 @@ class ProcesarVencimientoSustentos extends Command
                 foreach ($lote as $sustento) {
                     try {
                         DB::transaction(function () use ($sustento, $reclasificar) {
-
+                            
+                            
+                            
+                            
                             $papeleta = Papeleta::whereKey($sustento->papeleta_id)->lockForUpdate()->first();
                             $actual = Sustento::whereKey($sustento->id)->lockForUpdate()->first();
 
+                            
+                            
+                            
                             if (! $papeleta
                                 || ! $actual
                                 || $actual->estado !== 'pendiente'
@@ -45,6 +54,8 @@ class ProcesarVencimientoSustentos extends Command
                             $actual->estado = 'vencido';
                             $actual->save();
 
+                            
+                            
                             $reclasificar->ejecutar(
                                 $papeleta,
                                 actorId: null,
@@ -53,7 +64,7 @@ class ProcesarVencimientoSustentos extends Command
                             );
                         });
                     } catch (PapeletaException) {
-
+                        
                     } catch (Throwable $e) {
                         report($e);
                     }

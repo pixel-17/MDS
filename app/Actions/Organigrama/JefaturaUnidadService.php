@@ -6,6 +6,7 @@ use App\Exceptions\UsuarioException;
 use App\Models\UnidadOrganica;
 use App\Models\User;
 
+
 class JefaturaUnidadService
 {
     /** @throws UsuarioException */
@@ -42,8 +43,10 @@ class JefaturaUnidadService
         }
 
         if ($ubicarJefe) {
+            $unidadId = $unidad?->id;
+
             $otraUnidad = $jefe->unidadesQueEncabeza()
-                ->when($unidad, fn ($q) => $q->whereKeyNot($unidad->id))
+                ->when($unidadId, fn ($q) => $q->whereKeyNot($unidadId))
                 ->first();
 
             if ($otraUnidad) {
@@ -55,6 +58,19 @@ class JefaturaUnidadService
         }
     }
 
+    /**
+     * Qué cambiaría al guardar la unidad con ese jefe y ese padre. null si
+     * la unidad todavía no existe (no hay "antes").
+     *
+     * @return array{
+     *     error: ?string,
+     *     jefe: array{antes: ?User, despues: ?User, cambia: bool, fuera_de_la_unidad: bool},
+     *     padre: array{antes: ?UnidadOrganica, despues: ?UnidadOrganica, cambia: bool},
+     *     personas: int,
+     *     subarbol: int,
+     *     avisos: list<string>
+     * }|null
+     */
     public function previsualizar(?UnidadOrganica $unidad, ?int $jefeId, ?int $parentId, bool $ubicarJefe = false): ?array
     {
         if ($unidad === null) {
@@ -108,7 +124,7 @@ class JefaturaUnidadService
             $suJefe = ($cambiaPadre ? $padreDespues : $padreAntes)?->jefe;
             $avisos[] = $ubicarJefe
                 ? $jefeDespues->nombre_completo.' pasará a esta unidad y dependerá de '
-                    .($suJefe?->nombre_completo ?? 'nadie (la unidad no tiene unidad padre con jefe)').'.'
+                    .($suJefe->nombre_completo ?? 'nadie (la unidad no tiene unidad padre con jefe)').'.'
                 : $jefeDespues->nombre_completo.' seguirá en su unidad actual: su propio jefe no cambia. '
                     .'Marca «Pasarlo a esta unidad» para que dependa del jefe de la unidad padre.';
         }
@@ -133,6 +149,7 @@ class JefaturaUnidadService
         ];
     }
 
+    
     public function ubicarJefe(UnidadOrganica $unidad): void
     {
         $jefe = $unidad->jefe_id ? User::find($unidad->jefe_id) : null;

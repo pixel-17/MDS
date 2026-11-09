@@ -10,9 +10,23 @@ use App\Models\UnidadOrganica;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
+/**
+ * Lado de LECTURA del organigrama: consultas, alcance de quien mira,
+ * filtros (búsqueda, sede, inactivos), nodos del árbol, ficha e historial.
+ * No modifica nada: las ediciones viven en App\Actions\Organigrama y el
+ * componente Livewire solo orquesta (estado de UI + confirmaciones).
+ *
+ * Todo se carga en unas pocas queries y el árbol se arma en memoria (el
+ * organigrama es chico, igual que en UnidadOrganica::descendantIds()).
+ *
+ * Cada nodo del árbol es una instancia de NodoOrganigrama (ver esa
+ * clase): no un array con un alias de tipo, porque PHPStan no soporta
+ * tipos recursivos (ni @phpstan-type local ni un alias global en
+ * phpstan.neon) y 'hijos' vuelve a contener nodos del mismo tipo.
+ */
 class ArmadorOrganigrama
 {
-
+    
     public const ESTADOS_PENDIENTES = [
         'pendiente_jefe' => 'Pendiente del jefe',
         'observada_por_jefe' => 'Observada por el jefe',
@@ -26,9 +40,21 @@ class ArmadorOrganigrama
         private readonly bool $verInactivos = false,
     ) {}
 
+    /**
+     * Arma todo lo que pinta el árbol para quien mira: nodos raíz ya
+     * filtrados por búsqueda/sede, estadísticas y conteo por sede.
+     *
+     * @return array{raices: Collection<int, NodoOrganigrama>, stats: array<string, int>, conteoSedes: array<int|string, int>, unidades: \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>, enAlcance: array<int, true>}
+     *
+     * NodoOrganigrama aquí ya no es un alias de tipo: es la clase
+     * App\Services\Organigrama\NodoOrganigrama (mismo namespace, por eso
+     * se referencia sin "use").
+     */
     public function armar(User $usuario): array
     {
-
+        
+        
+        
         $unidades = UnidadOrganica::query()
             ->orderBy('nombre')
             ->get();
@@ -36,7 +62,8 @@ class ArmadorOrganigrama
         $porPadre = $unidades->groupBy('parent_id');
 
         $stats = ['unidades' => 0, 'personas' => 0, 'sin_sede' => 0, 'sin_jefe' => 0];
-
+        
+        
         $conteoSedes = [];
 
         $raicesDeAlcance = $this->raicesPara($usuario, $unidades, $porPadre);
@@ -45,7 +72,10 @@ class ArmadorOrganigrama
         $this->cargarRama($unidades, $enAlcance);
 
         $raices = $raicesDeAlcance
-
+            
+            
+            
+            
             ->map(function (UnidadOrganica $u) use ($porPadre, &$stats, &$conteoSedes) {
                 return $this->construirNodo($u, $porPadre, $stats, $conteoSedes);
             })
@@ -55,6 +85,16 @@ class ArmadorOrganigrama
         return compact('raices', 'stats', 'conteoSedes', 'unidades', 'enAlcance');
     }
 
+    /**
+     * Carga jefes (con sede) y trabajadores SOLO de las
+     * unidades dentro del alcance de quien mira. Un Jefe de Área ya no
+     * trae a todos los trabajadores de la municipalidad para pintar su
+     * rama. Las relaciones quedan en las mismas instancias que usa
+     * $porPadre, así que construirNodo() las ve sin más queries.
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>  $unidades
+     * @param  array<int, true>  $enAlcance
+     */
     public function cargarRama(Collection $unidades, array $enAlcance): void
     {
         $unidades
@@ -62,7 +102,8 @@ class ArmadorOrganigrama
             ->loadMissing([
                 'jefe.sede',
                 'miembros' => fn ($q) => $q
-
+                    
+                    
                     ->when(! $this->verInactivos, fn ($q) => $q->where('activo', true))
                     ->with('sede')
                     ->orderBy('name')
@@ -70,6 +111,16 @@ class ArmadorOrganigrama
             ]);
     }
 
+    /**
+     * Ficha de la persona abierta en el panel lateral, o null. Solo se
+     * arma si la persona cae dentro del alcance de quien mira (admin:
+     * todo; Jefe de Área: su rama): $personaId viene del navegador y no
+     * se confía en él.
+     *
+     * @param  Collection<int, UnidadOrganica>  $unidades
+     * @param  array<int, true>  $enAlcance  ids de unidades dentro del alcance (ver idsEnAlcance)
+     * @return array<string, mixed>|null
+     */
     public function fichaDe(?int $personaId, Collection $unidades, array $enAlcance): ?array
     {
         if ($personaId === null) {
@@ -115,6 +166,14 @@ class ArmadorOrganigrama
         ];
     }
 
+    /**
+     * Ids de todas las unidades dentro del alcance de quien mira: las
+     * raíces y todo lo que cuelga de ellas.
+     *
+     * @param  Collection<int, UnidadOrganica>  $raicesDeAlcance
+     * @param  \Illuminate\Support\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
+     * @return array<int, true>
+     */
     public function idsEnAlcance(Collection $raicesDeAlcance, Collection $porPadre): array
     {
         $enAlcance = [];
@@ -123,6 +182,7 @@ class ArmadorOrganigrama
         while ($pendientes) {
             $id = array_pop($pendientes);
 
+            
             if (isset($enAlcance[$id])) {
                 continue;
             }
@@ -136,6 +196,13 @@ class ArmadorOrganigrama
         return $enAlcance;
     }
 
+    /**
+     * Últimos movimientos visibles para quien mira (admin: todos; Jefe
+     * de Área: los que tocan alguna unidad de su alcance).
+     *
+     * @param  array<int, true>  $enAlcance
+     * @return Collection<int, array{movimiento: MovimientoOrganigrama, puede_deshacer: bool}>
+     */
     public function historialDe(User $usuario, array $enAlcance, bool $modoEdicion): Collection
     {
         $consulta = MovimientoOrganigrama::query()
@@ -156,6 +223,13 @@ class ArmadorOrganigrama
         ]);
     }
 
+    /**
+     * Unidades desde donde se empieza a pintar.
+     *
+     * @param  Collection<int, UnidadOrganica>  $unidades
+     * @param  \Illuminate\Support\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
+     * @return Collection<int, UnidadOrganica>
+     */
     public function raicesPara(User $usuario, Collection $unidades, Collection $porPadre): Collection
     {
         if ($usuario->hasRole('admin')) {
@@ -165,12 +239,17 @@ class ArmadorOrganigrama
         $porId = $unidades->keyBy('id');
         $esJefeDeArea = $usuario->esJefeDeArea();
 
+        
+        
+        
         $encabezadas = $unidades
             ->where('jefe_id', $usuario->id)
             ->when($esJefeDeArea, fn ($col) => $col->filter(fn (UnidadOrganica $u) => $porPadre->has($u->id)))
             ->pluck('id')
             ->all();
 
+        
+        
         return $unidades
             ->whereIn('id', $encabezadas)
             ->filter(function (UnidadOrganica $u) use ($porId, $encabezadas) {
@@ -185,7 +264,16 @@ class ArmadorOrganigrama
             ->values();
     }
 
-    private function construirNodo(UnidadOrganica $unidad, Collection $porPadre, array &$stats, array &$conteoSedes): ?array
+    /**
+     * Arma el nodo de una unidad (y, recursivamente, sus hijos) ya
+     * filtrado por la búsqueda y por la sede. null = ese nodo y todo lo
+     * de abajo quedan fuera del resultado.
+     *
+     * @param  \Illuminate\Support\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
+     * @param  array<string, int>  $stats
+     * @param  array<int|string, int>  $conteoSedes
+     */
+    private function construirNodo(UnidadOrganica $unidad, Collection $porPadre, array &$stats, array &$conteoSedes): ?NodoOrganigrama
     {
         $q = mb_strtolower(trim($this->buscar));
         $hayFiltroSede = $this->sede !== '';
@@ -196,6 +284,8 @@ class ArmadorOrganigrama
             default => (int) $p->sede_id === (int) $this->sede,
         };
 
+        
+        
         $jefes = collect([$unidad->jefe])
             ->filter()
             ->unique('id')
@@ -208,6 +298,7 @@ class ArmadorOrganigrama
             || $jefes->contains(fn (User $j) => $contiene($j->nombre_completo) || $contiene($j->dni))
         );
 
+        
         $miembrosBase = $unidad->miembros
             ->reject(fn (User $m) => $jefes->contains('id', $m->id))
             ->when(! $this->verInactivos, fn (Collection $c) => $c->where('activo', true))
@@ -216,6 +307,7 @@ class ArmadorOrganigrama
             ))
             ->values();
 
+        
         $contados = $miembrosBase->concat(
             $q === '' || $coincideUnidad ? $jefes : $jefes->filter(fn (User $j) => $contiene($j->nombre_completo) || $contiene($j->dni))
         );
@@ -227,6 +319,8 @@ class ArmadorOrganigrama
         $miembros = $miembrosBase->filter($enSede)->values();
         $jefesEnFiltro = $jefes->filter($enSede)->values();
 
+        
+        
         $hijos = $porPadre->get($unidad->id, collect())
             ->map(function (UnidadOrganica $h) use ($porPadre, &$stats, &$conteoSedes) {
                 return $this->construirNodo($h, $porPadre, $stats, $conteoSedes);
@@ -241,6 +335,7 @@ class ArmadorOrganigrama
             return null;
         }
 
+        
         $sinJefe = ! $unidad->jefe?->activo;
 
         $stats['unidades']++;
@@ -248,15 +343,15 @@ class ArmadorOrganigrama
         $stats['sin_sede'] += $miembros->whereNull('sede_id')->count() + $jefesEnFiltro->whereNull('sede_id')->count();
         $stats['sin_jefe'] += $sinJefe ? 1 : 0;
 
-        return [
-            'unidad' => $unidad,
-            'jefes' => $jefes,
-            'jefes_en_filtro' => $jefesEnFiltro->pluck('id')->all(),
-            'filtro_sede' => $hayFiltroSede,
-            'miembros' => $miembros,
-            'hijos' => $hijos,
-            'total' => $miembros->count() + $jefesEnFiltro->count() + $hijos->sum('total'),
-            'sin_jefe' => $sinJefe,
-        ];
+        return new NodoOrganigrama(
+            unidad: $unidad,
+            jefes: $jefes,
+            jefesEnFiltro: $jefesEnFiltro->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
+            filtroSede: $hayFiltroSede,
+            miembros: $miembros,
+            hijos: $hijos,
+            total: $miembros->count() + $jefesEnFiltro->count() + $hijos->sum('total'),
+            sinJefe: $sinJefe,
+        );
     }
 }

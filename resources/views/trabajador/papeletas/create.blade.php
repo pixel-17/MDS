@@ -16,7 +16,6 @@
             this.archivo = f ? f.name : null;
         },
         get pideAdjunto() { const m = this.motivos.find(m => m.id == this.motivoId); return !!m && !!m.requiere_sustento_en_retorno; } }">
-
         <div
             x-show="modalConfirmar"
             x-cloak
@@ -72,7 +71,7 @@
                                 name="motivo_id"
                                 x-model="motivoId"
                                 required
-                                class="input-glass @error('motivo_id') !border-alarma-500 @enderror"
+                                class="input-glass dark:[color-scheme:dark] @error('motivo_id') !border-alarma-500 @enderror"
                             >
                                 <option value="">Selecciona un motivo</option>
                                 @foreach ($motivos as $motivo)
@@ -116,7 +115,6 @@
                         <span class="font-display text-sello-500 dark:text-sello-300 font-semibold shrink-0">3</span>
                         <div class="w-full space-y-1.5">
                             <x-label for="hora_retorno_estimado" value="Hora de retorno estimada " />
-
                             <input
                                 type="datetime-local"
                                 id="hora_retorno_estimado"

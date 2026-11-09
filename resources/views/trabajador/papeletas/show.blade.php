@@ -6,15 +6,21 @@
         ? $papeleta->historial->where('estado_nuevo', 'ObservadaPorJefe')->sortByDesc('id')->first()
         : null;
 
+    // Misma regla que PapeletaPolicy::cancelar (antes de Autorizada y corriendo;
+    // en fase RRHH solo con RRHH en horario).
     $puedeCancelar = auth()->user()->can('cancelar', $papeleta);
     $puedeMarcarRetorno = $papeleta->trabajador_id === auth()->id() && $papeleta->estado->equals(\App\States\Papeleta\AutorizadaYCorriendo::class) && ! $papeleta->retorno;
     $sustentoPendiente = $papeleta->estado->equals(\App\States\Papeleta\EnJustificacion::class)
         ? $papeleta->sustentos->firstWhere('estado', 'pendiente')
         : null;
 
+    // El PDF solo certifica una papeleta que terminó aprobada: Cerrada (sin
+    // descuento) o Finalizada (con descuento). Rechazada, Cancelada y Vencida
+    // también son estados terminales, pero no hay nada que certificar ahí.
     $puedeDescargarPdf = $papeleta->estado->equals(\App\States\Papeleta\Cerrada::class)
         || $papeleta->estado->equals(\App\States\Papeleta\Finalizada::class);
 
+    // Detalle agrupado: qué pasó (información) y quién decidió y cuándo (aprobación).
     $seccionesDetalle = [
         'Información' => collect([
             ['Sede', $papeleta->sede->nombre ?? '—'],
@@ -45,17 +51,16 @@
 @endphp
 
 <x-trabajador-layout titulo="Detalle de papeleta" :volver-a="route('trabajador.papeletas.index')">
-    <x-papeleta-en-vivo :papeleta="$papeleta" />
+    <x-papeleta-en-vivo :papeleta-id="$papeleta->id" />
 
-    <div class="space-y-5" data-en-vivo-contenido>
-        {{-- Ticket grande --}}
+    <div class="space-y-5" data-en-vivo-contenido data-papeleta-id="{{ $papeleta->id }}">
         <div class="glass-card">
             <div class="p-5 flex items-start justify-between gap-3">
                 <div class="min-w-0">
                     <p class="font-mono text-xs text-tinta-400 dark:text-tinta-300/60">N.° {{ str_pad($papeleta->id, 4, '0', STR_PAD_LEFT) }}</p>
                     <p class="font-display font-semibold text-lg text-tinta-950 dark:text-white leading-snug mt-0.5">{{ $papeleta->motivo->nombre }}</p>
                 </div>
-                <span data-en-vivo-estado class="shrink-0"><x-estado-papeleta :estado="$papeleta->estado" :abandono="$papeleta->esAbandono()" class="whitespace-nowrap" /></span>
+                <x-estado-papeleta :estado="$papeleta->estado" :abandono="$papeleta->esAbandono()" class="shrink-0 whitespace-nowrap" />
             </div>
 
             @if ($puedeDescargarPdf)
@@ -179,7 +184,6 @@
             </div>
         @endif
 
-        {{-- Acciones contextuales --}}
         @if ($puedeCancelar)
             <form method="POST" action="{{ route('trabajador.papeletas.cancelar', $papeleta) }}"
                   x-data
@@ -208,7 +212,6 @@
                     <template x-if="estado === 'abriendo' || estado === 'en-vivo'">
                         <div class="space-y-3">
                             <div class="relative overflow-hidden rounded-xl bg-black aspect-[3/4]">
-
                                 <video x-ref="video" x-init="conectarCamara()" playsinline autoplay muted class="h-full w-full object-cover"
                                        :class="facingMode === 'user' && '-scale-x-100'"></video>
                                 <p x-show="estado === 'abriendo'" class="absolute inset-0 flex items-center justify-center text-xs text-white/80">
@@ -260,7 +263,6 @@
                     <p class="text-xs text-red-600 dark:text-red-400" x-show="camaraError" x-text="camaraError"></p>
 
                     <canvas x-ref="canvas" class="hidden"></canvas>
-
                     <input type="file" x-ref="inputFoto" name="foto" accept="image/*" class="hidden" tabindex="-1" aria-hidden="true">
                     <input type="hidden" name="latitud" :value="lat">
                     <input type="hidden" name="longitud" :value="lng">
@@ -297,7 +299,6 @@
             </div>
         @endif
 
-        {{-- Detalle agrupado --}}
         @foreach ($seccionesDetalle as $titulo => $filas)
             <section>
                 <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-100/50 mb-2 px-1">{{ $titulo }}</h3>
@@ -312,7 +313,6 @@
             </section>
         @endforeach
 
-        {{-- Retorno registrado --}}
         @if ($papeleta->retorno)
             <div class="glass-card p-5">
                 <h3 class="text-sm font-semibold text-gray-700 dark:text-tinta-50/80 mb-3">
@@ -349,7 +349,6 @@
             </div>
         @endif
 
-        {{-- Sustentos --}}
         @if ($papeleta->sustentos->isNotEmpty())
             <div class="glass-card p-5">
                 <h3 class="text-sm font-semibold text-gray-700 dark:text-tinta-50/80 mb-3">Sustentos</h3>

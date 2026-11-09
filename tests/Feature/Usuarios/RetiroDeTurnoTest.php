@@ -15,11 +15,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Un turno solo vale mientras el trabajador esté activo y en el régimen
- * para el que se programó: al desactivarlo o cambiarlo de régimen
- * (276 <-> 728) su turno anterior se retira. El historial pasado queda.
- */
+
 class RetiroDeTurnoTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -94,7 +90,7 @@ class RetiroDeTurnoTest extends TestCase
     public function test_cambiar_de_276_a_728_deja_programar_el_turno_nuevo(): void
     {
         $trabajador = $this->usuarioDePrueba(['regimen' => '276']);
-        // Turno heredado del régimen anterior.
+        
         ConfiguracionTurno::create([
             'user_id' => $trabajador->id,
             'turno' => ConfiguracionTurno::TURNO_276,

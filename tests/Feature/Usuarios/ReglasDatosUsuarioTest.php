@@ -11,10 +11,7 @@ use Spatie\Permission\Models\Role;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Una sola regla de DNI/correo para el alta de jefes (CrearUsuarioRequest)
- * y para admin (UsuarioAdminForm), ver App\Support\ReglasDatosUsuario.
- */
+
 class ReglasDatosUsuarioTest extends TestCase
 {
     use CreaEscenarioPapeletas;

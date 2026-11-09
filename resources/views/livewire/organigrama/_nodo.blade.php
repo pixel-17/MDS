@@ -1,13 +1,15 @@
 @php
-
+    /** @var \App\Models\UnidadOrganica $unidad */
     $unidad = $nodo['unidad'];
     $jefePrincipal = $unidad->jefe;
     $tieneHijos = $nodo['hijos']->isNotEmpty();
     $tieneMiembros = $nodo['miembros']->isNotEmpty();
     $sedeJefe = $jefePrincipal?->sede_id;
 
+    // Nivel en el árbol (0 = raíz): decide el tono de la tarjeta (degradé de una sola gama).
     $nivel = $nivel ?? 0;
 
+    // Texto de la búsqueda: se resalta donde coincide (nombre de unidad, jefes y trabajadores). Siempre devuelve HTML ya escapado.
     $buscar = trim((string) ($buscar ?? ''));
     $resaltar = function (?string $texto) use ($buscar): \Illuminate\Support\HtmlString {
         $texto = (string) $texto;
@@ -24,8 +26,11 @@
         return new \Illuminate\Support\HtmlString($html);
     };
 
+    // Unidades con mucha gente: se muestran los primeros y el resto con un botón (con filtros activos se ve todo).
     $maxVisibles = 8;
 
+    // Vista inicial "solo hasta las áreas": la raíz abre para mostrar sus sub-unidades; las demás
+    // abren solo si tienen sub-áreas debajo. Las oficinas (sin sub-unidades) y su gente quedan cerradas.
     $tieneSubareas = $nodo['hijos']->contains(fn ($h) => $h['hijos']->isNotEmpty());
     $abiertoInicial = $nivel === 0 ? $tieneHijos : $tieneSubareas;
 @endphp
@@ -56,7 +61,6 @@
             @drop.prevent="if (arrastrando) { $wire.proponerMovimiento(arrastrando, {{ $unidad->id }}) } bandeja = bandeja.filter(p => p.id !== arrastrando); arrastrando = null; sobre = null"
         @endif
     >
-
         <div class="flex items-start gap-2">
             @if ($tieneHijos || $tieneMiembros)
                 <button type="button" @click="open = ! open" class="-ms-1 mt-0 grid size-8 shrink-0 place-items-center rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10" :aria-expanded="open"
@@ -99,7 +103,6 @@
                             </button>
                         </div>
                     @elseif ($modoEdicion && ($esJefeDeArea ?? false))
-
                         <div class="flex items-center gap-0.5 opacity-70 transition group-hover:opacity-100 group-focus-within:opacity-100">
                             <button type="button" title="Agregar sub-unidad" class="rounded-lg p-1.5 text-gray-500 hover:bg-tinta-50 hover:text-tinta-700 dark:text-tinta-100 dark:hover:bg-white/10"
                                     @click="$dispatch('org-unidad-abrir', { id: null, parentId: {{ $unidad->id }} })">
@@ -111,7 +114,6 @@
                             </button>
                         </div>
                     @elseif ($modoEdicion)
-
                         <div class="flex items-center gap-0.5 opacity-70 transition group-hover:opacity-100 group-focus-within:opacity-100">
                             <button type="button" title="Agregar trabajador a esta unidad" class="rounded-lg p-1.5 text-gray-500 hover:bg-tinta-50 hover:text-tinta-700 dark:text-tinta-100 dark:hover:bg-white/10"
                                     @click="$dispatch('org-persona-abrir', { unidadId: {{ $unidad->id }} })">
@@ -123,7 +125,6 @@
 
                 <div class="mt-3 space-y-1.5">
                     @forelse ($nodo['jefes'] as $jefe)
-
                         @php($puedeArrastrarJefe = $modoEdicion && ($esAdmin || (int) $jefe->id !== (int) auth()->id()))
                         <div @class([
                             'org-persona flex flex-wrap items-center gap-2 text-sm',
@@ -152,7 +153,6 @@
             </div>
         </div>
 
-        {{-- Trabajadores ligados a esa jefatura --}}
         @if ($tieneMiembros)
             <div x-show="open" x-collapse class="mt-3 border-t border-gray-100 pt-3 dark:border-white/10">
                 <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">
@@ -191,7 +191,6 @@
         @endif
     </div>
 
-    {{-- Sub-unidades --}}
     @if ($tieneHijos)
         <ul x-show="open" x-collapse>
             @foreach ($nodo['hijos'] as $hijo)

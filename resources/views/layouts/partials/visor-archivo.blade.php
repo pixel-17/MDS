@@ -1,4 +1,3 @@
-
 <style>
     #visor-archivo { --va-ancho: clamp(22rem, 32vw, 30rem); --va-asa: 1.25rem; }
     #visor-archivo-panel { pointer-events: auto; position: absolute; display: flex; flex-direction: column; overflow: hidden; }
@@ -14,7 +13,7 @@
         #visor-archivo[data-estado="minimizado"] #visor-archivo-panel { display: none; }
         #visor-archivo-chip { display: none; }
         #visor-archivo[data-estado="minimizado"] #visor-archivo-chip { display: flex; }
-
+        #visor-archivo-asa, .va-solo-esc { display: none; }
     }
     @media (min-width: 1024px) {
         #visor-archivo-panel { top: 0; bottom: 0; right: 0; width: var(--va-ancho); transition: transform 200ms ease; }
@@ -22,7 +21,7 @@
         #visor-archivo-asa { display: flex; right: var(--va-ancho); transition: right 200ms ease; }
         #visor-archivo[data-estado="plegado"] #visor-archivo-asa { right: 0; }
         #visor-archivo[data-estado="abierto"] [data-ico-asa="abrir"], #visor-archivo[data-estado="plegado"] [data-ico-asa="plegar"] { display: none; }
-
+        #visor-archivo-chip, .va-solo-cel { display: none; }
     }
 </style>
 
@@ -107,6 +106,11 @@
         let archivos = [];
         let actual = -1;
 
+        // data-visor-solo: enlaces a .../archivo que se previsualizan en el visor
+        // de siempre, pero SOLOS — sin juntarse con los demás enlaces de la
+        // página. Para listados/reportes con muchas filas, cada una de una
+        // papeleta distinta: agruparlas todas en una sola tanda de pestañas no
+        // tiene sentido y con decenas de filas se vuelve inusable.
         const patronArchivo = (a) => /\/archivo(\/|\?|$)/.test(a.getAttribute('href') || '');
         const esSolo = (a) => a.hasAttribute('data-visor-solo');
         const esArchivo = (a) => patronArchivo(a);
@@ -120,6 +124,8 @@
             return 'Archivo';
         };
 
+        // Nunca mete en el conteo un enlace data-visor-solo, aunque sea el que
+        // dispara la apertura: así el de al lado no se arrastra tampoco.
         const recolectar = () => {
             const vistos = new Set();
             archivos = [];
@@ -146,6 +152,8 @@
             });
         };
 
+        // El archivo se ajusta al ancho del panel y solo se desplaza en vertical:
+        // las imágenes se muestran al 100 % de ancho y los PDF se abren con "ajustar al ancho".
         const PARAMS_PDF = '#toolbar=0&navpanes=0&view=FitH&zoom=page-width';
         let turno = 0;
 
@@ -174,13 +182,16 @@
             pintarTabs();
             const mio = ++turno;
             vaciarVista();
-
+            // Se consulta el tipo de archivo sin descargarlo; si falla, se usa el visor de PDF.
             fetch(archivo.href, { method: 'HEAD', credentials: 'same-origin' })
                 .then((r) => (r.headers.get('content-type') || '').startsWith('image/'))
                 .catch(() => false)
                 .then((esImagen) => { if (mio === turno) mostrar(archivo.href, esImagen); });
         };
 
+        // La página deja libre el espacio que ocupa el visor para que nada quede tapado.
+        // En escritorio el espacio se reserva en el contenedor padre (no en #contenido), así
+        // #contenido conserva su "margin: auto" y queda centrado en lo que sobra.
         const zona = contenido ? contenido.parentElement : null;
         const ajustarPagina = () => {
             if (!contenido) return;
@@ -200,6 +211,7 @@
             }
         };
 
+        // El chip minimizado se apoya sobre la barra de navegación inferior si existe.
         const posicionChip = () => {
             const nav = document.querySelector('.bottom-nav');
             return (nav ? nav.offsetHeight : 0) + 8;
@@ -215,6 +227,8 @@
 
         const estadoInicial = () => (escritorio.matches ? 'abierto' : 'medio');
 
+        // Un enlace data-visor-solo no agrupa: se abre siempre como único archivo,
+        // así que las pestañas no aparecen (pintarTabs() ya las oculta si hay < 2).
         const abrir = (href, textoSolo) => {
             let i;
             if (textoSolo !== undefined) {
@@ -251,6 +265,7 @@
         $('visor-archivo-asa').addEventListener('click', alternarPliegue);
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && visor.dataset.estado !== 'cerrado') cerrar(); });
 
+        // Al girar el celular o cambiar el tamaño de la ventana, se pasa al modo que corresponde.
         escritorio.addEventListener('change', () => {
             if (visor.dataset.estado !== 'cerrado') poner(estadoInicial());
         });

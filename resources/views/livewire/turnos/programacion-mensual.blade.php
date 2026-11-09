@@ -53,7 +53,6 @@
                     d.setDate(d.getDate() - dias);
                     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
                 },
-                {{-- Misma regla que PatronTurnos::offsetContinuacion (PHP): sigue la rotación donde terminó lo anterior a 'desde'. --}}
                 offsetContinuacion(pasos) {
                     const n = pasos.length;
                     const previos = [];
@@ -92,7 +91,6 @@
             }"
             class="space-y-6"
         >
-
             <div class="flex items-center justify-between flex-wrap gap-3">
                 <div class="flex items-center gap-2">
                     <button type="button" @click="navegar('mesAnterior')" class="px-3 py-1.5 rounded-md border text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" aria-label="Mes anterior">&larr; Anterior</button>
@@ -103,7 +101,6 @@
                 <span x-show="sucio" x-cloak class="text-xs font-medium text-amber-700 dark:text-amber-300">Cambios sin guardar</span>
             </div>
 
-            {{-- Pincel --}}
             <div class="glass-card p-4 space-y-3">
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="text-sm font-medium mr-1">Turno a pintar:</span>
@@ -145,7 +142,6 @@
                     <button type="button" x-show="meses > 1" x-cloak @click="generarMeses()" wire:loading.attr="disabled" class="px-3 py-2 rounded-md bg-tinta-800 text-white text-sm disabled:opacity-50">Generar y guardar <span x-text="meses"></span> meses</button>
                     <button type="button" @click="dias = {}" class="px-3 py-2 rounded-md border text-sm text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800">Limpiar mes</button>
                 </div>
-
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="text-xs text-gray-500">Atajos:</span>
                     @foreach ($predefinidos as $etiqueta => $valor)
@@ -162,7 +158,6 @@
                 <p x-show="errorPatron" x-text="errorPatron" x-cloak class="text-sm text-red-600"></p>
             </div>
 
-            {{-- Calendario --}}
             <div class="glass-card p-4 overflow-x-auto">
                 <table class="min-w-full text-center text-sm border-separate border-spacing-1">
                     <thead>
@@ -199,7 +194,6 @@
                 </table>
             </div>
 
-            {{-- Resumen --}}
             <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600 dark:text-gray-300">
                 <span>Mañana: <strong x-text="cuenta('MANANA')"></strong></span>
                 <span>Tarde: <strong x-text="cuenta('TARDE')"></strong></span>

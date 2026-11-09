@@ -7,9 +7,15 @@ use App\Models\UnidadOrganica;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
+
 class GuardarUnidadOrganicaAction
 {
-
+    /**
+     * @param  array{nombre:string,tipo:?string,parent_id:?int,jefe_id:?int,activo:bool}  $datos
+     * @param  bool  $ubicarJefe  pasar al jefe nuevo a esta unidad si estaba en otra
+     *
+     * @throws UsuarioException
+     */
     public function ejecutar(User $actor, ?UnidadOrganica $unidad, array $datos, bool $ubicarJefe = false): UnidadOrganica
     {
         if (! $actor->hasRole('admin')) {
@@ -40,13 +46,22 @@ class GuardarUnidadOrganicaAction
                 : UnidadOrganica::create($atributos);
 
             if ($ubicarJefe) {
-                $jefaturas->ubicarJefe($unidad->fresh());
+                $jefaturas->ubicarJefe($unidad->fresh() ?? $unidad);
             }
 
             return $unidad;
         });
     }
 
+    /**
+     * Delega en el alcance que corresponda: crear una sub-unidad nueva
+     * (exigirAlcanceDeJefeDeAreaAlCrear) o editar la jefatura de una que ya
+     * existe (exigirAlcanceDeJefeDeAreaAlEditar).
+     *
+     * @param  array{nombre:string,tipo:?string,parent_id:?int,jefe_id:?int,activo:bool}  $datos
+     *
+     * @throws UsuarioException
+     */
     private function exigirAlcanceDeJefeDeArea(User $actor, ?UnidadOrganica $unidad, array $datos): void
     {
         if ($unidad === null) {
@@ -58,6 +73,16 @@ class GuardarUnidadOrganicaAction
         $this->exigirAlcanceDeJefeDeAreaAlEditar($actor, $unidad, $datos);
     }
 
+    /**
+     * Un jefe de área puede crear una sub-unidad nueva ("una rama más") dentro
+     * de su propia área: la unidad que encabeza o cualquiera de sus
+     * sub-unidades, nunca fuera de ella ni como unidad raíz. Si de entrada le
+     * asigna un jefe, ese jefe también debe pertenecer a su área.
+     *
+     * @param  array{nombre:string,tipo:?string,parent_id:?int,jefe_id:?int,activo:bool}  $datos
+     *
+     * @throws UsuarioException
+     */
     private function exigirAlcanceDeJefeDeAreaAlCrear(User $actor, array $datos): void
     {
         $reglas = app(ReglasOrganigrama::class);
@@ -81,6 +106,15 @@ class GuardarUnidadOrganicaAction
         }
     }
 
+    /**
+     * Un jefe de área solo puede cambiar QUIÉN jefatura una unidad de su área (nunca la que él
+     * encabeza) y el jefe nuevo debe pertenecer a esa misma área. Nombre, tipo, padre y estado
+     * quedan como están: eso sigue siendo del administrador.
+     *
+     * @param  array{nombre:string,tipo:?string,parent_id:?int,jefe_id:?int,activo:bool}  $datos
+     *
+     * @throws UsuarioException
+     */
     private function exigirAlcanceDeJefeDeAreaAlEditar(User $actor, UnidadOrganica $unidad, array $datos): void
     {
         $reglas = app(ReglasOrganigrama::class);
@@ -109,6 +143,16 @@ class GuardarUnidadOrganicaAction
         }
     }
 
+    /**
+     * Sin ciclos: ni su propio padre ni el de un descendiente suyo.
+     *
+     * Va dentro de la transacción y bloquea el árbol (solo id y parent_id,
+     * son pocas filas) antes de recorrerlo: así dos admins moviendo
+     * unidades a la vez se serializan y el segundo ve el árbol ya
+     * modificado por el primero, en vez de validar contra un estado viejo.
+     *
+     * @throws UsuarioException
+     */
     private function validarSinCiclos(?UnidadOrganica $unidad, mixed $parentId): void
     {
         if (! $unidad || ! $parentId) {

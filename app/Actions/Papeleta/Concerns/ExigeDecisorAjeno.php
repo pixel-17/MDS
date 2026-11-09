@@ -6,6 +6,7 @@ use App\Exceptions\PapeletaException;
 use App\Models\Papeleta;
 use App\Models\User;
 
+
 trait ExigeDecisorAjeno
 {
     protected function exigirDecisorAjeno(Papeleta $papeleta, User $decisor): void

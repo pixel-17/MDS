@@ -11,13 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Los 4 widgets "por trabajador" agregados a
- * DashboardMetricsService::calcularRrhh(): quién está afuera ahora,
- * el top por cantidad de papeletas, el top de horas acumuladas del
- * mes (vía ReporteHorasAcumuladasService) y el seguimiento de
- * rechazadas/observadas.
- */
+
 class DashboardMetricsRrhhTest extends TestCase
 {
     use CreaEscenarioPapeletas;

@@ -16,6 +16,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+
 class TrabajadorModal extends Component
 {
     use ManejaExcepcionesDeUsuario;
@@ -76,8 +77,10 @@ class TrabajadorModal extends Component
             return;
         }
 
+        /** @var User $actor */
         $actor = auth()->user();
 
+        
         if ($t->activo && ! $this->activo) {
             $motivo = $estado->motivoParaNoDesactivar($actor, $t);
 
@@ -87,6 +90,7 @@ class TrabajadorModal extends Component
                 return;
             }
 
+            
             if ($estado->jefaturasPorResolver($t)->isNotEmpty()) {
                 $this->abierto = false;
                 $this->dispatch('usuario-baja-abrir', id: $t->id);
@@ -96,13 +100,14 @@ class TrabajadorModal extends Component
         }
 
         if (! $this->intentar(function () use ($mover, $actor, $t) {
-
+            
             if ($this->unidadId !== null && (int) $this->unidadId !== (int) $t->unidad_organica_id) {
                 if ($t->unidad_organica_id === null) {
-
+                    
+                    
                     $mover->exigirJefeInmediato(UnidadOrganica::findOrFail($this->unidadId));
                     $t->unidad_organica_id = $this->unidadId;
-                    $t->save();
+                    $t->save(); 
                 } else {
                     $mover->ejecutar($actor, $t->id, $this->unidadId, (int) $t->unidad_organica_id, true, false);
                 }
@@ -138,6 +143,7 @@ class TrabajadorModal extends Component
 
         $t = User::with(['jefeInmediato', 'sede'])->find($this->trabajadorId);
 
+        
         $destino = $t && $this->unidadId && (int) $this->unidadId !== (int) $t->unidad_organica_id
             ? UnidadOrganica::with('jefe.sede')->find($this->unidadId)
             : null;

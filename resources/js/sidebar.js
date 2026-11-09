@@ -1,4 +1,11 @@
-
+/**
+ * Estado global del sidebar (Alpine.store), compartido entre el
+ * componente Livewire de navegación y el layout que reserva el
+ * espacio a la izquierda del contenido.
+ *
+ * - collapsed: sidebar en modo solo-iconos en escritorio (persiste).
+ * - mobileOpen: drawer visible en móvil (no persiste, siempre arranca cerrado).
+ */
 const CLAVE = 'mssc-sidebar-collapsed';
 
 document.addEventListener('alpine:init', () => {

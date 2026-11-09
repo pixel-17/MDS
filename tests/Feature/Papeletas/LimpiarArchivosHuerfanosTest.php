@@ -23,7 +23,7 @@ class LimpiarArchivosHuerfanosTest extends TestCase
         Storage::fake('local');
     }
 
-    /** Crea un archivo con la antigüedad indicada (en días). */
+    
     private function archivo(string $ruta, int $dias = 40): string
     {
         Storage::disk('local')->put($ruta, 'contenido');

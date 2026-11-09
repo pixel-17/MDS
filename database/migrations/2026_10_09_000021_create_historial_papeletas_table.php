@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-
+    
     public function up(): void
     {
         Schema::create('historial_papeletas', function (Blueprint $table) {
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->foreignId('motivo_nuevo_id')->nullable()->constrained('motivos')->nullOnDelete();
 
             $table->text('justificacion')->nullable();
-            $table->json('metadata')->nullable();
+            $table->json('metadata')->nullable(); 
 
             $table->timestamp('created_at')->useCurrent();
         });

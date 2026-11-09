@@ -7,6 +7,7 @@ use App\Models\Papeleta;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+
 class PapeletaArchivoController extends Controller
 {
     public function show(Papeleta $papeleta, string $tipo): StreamedResponse
@@ -23,6 +24,7 @@ class PapeletaArchivoController extends Controller
 
         abort_unless($path && Storage::disk('local')->exists($path), 404, 'El archivo no existe.');
 
+        
         return Storage::disk('local')->response($path, null, ['X-Content-Type-Options' => 'nosniff']);
     }
 }

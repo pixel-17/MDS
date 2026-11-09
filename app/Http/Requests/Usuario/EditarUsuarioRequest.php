@@ -8,6 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
+
 class EditarUsuarioRequest extends FormRequest
 {
     public function authorize(): bool
@@ -15,18 +16,20 @@ class EditarUsuarioRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         $unidadesDisponibles = $this->unidadesDisponibles();
         $esJefeDeArea = $unidadesDisponibles->isNotEmpty();
 
+        /** @var User $trabajador */
         $trabajador = $this->route('trabajador');
 
         return [
             'name' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
             'email' => ReglasDatosUsuario::email($trabajador->id),
-
+            
             'sede_id' => $esJefeDeArea ? ['required', 'exists:sedes,id'] : ['nullable'],
             'unidad_organica_id' => $esJefeDeArea
                 ? ['required', Rule::in($unidadesDisponibles->all())]
@@ -42,9 +45,11 @@ class EditarUsuarioRequest extends FormRequest
         ];
     }
 
+    
+    /** @return Collection<int, int> */
     public function unidadesDisponibles(): Collection
     {
-        $encabezadas = $this->user()->unidadesQueEncabeza;
+        $encabezadas = $this->user()->unidadesQueEncabeza ?? collect();
 
         $ids = collect();
         foreach ($encabezadas as $unidad) {

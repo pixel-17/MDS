@@ -9,12 +9,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * El campo "Buscar trabajador" de la bandeja de RRHH filtra las tres
- * listas (por decidir, post-hoc, sustentos) por nombre/apellido del
- * trabajador. Aquí solo se cubre "por decidir": las otras dos listas
- * comparten el mismo closure de filtro en RrhhIndex::render().
- */
+
 class RrhhIndexBusquedaTest extends TestCase
 {
     use CreaEscenarioPapeletas;

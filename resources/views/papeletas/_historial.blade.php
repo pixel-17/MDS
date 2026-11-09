@@ -3,7 +3,11 @@
     <ol class="space-y-3">
         @forelse ($papeleta->historial as $evento)
             @php
-
+                // Los eventos guardan solo el basename del estado (p. ej.
+                // "Rechazada"); reconstruimos el FQCN para reusar el mismo
+                // mapa de colores/etiquetas que ya usa <x-estado-papeleta>,
+                // así un evento del historial se ve igual que el badge de
+                // estado actual en toda la app.
                 $puntoNuevo = null;
                 $etiquetaNuevo = $evento->estado_nuevo;
                 $etiquetaAnterior = $evento->estado_anterior;

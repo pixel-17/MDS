@@ -11,9 +11,10 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
+
 class InsigniaBandeja extends Component
 {
-
+    
     #[Locked]
     public string $bandeja = 'jefe';
 
@@ -46,7 +47,11 @@ class InsigniaBandeja extends Component
         }
 
         return match ($this->bandeja) {
-
+            
+            
+            
+            
+            
             'jefe' => Papeleta::where(fn ($raiz) => $raiz
                 ->where(fn ($propias) => $propias
                     ->deJefeInmediato($usuario)
@@ -54,13 +59,15 @@ class InsigniaBandeja extends Component
                         $query->whereState('estado', PendienteJefe::class)
                             ->orWhereState('estado', ObservadaPorRrhh::class);
                     }))
-
+                
+                
                 ->orWhere(fn ($posthoc) => $posthoc
                     ->where('autorizado_con_rrhh_fuera_horario', true)
                     ->where('revision_posthoc_estado', 'observada')
                     ->where('resuelto_por_jefe_id', $usuario->id)))
                 ->count(),
-
+            
+            
             'rrhh' => $usuario->hasRole('rrhh')
                 ? Papeleta::whereState('estado', PendienteRrhh::class)
                     ->orWhere(fn ($q) => $q

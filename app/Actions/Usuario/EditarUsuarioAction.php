@@ -4,6 +4,7 @@ namespace App\Actions\Usuario;
 
 use App\Models\User;
 
+
 class EditarUsuarioAction
 {
     /**
@@ -19,6 +20,6 @@ class EditarUsuarioAction
             'unidad_organica_id' => $esJefeDeArea ? $datos['unidad_organica_id'] : $trabajador->unidad_organica_id,
         ]);
 
-        return $trabajador->fresh();
+        return $trabajador->fresh() ?? $trabajador;
     }
 }

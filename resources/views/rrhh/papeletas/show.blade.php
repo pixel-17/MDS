@@ -2,6 +2,8 @@
     use App\States\Papeleta\PendienteRrhh;
     use App\States\Papeleta\EnJustificacion;
 
+    // Solo lectura cuando la ve el admin (ver Admin\PapeletaController):
+    // ninguna acción de RRHH aparece para él.
     $soloLectura = $soloLectura ?? false;
 
     $puedeDecidir = ! $soloLectura && $papeleta->estado->equals(PendienteRrhh::class);
@@ -12,6 +14,14 @@
     $topePosthoc = (int) \App\Models\Configuracion::valorDe('TOPE_OBSERVACIONES', 3);
     $posthocRespondida = $papeleta->revision_posthoc_estado === 'respondida';
 
+    // Mismo tope configurable que usa jefe/papeletas/show.blade.php (Configuraciones >
+    // TOPE_OBSERVACIONES). Antes estaba hardcodeado como "/3" en esta vista.
+    $topeObservaciones = (int) \App\Models\Configuracion::valorDe('TOPE_OBSERVACIONES', 3);
+    $observarRrhhAgotaElTope = $papeleta->contador_observaciones_rrhh >= $topeObservaciones - 1;
+    $avisoObservarRrhh = $observarRrhhAgotaElTope
+        ? "Esta papeleta ya tiene {$papeleta->contador_observaciones_rrhh}/{$topeObservaciones} observaciones de RRHH. Si la observas, alcanzará el tope y el sistema la rechazará automáticamente en vez de esperar respuesta del jefe."
+        : null;
+
     $sustentoPresentado = ! $soloLectura && $papeleta->estado->equals(EnJustificacion::class)
         ? $papeleta->sustentos->firstWhere('estado', 'presentado')
         : null;
@@ -19,11 +29,11 @@
 
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between" data-en-vivo-contenido data-papeleta-id="{{ $papeleta->id }}">
             <h2 class="font-bold text-2xl text-tinta-950 leading-tight tracking-tight">
-                Papeleta
+                Papeleta #{{ $papeleta->id }} · {{ $papeleta->trabajador->nombre_completo }}
             </h2>
-            <span data-en-vivo-estado><x-estado-papeleta :estado="$papeleta->estado" :abandono="$papeleta->esAbandono()" class="text-sm" /></span>
+            <x-estado-papeleta :estado="$papeleta->estado" :abandono="$papeleta->esAbandono()" class="text-sm" />
         </div>
     </x-slot>
 
@@ -42,11 +52,9 @@
     @endisset
 
     <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-            <x-papeleta-en-vivo :papeleta="$papeleta" />
-        </div>
+        <x-papeleta-en-vivo :papeleta-id="$papeleta->id" />
 
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6" data-en-vivo-contenido>
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6" data-en-vivo-contenido data-papeleta-id="{{ $papeleta->id }}">
             @include('papeletas._info', ['papeleta' => $papeleta])
 
             @if ($puedeDecidir || $puedePosthoc)
@@ -89,12 +97,12 @@
                             color="green"
                         />
                         @unless ($papeleta->sinJefatura())
-                            <x-accion-comentario :action="route('rrhh.papeletas.observar', $papeleta)" label="Observar (vuelve al jefe)" color="orange" :sugerencias="config('respuestas_rapidas.rrhh_observar')" />
+                            <x-accion-comentario :action="route('rrhh.papeletas.observar', $papeleta)" label="Observar (vuelve al jefe)" color="orange" :sugerencias="config('respuestas_rapidas.rrhh_observar')" :aviso="$avisoObservarRrhh" />
                         @endunless
                         <x-accion-comentario :action="route('rrhh.papeletas.rechazar', $papeleta)" label="Rechazar" color="red" :sugerencias="config('respuestas_rapidas.rrhh_rechazar')" />
                     </div>
                     @if ($papeleta->contador_observaciones_rrhh > 0)
-                        <p class="text-xs text-gray-500 mt-2">Observaciones previas de RRHH: {{ $papeleta->contador_observaciones_rrhh }}/3</p>
+                        <p class="text-xs text-gray-500 mt-2">Observaciones previas de RRHH: {{ $papeleta->contador_observaciones_rrhh }}/{{ $topeObservaciones }}</p>
                     @endif
                 </div>
             @endif
@@ -140,16 +148,13 @@
             @endif
 
             @if ($sustentoPresentado)
-                <div class="glass-card p-6" x-data="{ resultado: 'aprobado', enviando: false }">
+                <div class="glass-card p-6" x-data="{ resultado: '{{ old('resultado', 'aprobado') }}', comentario: @js(old('comentario', '')), enviando: false, get bloqueado() { return this.resultado === 'particular' && this.comentario.trim().length < 5; } }">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">Revisar sustento presentado</h3>
-                    <form method="POST" action="{{ route('rrhh.sustentos.revisar', $sustentoPresentado) }}" class="space-y-3" @submit="enviando = true">
+                    <form method="POST" action="{{ route('rrhh.sustentos.revisar', $sustentoPresentado) }}" class="space-y-3" @submit="if (bloqueado) { $event.preventDefault(); return; } enviando = true">
                         @csrf
                         <div class="flex items-center gap-4 text-sm flex-wrap">
                             <label class="inline-flex items-center gap-1">
                                 <input type="radio" name="resultado" value="aprobado" x-model="resultado"> Aprobar
-                            </label>
-                            <label class="inline-flex items-center gap-1">
-                                <input type="radio" name="resultado" value="observado" x-model="resultado"> Observar
                             </label>
                             <label class="inline-flex items-center gap-1">
                                 <input type="radio" name="resultado" value="particular" x-model="resultado"> Cambiar a Particular (con descuento)
@@ -158,10 +163,14 @@
                         <p x-show="resultado === 'particular'" x-cloak class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
                             El sustento no es válido y no se le dará una nueva oportunidad: la papeleta pasará a Particular y se descontarán las horas que el trabajador estuvo fuera. Esta decisión no se puede deshacer desde aquí.
                         </p>
-                        <textarea name="comentario" aria-label="Motivo" rows="2" maxlength="2000" x-show="resultado === 'observado' || resultado === 'particular'"
-                                  placeholder="Motivo (mínimo 5 caracteres)..."
-                                  class="block w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-tinta-500 focus:ring-tinta-500 dark:border-white/15 dark:bg-white/5 dark:text-white"></textarea>
-                        <button type="submit" :disabled="enviando" :class="{ 'opacity-50 cursor-not-allowed': enviando }" class="inline-flex items-center px-4 py-2 border border-transparent text-xs font-semibold rounded-md text-white bg-tinta-600 hover:bg-tinta-700">
+                        <div x-show="resultado === 'particular'" x-cloak>
+                            <textarea name="comentario" aria-label="Motivo" rows="2" maxlength="2000" x-model="comentario"
+                                      placeholder="Motivo (mínimo 5 caracteres)..."
+                                      class="block w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-tinta-500 focus:ring-tinta-500 dark:border-white/15 dark:bg-white/5 dark:text-white"></textarea>
+                            <p class="text-xs text-gray-400 mt-1">Obligatorio para cambiar a Particular.</p>
+                        </div>
+                        @error('comentario')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                        <button type="submit" :disabled="enviando || bloqueado" :class="{ 'opacity-50 cursor-not-allowed': enviando || bloqueado }" class="inline-flex items-center px-4 py-2 border border-transparent text-xs font-semibold rounded-md text-white bg-tinta-600 hover:bg-tinta-700">
                             <span x-show="! enviando">Confirmar revisión</span>
                             <span x-show="enviando" x-cloak>Enviando…</span>
                         </button>
@@ -191,7 +200,7 @@
                         @endif
                         <div>
                             <label for="corregir-motivo" class="block text-xs font-medium text-gray-600 mb-1">Motivo (actual: {{ $papeleta->motivo->nombre }})</label>
-                            <select id="corregir-motivo" name="motivo_id" class="{{ $campo }}">
+                            <select id="corregir-motivo" name="motivo_id" class="{{ $campo }} dark:[color-scheme:dark]">
                                 <option value="">No cambiar</option>
                                 @foreach ($motivosActivos->where('id', '!=', $papeleta->motivo_id) as $m)
                                     <option value="{{ $m->id }}" @selected((int) old('motivo_id') === $m->id)>{{ $m->nombre }}</option>

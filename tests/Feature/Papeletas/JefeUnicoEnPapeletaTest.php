@@ -15,14 +15,7 @@ use Illuminate\Support\Facades\Notification;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Un solo jefe por papeleta: el jefe de la unidad del trabajador
- * (jefe_inmediato_id, fotografiado al crear). El turno vigente (728) ya no
- * se exige al decisor, solo a quien crea la papeleta; en la mayoría de
- * estos tests se le carga uno "de sobra" donde no es el foco del test. Lo
- * que SÍ se exige es que el jefe exista y esté activo.
- * Fecha de referencia: lunes 2026-09-21, 10:00.
- */
+
 class JefeUnicoEnPapeletaTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -52,7 +45,7 @@ class JefeUnicoEnPapeletaTest extends TestCase
     public function test_trabajador_276_con_jefe_728_con_turno_la_papeleta_le_llega(): void
     {
         $trabajador = $this->usuarioDePrueba(['regimen' => '276']);
-        $jefe = $this->conJefeDePrueba($trabajador); // 728
+        $jefe = $this->conJefeDePrueba($trabajador); 
         $this->turnoDePrueba($jefe);
 
         $papeleta = $this->crear($trabajador->fresh());
@@ -65,11 +58,11 @@ class JefeUnicoEnPapeletaTest extends TestCase
 
     public function test_jefe_728_sin_ningun_turno_cargado_ya_no_bloquea_la_creacion(): void
     {
-        // El turno vigente se exige a quien CREA la papeleta, nunca a su
-        // decisor: que el jefe inmediato (728) no tenga ningún turno
-        // cargado ya no bloquea la papeleta de su trabajador.
+        
+        
+        
         $trabajador = $this->usuarioDePrueba(['regimen' => '276']);
-        $jefe = $this->conJefeDePrueba($trabajador); // 728, sin ningún turno cargado
+        $jefe = $this->conJefeDePrueba($trabajador); 
 
         $papeleta = $this->crear($trabajador->fresh());
 

@@ -14,13 +14,7 @@ use Illuminate\Support\Carbon;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Papeleta que el jefe aprobó (PENDIENTE_RRHH) y RRHH sale de horario
- * antes de decidir: pasa a AUTORIZADA_Y_CORRIENDO con revisión post-hoc.
- *
- * Horario ordinario sembrado: 07:45-16:15, lunes a viernes. Lunes de
- * referencia: 2026-09-21.
- */
+
 class CierreDeRrhhTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -33,7 +27,7 @@ class CierreDeRrhhTest extends TestCase
         $this->prepararBase();
         $this->seed(ConfiguracionSeeder::class);
 
-        // Sin personal RRHH designado, RRHH nunca está "en horario".
+        
         $this->usuarioDePrueba(['regimen' => '276'], ['rrhh']);
     }
 
@@ -54,11 +48,7 @@ class CierreDeRrhhTest extends TestCase
         $this->artisan('papeletas:procesar-vencimientos')->assertSuccessful();
     }
 
-    /**
-     * Por defecto quien envía la papeleta es jefe de una unidad: es el único
-     * caso en que el sistema autoriza al cerrar RRHH. Con $esJefe = false es
-     * un trabajador raso, que nunca se autoriza por sistema.
-     */
+    
     private function pendienteDeRrhh(string $finTurno, bool $esJefe = true): Papeleta
     {
         $trabajador = $this->usuarioDePrueba();
@@ -106,7 +96,7 @@ class CierreDeRrhhTest extends TestCase
 
     public function test_en_fin_de_semana_tambien_se_autoriza_porque_rrhh_no_esta_en_horario(): void
     {
-        $this->ir('2026-09-26 10:00:00'); // sábado
+        $this->ir('2026-09-26 10:00:00'); 
         $papeleta = $this->pendienteDeRrhh('2026-09-26 22:00:00');
 
         $this->vencimientos();

@@ -11,6 +11,17 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
+/**
+ * Bandeja del Trabajador (Paso 1 del flujo), migrada de
+ * App\Http\Controllers\Trabajador\PapeletaController@index a Livewire
+ * puro para que se actualice sola en tiempo real: en cuanto su Jefe o
+ * RRHH deciden algo, NotificarPapeletaService le manda una
+ * PapeletaNotification (canal 'broadcast') y este listado se
+ * re-renderiza al instante sin que el trabajador recargue la página.
+ *
+ * crear/store/show/cancelar siguen siendo del Controller original —
+ * solo el listado (index) necesitaba tiempo real.
+ */
 #[Layout('components.trabajador-layout')]
 #[Title('Mis papeletas')]
 class TrabajadorIndex extends Component
@@ -19,6 +30,7 @@ class TrabajadorIndex extends Component
 
     public string $buscar = '';
 
+    
     #[Url(as: 'todas')]
     public bool $verTodas = false;
 
@@ -29,7 +41,9 @@ class TrabajadorIndex extends Component
 
     public function updatedVerTodas(): void
     {
-
+        
+        
+        
         if (! $this->verTodas) {
             $this->buscar = '';
         }
@@ -40,6 +54,8 @@ class TrabajadorIndex extends Component
     public function render(): View
     {
         $termino = trim($this->buscar);
+
+        /** @var \App\Models\User $usuario */
         $usuario = Auth::user();
 
         $papeletas = $usuario->papeletas()
@@ -52,6 +68,7 @@ class TrabajadorIndex extends Component
             ->orderByDesc('papeletas.id')
             ->paginate(15);
 
+        
         $tieneAlguna = ! $papeletas->isEmpty() || $this->verTodas || $termino !== ''
             || $usuario->papeletas()->exists();
 

@@ -13,11 +13,23 @@ use App\Models\User;
 use App\Services\Organigrama\ArmadorOrganigrama;
 use Illuminate\Support\Collection;
 
+
 trait MueveTrabajador
 {
-
+    /**
+     * Movimiento pendiente de confirmar, o null. Solo guarda ids; viene
+     * del navegador, así que MoverTrabajadorAction lo revalida entero al
+     * confirmar y la vista previa se recalcula en cada render.
+     *
+     * `cambiar_sede` (aceptar la sede del jefe del destino) es la decisión
+     * de la ventana de confirmación; es solo un booleano: la sede concreta
+     * la decide el servidor.
+     *
+     * @var array{trabajador: int, origen: int, destino: int, cambiar_sede: bool}|null
+     */
     public ?array $propuesta = null;
 
+    
     public function proponerMovimiento(int $trabajadorId, int $destinoId): void
     {
         $usuario = $this->autorizar();
@@ -38,12 +50,15 @@ trait MueveTrabajador
             return;
         }
 
+        
         if ($trabajador->unidadesQueEncabeza()->exists()) {
             $this->proponerMovimientoJefe($usuario, $trabajador, $destino);
 
             return;
         }
 
+        
+        
         if ((int) $trabajador->unidad_organica_id === (int) $destino->id) {
             $this->proponerMovimientoJefe($usuario, $trabajador, $destino);
 
@@ -53,7 +68,7 @@ trait MueveTrabajador
         try {
             $vista = app(MoverTrabajadorAction::class)->previsualizar($usuario, $trabajador, $destino);
         } catch (UsuarioException $e) {
-
+            
             $this->proponerMovimientoJefe($usuario, $trabajador, $destino);
 
             if ($this->propuestaJefe !== null) {
@@ -71,11 +86,12 @@ trait MueveTrabajador
             'trabajador' => (int) $trabajador->id,
             'origen' => (int) $trabajador->unidad_organica_id,
             'destino' => (int) $destino->id,
-
+            
             'cambiar_sede' => $vista['sede']['propone_cambio'],
         ];
     }
 
+    
     public function ascenderTrabajador(): void
     {
         $usuario = $this->autorizar();
@@ -85,8 +101,8 @@ trait MueveTrabajador
             return;
         }
 
-        $trabajador = User::find((int) ($propuesta['trabajador'] ?? 0));
-        $destino = UnidadOrganica::find((int) ($propuesta['destino'] ?? 0));
+        $trabajador = User::find((int) $propuesta['trabajador']);
+        $destino = UnidadOrganica::find((int) $propuesta['destino']);
 
         if (! $trabajador || ! $destino) {
             return;
@@ -115,11 +131,11 @@ trait MueveTrabajador
         try {
             $movimiento = app(MoverTrabajadorAction::class)->ejecutar(
                 $usuario,
-                (int) ($propuesta['trabajador'] ?? 0),
-                (int) ($propuesta['destino'] ?? 0),
-                (int) ($propuesta['origen'] ?? 0),
+                (int) $propuesta['trabajador'],
+                (int) $propuesta['destino'],
+                (int) $propuesta['origen'],
                 true,
-                (bool) ($propuesta['cambiar_sede'] ?? false),
+                (bool) $propuesta['cambiar_sede'],
             );
         } catch (UsuarioException $e) {
             $this->mensajeError = $e->getMessage();
@@ -129,7 +145,7 @@ trait MueveTrabajador
 
         $movimiento->load(['trabajador', 'unidadAnterior', 'unidadNueva']);
         $this->mensajeOk = $movimiento->trabajador?->nombre_completo.' pasó de '
-            .($movimiento->unidadAnterior?->nombre ?? '—').' a '.($movimiento->unidadNueva?->nombre ?? '—').'.';
+            .($movimiento->unidadAnterior->nombre ?? '—').' a '.($movimiento->unidadNueva->nombre ?? '—').'.';
     }
 
     public function deshacerMovimiento(int $movimientoId): void
@@ -161,17 +177,25 @@ trait MueveTrabajador
 
         $reversion->load(['trabajador', 'unidadNueva']);
         $this->mensajeOk = 'Se deshizo el movimiento: '.$reversion->trabajador?->nombre_completo
-            .' volvió a '.($reversion->unidadNueva?->nombre ?? '—').'.';
+            .' volvió a '.($reversion->unidadNueva->nombre ?? '—').'.';
     }
 
+    /**
+     * Datos de la ventana de confirmación del movimiento propuesto, o
+     * null. Se recalcula en cada render con MoverTrabajadorAction (que
+     * valida permisos y régimen): si la propuesta dejó de ser válida,
+     * simplemente no se muestra.
+     *
+     * @return array<string, mixed>|null
+     */
     private function vistaPreviaMovimiento(User $usuario): ?array
     {
         if ($this->propuesta === null) {
             return null;
         }
 
-        $trabajador = User::find((int) ($this->propuesta['trabajador'] ?? 0));
-        $destino = UnidadOrganica::find((int) ($this->propuesta['destino'] ?? 0));
+        $trabajador = User::find((int) $this->propuesta['trabajador']);
+        $destino = UnidadOrganica::find((int) $this->propuesta['destino']);
 
         if (! $trabajador || ! $destino) {
             return null;
@@ -191,6 +215,16 @@ trait MueveTrabajador
         return $vista;
     }
 
+    /**
+     * Unidades a las que se puede proponer mover a la persona de la ficha:
+     * activas, dentro del alcance de quien mira y distintas de la actual.
+     * Solo es una lista para elegir; las reglas las valida el servidor.
+     *
+     * @param  array<string, mixed>|null  $ficha
+     * @param  Collection<int, UnidadOrganica>  $unidades
+     * @param  array<int, true>  $enAlcance
+     * @return list<array{id: int, label: string, hint: string}>
+     */
     private function destinosParaMover(?array $ficha, Collection $unidades, array $enAlcance): array
     {
         if (! $this->modoEdicion || $ficha === null) {
@@ -199,14 +233,15 @@ trait MueveTrabajador
 
         $actual = (int) $ficha['persona']->unidad_organica_id;
 
-        return $unidades
+        $destinos = $unidades
             ->filter(fn (UnidadOrganica $u) => isset($enAlcance[$u->id]) && $u->activo && (int) $u->id !== $actual)
             ->map(fn (UnidadOrganica $u) => [
                 'id' => (int) $u->id,
                 'label' => $u->nombre,
-                'hint' => $u->jefe?->nombre_completo ?? 'sin jefe',
+                'hint' => $u->jefe->nombre_completo ?? 'sin jefe',
             ])
-            ->values()
             ->all();
+
+        return array_values($destinos);
     }
 }

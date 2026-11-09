@@ -6,15 +6,10 @@ use App\Support\PatronDescansoSemanal;
 use Illuminate\Support\Carbon;
 use PHPUnit\Framework\TestCase;
 
-/**
- * Tests unitarios para PatronDescansoSemanal.
- *
- * No tocan BD ni requieren el contenedor de Laravel — igual que
- * PatronTurnosTest, extienden directamente PHPUnit\Framework\TestCase.
- */
+
 class PatronDescansoSemanalTest extends TestCase
 {
-    // ── esArcoContiguo ────────────────────────────────────────────────────────
+    
 
     public function test_sabado_y_domingo_son_arco_contiguo(): void
     {
@@ -23,7 +18,7 @@ class PatronDescansoSemanalTest extends TestCase
 
     public function test_domingo_y_lunes_son_arco_contiguo_en_el_limite(): void
     {
-        // Domingo(7) y lunes(1) son contiguos en la semana circular.
+        
         $this->assertTrue(PatronDescansoSemanal::esArcoContiguo([1, 7]));
     }
 
@@ -39,8 +34,8 @@ class PatronDescansoSemanalTest extends TestCase
 
     public function test_tres_dias_consecutivos_son_arco_contiguo(): void
     {
-        $this->assertTrue(PatronDescansoSemanal::esArcoContiguo([5, 6, 7]));  // jue-vie-sab
-        $this->assertTrue(PatronDescansoSemanal::esArcoContiguo([6, 7, 1]));  // sab-dom-lun
+        $this->assertTrue(PatronDescansoSemanal::esArcoContiguo([5, 6, 7]));  
+        $this->assertTrue(PatronDescansoSemanal::esArcoContiguo([6, 7, 1]));  
     }
 
     public function test_un_solo_dia_es_arco_contiguo(): void
@@ -48,11 +43,11 @@ class PatronDescansoSemanalTest extends TestCase
         $this->assertTrue(PatronDescansoSemanal::esArcoContiguo([3]));
     }
 
-    // ── anclaYCiclo ───────────────────────────────────────────────────────────
+    
 
     public function test_sabado_y_domingo_producen_ciclo_5_trabajo_2_descanso(): void
     {
-        $referencia = Carbon::parse('2026-10-19');  // semana que contiene oct-2026
+        $referencia = Carbon::parse('2026-10-19');  
 
         $resultado = PatronDescansoSemanal::anclaYCiclo([6, 7], $referencia);
 
@@ -63,7 +58,7 @@ class PatronDescansoSemanalTest extends TestCase
 
     public function test_ancla_resultante_es_un_lunes(): void
     {
-        // Con sábado+domingo de descanso, el primer día de trabajo es lunes.
+        
         $referencia = Carbon::parse('2026-10-19');
 
         $resultado = PatronDescansoSemanal::anclaYCiclo([6, 7], $referencia);
@@ -97,13 +92,13 @@ class PatronDescansoSemanalTest extends TestCase
 
     public function test_dias_no_contiguos_devuelven_null(): void
     {
-        // Martes y viernes — no contiguos.
+        
         $this->assertNull(PatronDescansoSemanal::anclaYCiclo([2, 5], Carbon::now()));
     }
 
     public function test_duplicados_en_la_entrada_se_ignoran(): void
     {
-        // [6, 6, 7] equivale a [6, 7].
+        
         $referencia = Carbon::parse('2026-10-19');
 
         $resultado = PatronDescansoSemanal::anclaYCiclo([6, 6, 7], $referencia);
@@ -112,34 +107,26 @@ class PatronDescansoSemanalTest extends TestCase
         $this->assertSame(2, $resultado['dias_descanso']);
     }
 
-    /**
-     * Verifica que el ancla producida sea coherente con
-     * GeneradorTurnoMensualService::esDescansoEnFecha: el primer día de
-     * trabajo (lunes, cuando descansa S+D) NO debe ser descanso según el
-     * servicio, y el sábado SÍ.
-     *
-     * Usamos la cuenta modular directamente (sin instanciar el servicio de
-     * Laravel) para que el test siga siendo unitario puro.
-     */
+    
     public function test_ancla_es_coherente_con_la_cuenta_modular_del_generador(): void
     {
-        $referencia = Carbon::parse('2026-10-19');  // lunes 19 oct 2026
+        $referencia = Carbon::parse('2026-10-19');  
         $resultado = PatronDescansoSemanal::anclaYCiclo([6, 7], $referencia);
 
         $this->assertNotNull($resultado);
 
         $ancla = $resultado['fecha_ancla'];
-        $diasTrabajo = $resultado['dias_trabajo'];  // 5
-        $diasDescanso = $resultado['dias_descanso']; // 2
-        $ciclo = $diasTrabajo + $diasDescanso; // 7
+        $diasTrabajo = $resultado['dias_trabajo'];  
+        $diasDescanso = $resultado['dias_descanso']; 
+        $ciclo = $diasTrabajo + $diasDescanso; 
 
-        // El lunes de esa misma semana debe ser día de trabajo.
+        
         $lunes = Carbon::parse('2026-10-19');
         $diffLunes = $ancla->diffInDays($lunes, false);
         $posLunes = (($diffLunes % $ciclo) + $ciclo) % $ciclo;
         $this->assertLessThan($diasTrabajo, $posLunes, 'El lunes debe ser día de trabajo');
 
-        // El sábado de esa misma semana debe ser descanso.
+        
         $sabado = Carbon::parse('2026-10-24');
         $diffSab = $ancla->diffInDays($sabado, false);
         $posSab = (($diffSab % $ciclo) + $ciclo) % $ciclo;

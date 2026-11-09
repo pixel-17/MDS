@@ -14,9 +14,7 @@ use Laravel\Jetstream\Features;
  */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
+    
     protected static ?string $password;
 
     /**
@@ -32,10 +30,14 @@ class UserFactory extends Factory
             'dni' => fake()->unique()->numerify('########'),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-
+            
+            
+            
+            
             'activo' => true,
             'debe_actualizar_password' => false,
-
+            
+            
             'volumen_notificacion' => 80,
             'permite_gps' => false,
             'permite_camara' => false,
@@ -57,9 +59,7 @@ class UserFactory extends Factory
         ]);
     }
 
-    /**
-     * Indicate that the user should have a personal team.
-     */
+    
     public function withPersonalTeam(?callable $callback = null): static
     {
         if (! Features::hasTeamFeatures()) {

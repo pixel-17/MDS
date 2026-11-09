@@ -18,24 +18,35 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
+/**
+ * Bandeja de RRHH, migrada de
+ * App\Http\Controllers\Rrhh\PapeletaController@index a Livewire puro.
+ * Igual que JefeIndex: se re-renderiza sola vía
+ * EscuchaNotificacionesEnVivo en cuanto llega una papeleta nueva
+ * pendiente, un post-hoc, etc.
+ */
 #[Layout('layouts.app')]
 #[Title('Bandeja de RRHH')]
 class RrhhIndex extends Component
 {
     use EscuchaNotificacionesEnVivo, PaginaListasDeBandeja, WithPagination;
 
+    
     public string $buscar = '';
 
+    
     public ?int $motivoId = null;
 
     public ?int $sedeId = null;
 
     public string $regimen = '';
 
+    
     public string $desde = '';
 
     public string $hasta = '';
 
+    
     private const FILTROS = ['motivoId', 'sedeId', 'regimen', 'desde', 'hasta'];
 
     public function updated(string $nombre): void
@@ -59,7 +70,9 @@ class RrhhIndex extends Component
 
     public function render(): View
     {
-
+        
+        
+        
         $filtroBuscar = fn ($query) => $query
             ->when($this->buscar, fn ($q) => $q->whereHas('trabajador', fn ($t) => $t
                 ->where('name', 'like', "%{$this->buscar}%")
@@ -74,7 +87,7 @@ class RrhhIndex extends Component
             Papeleta::whereState('estado', PendienteRrhh::class)
                 ->when(true, $filtroBuscar)
                 ->with(['trabajador', 'motivo'])
-
+                
                 ->oldest()
                 ->orderBy('papeletas.id'),
             'porDecidirPage',
@@ -94,9 +107,11 @@ class RrhhIndex extends Component
             Papeleta::whereState('estado', EnJustificacion::class)
                 ->whereHas('sustentos', fn ($q) => $q->where('estado', 'presentado'))
                 ->when(true, $filtroBuscar)
-
+                
+                
+                
                 ->with(['trabajador', 'motivo', 'sustentos' => fn ($q) => $q->where('estado', 'presentado')])
-
+                
                 ->orderBy(
                     Sustento::select('fecha_limite')
                         ->whereColumn('sustentos.papeleta_id', 'papeletas.id')
@@ -108,6 +123,8 @@ class RrhhIndex extends Component
             'sustentosPage',
         );
 
+        
+        
         $abandonosEnRegularizacion = $this->paginarLista(
             Papeleta::whereState('estado', Finalizada::class)
                 ->where('causa_finalizacion_sin_retorno', 'abandono_no_marcado')
@@ -136,6 +153,7 @@ class RrhhIndex extends Component
         ]);
     }
 
+    
     private function fechaValida(string $fecha): bool
     {
         return (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)

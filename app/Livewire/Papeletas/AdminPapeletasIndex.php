@@ -4,15 +4,18 @@ namespace App\Livewire\Papeletas;
 
 use App\Models\Papeleta;
 use App\Models\User;
+use App\Services\ReporteHorasAcumuladasService;
 use App\States\Papeleta\PapeletaState;
 use App\Support\PapeletaEstadoPresentacion;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
+
 
 #[Layout('layouts.app')]
 #[Title('Papeletas')]
@@ -20,18 +23,27 @@ class AdminPapeletasIndex extends Component
 {
     use WithPagination;
 
+    
     public string $buscar = '';
 
     public string $estado = '';
 
+    
+    public string $vista = 'dia';
+
     public string $fecha = '';
 
+    
+    public string $mes = '';
+
+    
     #[Url(as: 'trabajador')]
     public ?int $trabajadorId = null;
 
     public function mount(): void
     {
         $this->fecha = now()->toDateString();
+        $this->mes = now()->format('Y-m');
     }
 
     public function updatedBuscar(): void
@@ -46,6 +58,22 @@ class AdminPapeletasIndex extends Component
 
     public function updatedFecha(): void
     {
+        $this->resetPage();
+    }
+
+    public function updatedMes(): void
+    {
+        $this->resetPage();
+    }
+
+    
+    public function cambiarVista(string $vista): void
+    {
+        if (! in_array($vista, ['dia', 'mes'], true)) {
+            return;
+        }
+
+        $this->vista = $vista;
         $this->resetPage();
     }
 
@@ -68,13 +96,15 @@ class AdminPapeletasIndex extends Component
         $this->trabajadorId = null;
         $this->estado = '';
         $this->buscar = '';
+        $this->vista = 'dia';
         $this->fecha = now()->toDateString();
         $this->resetPage();
     }
 
+    /** @return array<string, string> clase de estado => etiqueta */
     public static function estados(): array
     {
-        return collect(glob(app_path('States/Papeleta/*.php')))
+        return collect(glob(app_path('States/Papeleta/*.php')) ?: [])
             ->map(fn (string $archivo) => 'App\\States\\Papeleta\\'.pathinfo($archivo, PATHINFO_FILENAME))
             ->reject(fn (string $clase) => $clase === PapeletaState::class || ! is_subclass_of($clase, PapeletaState::class))
             ->mapWithKeys(fn (string $clase) => [$clase => PapeletaEstadoPresentacion::para($clase)[0]])
@@ -82,7 +112,7 @@ class AdminPapeletasIndex extends Component
             ->all();
     }
 
-    public function render(): View
+    public function render(ReporteHorasAcumuladasService $reportes): View
     {
         $estados = self::estados();
         $termino = trim($this->buscar);
@@ -90,9 +120,11 @@ class AdminPapeletasIndex extends Component
 
         $papeletas = null;
         $coincidencias = collect();
+        $inicioMes = null;
+        $finMes = null;
 
         if ($trabajador) {
-
+            
             $papeletas = Papeleta::query()
                 ->where('trabajador_id', $trabajador->id)
                 ->when(array_key_exists($this->estado, $estados), fn ($q) => $q->whereState('estado', $this->estado))
@@ -100,6 +132,24 @@ class AdminPapeletasIndex extends Component
                 ->latest('dia_operativo')
                 ->orderByDesc('papeletas.id')
                 ->paginate(20);
+        } elseif ($this->vista === 'mes') {
+            
+            
+            [$inicioMes, $finMes] = $reportes->rangoDelMes($this->mes);
+
+            $papeletas = Papeleta::query()
+                ->whereBetween('dia_operativo', [$inicioMes->toDateString(), $finMes->toDateString()])
+                ->when(array_key_exists($this->estado, $estados), fn ($q) => $q->whereState('estado', $this->estado))
+                ->when($termino !== '', fn ($q) => $q->whereHas('trabajador', fn ($t) => $t
+                    ->where('name', 'like', "%{$termino}%")
+                    ->orWhere('apellido', 'like', "%{$termino}%")
+                    ->orWhere('dni', 'like', "%{$termino}%")))
+                ->with(['trabajador', 'motivo'])
+                ->latest('dia_operativo')
+                ->orderByDesc('papeletas.id')
+                ->paginate(20);
+
+            $coincidencias = $this->coincidencias($termino);
         } else {
             $fecha = $this->fecha;
             try {
@@ -120,16 +170,7 @@ class AdminPapeletasIndex extends Component
                 ->orderByDesc('papeletas.id')
                 ->paginate(20);
 
-            if ($termino !== '') {
-                $coincidencias = User::query()
-                    ->where(fn ($q) => $q
-                        ->where('name', 'like', "%{$termino}%")
-                        ->orWhere('apellido', 'like', "%{$termino}%")
-                        ->orWhere('dni', 'like', "%{$termino}%"))
-                    ->orderBy('name')
-                    ->limit(10)
-                    ->get(['id', 'name', 'apellido', 'dni']);
-            }
+            $coincidencias = $this->coincidencias($termino);
         }
 
         return view('livewire.papeletas.admin-papeletas-index', [
@@ -137,6 +178,29 @@ class AdminPapeletasIndex extends Component
             'estados' => $estados,
             'trabajador' => $trabajador,
             'coincidencias' => $coincidencias,
+            'inicioMes' => $inicioMes,
+            'finMes' => $finMes,
         ]);
+    }
+
+    /**
+     * Para encontrar a alguien (por día o por mes) y abrir su historial completo.
+     *
+     * @return Collection<int, User>
+     */
+    private function coincidencias(string $termino): Collection
+    {
+        if ($termino === '') {
+            return collect();
+        }
+
+        return User::query()
+            ->where(fn ($q) => $q
+                ->where('name', 'like', "%{$termino}%")
+                ->orWhere('apellido', 'like', "%{$termino}%")
+                ->orWhere('dni', 'like', "%{$termino}%"))
+            ->orderBy('name')
+            ->limit(10)
+            ->get(['id', 'name', 'apellido', 'dni']);
     }
 }

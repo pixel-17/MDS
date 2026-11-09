@@ -7,17 +7,29 @@
     $estaPendiente = $papeleta->estado->equals(PendienteJefe::class);
     $estaObservada = $papeleta->estado->equals(ObservadaPorJefe::class);
 
+    // Un trabajador puede tener varios jefes inmediatos.
+    // Centralizamos esta comprobación para que todos los botones
+    // respeten la misma regla de autorización.
     $esJefeInmediato = $papeleta->tieneComoJefeInmediatoA(auth()->user());
 
+    // Tras observar, mientras el trabajador no responda el jefe solo puede rechazar
+    // (al responder, la papeleta vuelve a PENDIENTE_JEFE y decide como siempre).
     $estaObservadaPorRrhh = $papeleta->estado->equals(ObservadaPorRrhh::class);
 
+    // Pendiente, observada por el jefe, o observada por RRHH: en los tres casos el jefe decide.
     $puedeDecidir = ($estaPendiente || $estaObservada || $estaObservadaPorRrhh) && $esJefeInmediato;
 
     $enCurso = $papeleta->estado->equals(AutorizadaYCorriendo::class) && $esJefeInmediato;
 
+    // Observación post-hoc de RRHH: solo responde el MISMO jefe que autorizó.
     $puedeResponderPosthoc = $papeleta->puedeResponderPosthoc(auth()->user());
     $topePosthoc = (int) \App\Models\Configuracion::valorDe('TOPE_OBSERVACIONES', 3);
 
+    // El tope de observaciones es configurable (Configuraciones > TOPE_OBSERVACIONES,
+    // por defecto 3) y ObservarJefeAction rechaza automáticamente la papeleta en
+    // cuanto el contador lo alcanza. Antes este número estaba hardcodeado en la
+    // vista como "/3" y el jefe no tenía ninguna advertencia de que "Observar"
+    // podía terminar rechazando la papeleta en vez de observarla.
     $topeObservaciones = (int) \App\Models\Configuracion::valorDe('TOPE_OBSERVACIONES', 3);
     $observarAgotaElTope = $papeleta->contador_observaciones_jefe >= $topeObservaciones - 1;
     $avisoObservar = $observarAgotaElTope
@@ -27,20 +39,18 @@
 
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between" data-en-vivo-contenido data-papeleta-id="{{ $papeleta->id }}">
             <h2 class="font-bold text-2xl text-tinta-950 dark:text-white leading-tight tracking-tight">
-                Papeleta
+                Papeleta #{{ $papeleta->id }} · {{ $papeleta->trabajador->nombre_completo }}
             </h2>
-            <span data-en-vivo-estado><x-estado-papeleta :estado="$papeleta->estado" :abandono="$papeleta->esAbandono()" class="text-sm" /></span>
+            <x-estado-papeleta :estado="$papeleta->estado" :abandono="$papeleta->esAbandono()" class="text-sm" />
         </div>
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-            <x-papeleta-en-vivo :papeleta="$papeleta" />
-        </div>
+        <x-papeleta-en-vivo :papeleta-id="$papeleta->id" />
 
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6" data-en-vivo-contenido>
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6" data-en-vivo-contenido data-papeleta-id="{{ $papeleta->id }}">
             @include('papeletas._info', ['papeleta' => $papeleta])
 
             @if ($puedeDecidir)

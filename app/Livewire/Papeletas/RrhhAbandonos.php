@@ -9,6 +9,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
+
 #[Layout('layouts.app')]
 #[Title('Abandonos')]
 class RrhhAbandonos extends Component
@@ -19,6 +20,7 @@ class RrhhAbandonos extends Component
 
     public string $causa = '';
 
+    
     public const CAUSAS = [
         'abandono_no_marcado' => 'Abandono no marcado',
         'comision_servicio_campo' => 'Comisión de servicio en campo',
@@ -36,7 +38,8 @@ class RrhhAbandonos extends Component
 
     public function render(): View
     {
-
+        
+        
         $abandonos = Papeleta::where('causa_finalizacion_sin_retorno', 'abandono_no_marcado')
             ->when(array_key_exists($this->causa, self::CAUSAS), fn ($q) => $q->where('causa_finalizacion_sin_retorno', $this->causa))
             ->when($this->buscar, fn ($q) => $q->whereHas('trabajador', fn ($t) => $t

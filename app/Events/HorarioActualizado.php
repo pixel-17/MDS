@@ -9,6 +9,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
+
 class HorarioActualizado implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets;
@@ -21,6 +22,7 @@ class HorarioActualizado implements ShouldBroadcastNow
         return [new PrivateChannel('App.Models.User.'.$this->userId)];
     }
 
+    
     public static function notificar(int ...$userIds): void
     {
         $ids = array_values(array_unique($userIds));

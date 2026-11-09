@@ -3,16 +3,16 @@
 namespace App\Livewire\Turnos;
 
 use App\Models\ConfiguracionTurno;
+use App\Models\Turno;
 use App\Models\User;
 use App\Services\GeneradorTurnoMensualService;
-use App\Support\PatronDescansoSemanal;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Carbon;
-use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+
 
 #[Layout('layouts.app')]
 #[Title('Configurar turno')]
@@ -21,121 +21,122 @@ class ConfiguracionTurnoForm extends Component
     #[Locked]
     public User $trabajador;
 
-    public string $turno = '';
+    
+    #[Locked]
+    public bool $embebido = false;
 
-    public string $fechaAncla = '';
+    
+    #[Locked]
+    public bool $sinTurnoVigenteHoy = false;
 
-    public int $diasTrabajo = 6;
+    
+    public ?string $mensajeExito = null;
 
-    public int $diasDescanso = 1;
-
-    public array $diasSemanaDescanso = [];
-
-    public function mount(User $trabajador): void
+    public function mount(User $trabajador, bool $embebido = false): void
     {
-        abort_unless(auth()->user()->puedeGestionarTurnoDe($trabajador), 403);
+        abort_unless((bool) auth()->user()?->puedeGestionarTurnoDe($trabajador), 403);
+        abort_unless($trabajador->regimen === '276', 403, 'Esta pantalla es solo para régimen 276; el 728 se programa día por día en turnos.programacion.');
 
         $this->trabajador = $trabajador;
+        $this->embebido = $embebido;
 
-        $config = ConfiguracionTurno::where('user_id', $trabajador->id)->first();
-
-        if ($config) {
-            $this->turno = $config->turno;
-            $this->fechaAncla = $config->fecha_ancla->toDateString();
-            $this->diasTrabajo = $config->dias_trabajo;
-            $this->diasDescanso = $config->dias_descanso;
-        } else {
-
-            $opciones = ConfiguracionTurno::turnosValidosPara($trabajador);
-            $this->turno = count($opciones) === 1 ? $opciones[0] : '';
-            $this->fechaAncla = now()->toDateString();
-        }
-    }
-
-    protected function rules(): array
-    {
-        return [
-            'turno' => ['required', 'in:'.implode(',', ConfiguracionTurno::turnosValidosPara($this->trabajador))],
-            'fechaAncla' => ['required', 'date'],
-            'diasTrabajo' => ['required', 'integer', 'min:1', 'max:30'],
-            'diasDescanso' => ['required', 'integer', 'min:1', 'max:30'],
-        ];
-    }
-
-    protected $messages = [
-        'turno.in' => 'Ese turno no existe para el régimen de este trabajador.',
-    ];
-
-    public function aplicarDiasSemana(): void
-    {
-        $referencia = $this->fechaAncla !== '' ? Carbon::parse($this->fechaAncla) : now();
-        $resultado = PatronDescansoSemanal::anclaYCiclo($this->diasSemanaDescanso, $referencia);
-
-        if ($resultado === null) {
-            throw ValidationException::withMessages([
-                'diasSemanaDescanso' => count($this->diasSemanaDescanso) >= 7 || $this->diasSemanaDescanso === []
-                    ? 'Elige entre 1 y 6 días de descanso.'
-                    : 'Los días de descanso deben ser consecutivos dentro de la semana (ej. sábado y domingo, o lunes y martes). Para descansos salteados, carga días de trabajo/descanso por número más abajo.',
-            ]);
-        }
-
-        $this->diasTrabajo = $resultado['dias_trabajo'];
-        $this->diasDescanso = $resultado['dias_descanso'];
-        $this->fechaAncla = $resultado['fecha_ancla']->toDateString();
+        $this->sinTurnoVigenteHoy = Turno::vigenteParaUsuario($trabajador->id) === null;
     }
 
     public function guardar(GeneradorTurnoMensualService $generador): void
     {
-        abort_unless(auth()->user()->puedeGestionarTurnoDe($this->trabajador), 403);
+        abort_unless((bool) auth()->user()?->puedeGestionarTurnoDe($this->trabajador), 403);
 
-        $datos = $this->validate();
+        $this->mensajeExito = null;
+
+        /** @var User $actor */
+        $actor = auth()->user();
+
+        
+        
+        
+        
+        
+        $ciclo = GeneradorTurnoMensualService::cicloOrdinario276();
 
         $generador->cargarConfiguracion(
             trabajador: $this->trabajador,
-            turno: $datos['turno'],
-            fechaAncla: Carbon::parse($datos['fechaAncla']),
-            actor: auth()->user(),
-            diasTrabajo: $datos['diasTrabajo'],
-            diasDescanso: $datos['diasDescanso'],
+            turno: ConfiguracionTurno::TURNO_276,
+            fechaAncla: $ciclo['fecha_ancla'],
+            actor: $actor,
+            diasTrabajo: $ciclo['dias_trabajo'],
+            diasDescanso: $ciclo['dias_descanso'],
         );
 
-        session()->flash('mensaje', 'Configuración de turno cargada. Se generó el horario del mes en curso.');
+        
+        
+        if ($this->embebido) {
+            $this->dispatch('turno-guardado', trabajadorId: $this->trabajador->id);
 
-        $this->redirectRoute('turnos.index', navigate: false);
+            return;
+        }
+
+        
+        
+        
+        
+        
+        $this->sinTurnoVigenteHoy = Turno::vigenteParaUsuario($this->trabajador->id) === null;
+        $this->mensajeExito = 'Configuración de turno cargada. Se generó el horario del mes en curso.';
     }
 
-    private function previsualizacion(): ?array
+    
+    public function cancelar(): void
     {
-        if ($this->fechaAncla === '' || $this->diasTrabajo < 1 || $this->diasDescanso < 1) {
-            return null;
+        if ($this->embebido) {
+            $this->dispatch('turno-cancelado');
+        }
+    }
+
+    /**
+     * Calendario REAL del mes en curso (que es el mes que de verdad se
+     * genera al guardar, ver guardar() más arriba) para $trabajador:
+     * misma consulta y misma forma de armar $semanas que
+     * CalendarioIndividualIndex::render(), para que esta pantalla se
+     * vea y se comporte como ese calendario. No es un cálculo
+     * proyectado del ciclo — son los registros `turnos` que ya existen,
+     * así que antes de guardar los días están en blanco (sin turno) y
+     * justo después de guardar aparecen pintados con el color real de
+     * cada turno.
+     *
+     * @return array{inicioMes: Carbon, semanas: array<int, array<int, int|null>>, turnosPorDia: \Illuminate\Support\Collection<int, Turno>, hoy: Carbon}
+     */
+    private function calendarioDelMes(): array
+    {
+        $inicioMes = now()->startOfMonth();
+        $finMes = $inicioMes->copy()->endOfMonth();
+
+        $turnosPorDia = Turno::where('user_id', $this->trabajador->id)
+            ->whereBetween('fecha', [$inicioMes->toDateString(), $finMes->toDateString()])
+            ->get()
+            ->keyBy(fn (Turno $turno) => $turno->fecha->day);
+
+        $primerDiaSemana = $inicioMes->dayOfWeekIso; 
+        $celdas = array_fill(0, $primerDiaSemana - 1, null);
+
+        for ($dia = 1; $dia <= $finMes->day; $dia++) {
+            $celdas[] = $dia;
         }
 
-        try {
-            $ancla = Carbon::parse($this->fechaAncla);
-        } catch (\Throwable) {
-            return null;
+        while (count($celdas) % 7 !== 0) {
+            $celdas[] = null;
         }
 
-        $inicio = now()->startOfWeek(Carbon::MONDAY);
-
-        return collect(range(0, 13))
-            ->map(function (int $i) use ($inicio, $ancla) {
-                $dia = $inicio->copy()->addDays($i);
-
-                return [
-                    'fecha' => $dia->toDateString(),
-                    'etiqueta' => ucfirst($dia->translatedFormat('D d')),
-                    'descanso' => GeneradorTurnoMensualService::esDescansoEnFecha($ancla, $dia, $this->diasTrabajo, $this->diasDescanso),
-                ];
-            })
-            ->all();
+        return [
+            'inicioMes' => $inicioMes,
+            'semanas' => array_chunk($celdas, 7),
+            'turnosPorDia' => $turnosPorDia,
+            'hoy' => now(),
+        ];
     }
 
     public function render(): View
     {
-        return view('livewire.turnos.configuracion-turno-form', [
-            'opcionesTurno' => ConfiguracionTurno::turnosValidosPara($this->trabajador),
-            'previsualizacion' => $this->previsualizacion(),
-        ]);
+        return view('livewire.turnos.configuracion-turno-form', $this->calendarioDelMes());
     }
 }

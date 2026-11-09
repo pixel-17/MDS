@@ -10,10 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * GET /papeletas/{papeleta}/archivo/{tipo}: quién puede abrir el adjunto
- * inicial, la foto del retorno y el adjunto de subsanación.
- */
+
 class ArchivosPapeletaTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -80,10 +77,10 @@ class ArchivosPapeletaTest extends TestCase
         $this->get(route('papeletas.archivo', ['papeleta' => $this->papeleta, 'tipo' => 'cualquier-cosa']))
             ->assertNotFound();
 
-        // Sin foto de retorno registrada.
+        
         $this->get($this->url('retorno-foto'))->assertNotFound();
 
-        // La ruta está en la BD pero el archivo ya no está en el disco.
+        
         Storage::disk('local')->delete(self::ADJUNTO);
         $this->get($this->url())->assertNotFound();
     }

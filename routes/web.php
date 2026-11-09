@@ -48,6 +48,8 @@ use App\Livewire\Usuarios\UsuarioForm;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
+
+
 $autenticado = ['auth:sanctum', config('jetstream.auth_session'), 'verified'];
 $soloAdmin = [...$autenticado, 'role:admin'];
 
@@ -57,11 +59,14 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
+
+
 Route::middleware($soloAdmin)->prefix('sedes')->name('sedes.')->group(function () {
     Route::get('/', SedeIndex::class)->name('index');
     Route::get('/crear', SedeForm::class)->name('crear');
     Route::get('/{sede}/editar', SedeForm::class)->name('editar');
 });
+
 
 Route::middleware($soloAdmin)->prefix('motivos')->name('motivos.')->group(function () {
     Route::get('/', MotivoIndex::class)->name('index');
@@ -69,15 +74,19 @@ Route::middleware($soloAdmin)->prefix('motivos')->name('motivos.')->group(functi
     Route::get('/{motivo}/editar', MotivoForm::class)->name('editar');
 });
 
+
 Route::middleware($soloAdmin)->prefix('turnos')->name('turnos.')->group(function () {
     Route::get('/', DefinicionTurnos::class)->name('index');
 
+    
     Route::get('/administrar', ProgramacionAdmin::class)->name('administrar');
 });
+
 
 Route::middleware($autenticado)->prefix('turnos')->name('turnos.')->group(function () {
     Route::get('/configuracion/{trabajador}', ConfiguracionTurnoForm::class)->name('configuracion');
 
+    
     Route::get('/programacion/{trabajador}', ProgramacionMensual::class)->name('programacion');
     Route::get('/programacion-equipo', ProgramacionEquipo::class)->name('programacion.equipo');
 
@@ -86,7 +95,9 @@ Route::middleware($autenticado)->prefix('turnos')->name('turnos.')->group(functi
     Route::get('/calendario/{trabajador}', CalendarioIndividualIndex::class)->name('calendario.individual-de');
 });
 
+
 Route::middleware($autenticado)->get('/organigrama', OrganigramaArbol::class)->name('organigrama.index');
+
 
 Route::middleware($soloAdmin)->prefix('unidades-organicas')->name('unidades-organicas.')->group(function () {
     Route::get('/', UnidadOrganicaIndex::class)->name('index');
@@ -94,16 +105,20 @@ Route::middleware($soloAdmin)->prefix('unidades-organicas')->name('unidades-orga
     Route::get('/{unidad}/editar', UnidadOrganicaForm::class)->name('editar');
 });
 
+
 Route::middleware($soloAdmin)->prefix('configuraciones')->name('configuraciones.')->group(function () {
     Route::get('/', ConfiguracionIndex::class)->name('index');
     Route::get('/{configuracion}/editar', ConfiguracionForm::class)->name('editar');
 });
 
+
+
 Route::middleware($soloAdmin)->get('/usuarios-admin', UsuarioAdminIndex::class)->name('usuarios-admin.index');
 Route::middleware($soloAdmin)->get('/usuarios-admin/crear', UsuarioAdminForm::class)->name('usuarios-admin.crear');
 Route::middleware($soloAdmin)->get('/usuarios-admin/{usuario}/editar', UsuarioAdminForm::class)->name('usuarios-admin.editar');
 
-Route::middleware($soloAdmin)->prefix('admin')->name('admin.')->group(function () {
+
+Route::middleware([...$autenticado, 'role:admin|rrhh'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/papeletas', AdminPapeletasIndex::class)->name('papeletas.index');
     Route::get('/papeletas/{papeleta}', [PapeletaController::class, 'show'])->name('papeletas.show');
 });
@@ -113,6 +128,7 @@ Route::middleware($soloAdmin)->get('/catalogos', CatalogoIndex::class)->name('ca
 Route::middleware($autenticado)->group(function () {
     Route::get('/dashboard', DashboardIndex::class)->name('dashboard');
 
+    
     Route::get('/reportes/resumen-papeletas', ResumenPapeletasIndex::class)
         ->name('reportes.resumen-papeletas');
 
@@ -122,31 +138,39 @@ Route::middleware($autenticado)->group(function () {
     Route::get('/reportes/sustentos', SustentosIndex::class)
         ->name('reportes.sustentos');
 
+    
+    
     Route::middleware('role:rrhh|admin')->group(function () {
         Route::get('/reportes/decisiones-rrhh', DecisionesRrhhIndex::class)
             ->name('reportes.decisiones-rrhh');
-
+        
         Route::get('/rrhh/abandonos', RrhhAbandonos::class)->name('rrhh.abandonos.index');
     });
 
+    
     Route::get('/actualizar-password-inicial', ActualizarPasswordInicial::class)
         ->name('password.actualizar-inicial');
 
+    
     Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store'])->name('push-subscriptions.store');
     Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push-subscriptions.destroy');
 
+    
     Route::prefix('usuarios')->name('usuarios.')->group(function () {
         Route::get('/', [UsuarioController::class, 'index'])->name('index');
         Route::get('/crear', UsuarioForm::class)->name('crear');
         Route::get('/{usuario}/editar', UsuarioForm::class)->name('editar');
     });
 
+    
     Route::get('/papeletas/sustentos/{sustento}/archivo', [SustentoArchivoController::class, 'show'])->name('sustentos.archivo');
 
+    
     Route::get('/papeletas/{papeleta}/archivo/{tipo}', [PapeletaArchivoController::class, 'show'])
         ->whereIn('tipo', ['adjunto-inicial', 'retorno-foto', 'justificacion-observacion', 'respuesta-posthoc'])
         ->name('papeletas.archivo');
 
+    
     Route::prefix('papeletas')->name('trabajador.papeletas.')->middleware('role:trabajador')->group(function () {
         Route::get('/', TrabajadorIndex::class)->name('index');
         Route::get('/crear', [TrabajadorPapeletaController::class, 'create'])->name('create');
@@ -160,6 +184,7 @@ Route::middleware($autenticado)->group(function () {
         Route::post('/sustentos/{sustento}', [TrabajadorSustentoController::class, 'store'])->name('sustento.store');
     });
 
+    
     Route::prefix('jefe')->name('jefe.')->group(function () {
         Route::get('/papeletas', JefeIndex::class)->name('papeletas.index');
         Route::get('/papeletas/{papeleta}', [JefePapeletaController::class, 'show'])->name('papeletas.show');
@@ -173,7 +198,7 @@ Route::middleware($autenticado)->group(function () {
 
     });
 
-    // --- RRHH (Paso 3 y Paso 4) ---
+    
     Route::prefix('rrhh')->name('rrhh.')->middleware('role:rrhh')->group(function () {
         Route::get('/papeletas', RrhhIndex::class)->name('papeletas.index');
         Route::get('/papeletas/{papeleta}', [RrhhPapeletaController::class, 'show'])->name('papeletas.show');

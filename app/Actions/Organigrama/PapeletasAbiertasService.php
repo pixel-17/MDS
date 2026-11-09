@@ -11,9 +11,10 @@ use App\States\Papeleta\PendienteJefe;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
+
 class PapeletasAbiertasService
 {
-
+    
     private const ESTADOS_DEL_JEFE = [PendienteJefe::class, ObservadaPorJefe::class];
 
     public function contarPendientesDeJefe(User $jefe): int
@@ -23,6 +24,12 @@ class PapeletasAbiertasService
             ->count();
     }
 
+    /**
+     * Reasigna las papeletas abiertas de $trabajador a su jefe inmediato y de
+     * área actuales (columnas ya recalculadas de users).
+     *
+     * @return int cantidad de papeletas reasignadas
+     */
     public function reasignarDeTrabajador(User $trabajador): int
     {
         $jefeId = $trabajador->jefe_inmediato_id;
@@ -54,8 +61,9 @@ class PapeletasAbiertasService
                 ]);
             });
 
+            
             try {
-                app(NotificarPapeletaService::class)->creada($papeleta->fresh());
+                app(NotificarPapeletaService::class)->creada($papeleta->fresh() ?? $papeleta);
             } catch (Throwable $e) {
                 report($e);
             }

@@ -11,6 +11,7 @@ use App\Services\GeneradorTurnoMensualService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
+
 class CambiarEstadoUsuarioAction
 {
     public const REEMPLAZO_EXISTENTE = 'existente';
@@ -19,6 +20,7 @@ class CambiarEstadoUsuarioAction
 
     public const REEMPLAZO_VACANTE = 'vacante';
 
+    
     public function motivoParaNoDesactivar(User $actor, User $usuario): ?string
     {
         if ($usuario->is($actor)) {
@@ -32,12 +34,18 @@ class CambiarEstadoUsuarioAction
         return null;
     }
 
+    /**
+     * Unidades que encabeza $usuario y que todavía tienen personas activas o
+     * sub-unidades: para cada una hay que decidir qué pasa con la jefatura.
+     *
+     * @return Collection<int, array{unidad: UnidadOrganica, es_area: bool, personas: int, subunidades: int, pendientes: int}>
+     */
     public function jefaturasPorResolver(User $usuario): Collection
     {
         $pendientes = app(PapeletasAbiertasService::class)->contarPendientesDeJefe($usuario);
 
         return $usuario->unidadesQueEncabeza()->get()
-            ->map(fn (UnidadOrganica $unidad) => [
+            ->map(fn (UnidadOrganica $unidad): array => [
                 'unidad' => $unidad,
                 'es_area' => $unidad->hijos()->where('activo', true)->exists(),
                 'personas' => $unidad->miembros()->where('activo', true)->whereKeyNot($usuario->getKey())->count(),
@@ -48,6 +56,11 @@ class CambiarEstadoUsuarioAction
             ->values();
     }
 
+    /**
+     * @param  array<int|string, array{modo?: string, usuario_id?: int|string|null, nuevo?: array<string, mixed>}>  $reemplazos  unidad_id => decisión
+     *
+     * @throws UsuarioException
+     */
     public function desactivar(User $actor, User $usuario, array $reemplazos = []): User
     {
         $this->exigirAdmin($actor);
@@ -64,6 +77,7 @@ class CambiarEstadoUsuarioAction
 
         $porResolver = $this->jefaturasPorResolver($usuario);
 
+        
         foreach ($porResolver as $fila) {
             $decision = $reemplazos[$fila['unidad']->id] ?? null;
             $modo = $decision['modo'] ?? null;
@@ -88,6 +102,15 @@ class CambiarEstadoUsuarioAction
         return $usuario;
     }
 
+    /**
+     * Quién encabeza $unidad después de la baja. Usa la misma acción que el
+     * catálogo (GuardarUnidadOrganicaAction), así que valen sus reglas
+     * (jefe activo, no administrador, no encabeza ya otra unidad).
+     *
+     * @param  array{modo?: string, usuario_id?: int|string|null, nuevo?: array<string, mixed>}  $decision
+     *
+     * @throws UsuarioException
+     */
     private function relevarJefatura(User $actor, UnidadOrganica $unidad, User $saliente, array $decision): void
     {
         $modo = $decision['modo'] ?? self::REEMPLAZO_VACANTE;
@@ -120,6 +143,7 @@ class CambiarEstadoUsuarioAction
             return;
         }
 
+        
         $guardar(null, false);
 
         if ($modo === self::REEMPLAZO_NUEVO) {
@@ -127,6 +151,14 @@ class CambiarEstadoUsuarioAction
         }
     }
 
+    /**
+     * Crea el usuario nuevo con la misma acción que el alta de jefes y lo deja
+     * como jefe de la unidad (el alta lo asigna al estar la unidad sin jefe).
+     *
+     * @param  array<string, mixed>  $nuevo  name, apellido, dni, email, regimen, sede_id (opcional)
+     *
+     * @throws UsuarioException
+     */
     private function crearJefeNuevo(User $actor, UnidadOrganica $unidad, User $saliente, array $nuevo): void
     {
         foreach (['name', 'apellido', 'dni', 'email', 'regimen'] as $campo) {

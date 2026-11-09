@@ -7,13 +7,15 @@
     'maxlength' => 2000,
     'placeholder' => 'Escribe un comentario (mínimo :min caracteres)...',
     'confirmText' => null,
-
+    // Aviso opcional que se muestra dentro del modal, antes de confirmar
+    // (por ejemplo, cuando esta acción puede tener una consecuencia que
+    // no es obvia desde el botón, como agotar un tope de intentos).
     'aviso' => null,
-
+    // Casilla opcional (nombre del campo y texto) que viaja junto al comentario.
     'opcion' => null,
     'opcionLabel' => null,
     'opcionMarcada' => true,
-
+    // Textos de un clic que rellenan el comentario (se pueden editar después).
     'sugerencias' => [],
 ])
 
@@ -57,13 +59,11 @@
     x-on:keydown.escape.window="if (! enviando) open = false"
     class="inline-block"
 >
-
     <button type="button" @click="open = true"
             class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-semibold rounded-md text-white {{ $colores }}">
         {{ $label }}
     </button>
 
-    {{-- Modal --}}
     <div x-show="open" x-cloak
          class="fixed inset-0 z-50 overflow-y-auto px-4 py-6 sm:px-0"
          role="dialog" aria-modal="true" :aria-labelledby="'{{ $id }}-titulo'">

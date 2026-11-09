@@ -15,6 +15,8 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
 
 #[Layout('layouts.app')]
 #[Title('Horas acumuladas')]
@@ -26,8 +28,10 @@ class HorasAcumuladasIndex extends Component
 
     public ?int $trabajadorId = null;
 
+    
     public string $buscar = '';
 
+    
     public int $top = 0;
 
     public ?int $sedeId = null;
@@ -49,6 +53,7 @@ class HorasAcumuladasIndex extends Component
         $this->mes = now()->format('Y-m');
     }
 
+    /** @return array<string, mixed> */
     protected function filtros(): array
     {
         return [
@@ -67,6 +72,8 @@ class HorasAcumuladasIndex extends Component
         $this->reset(['trabajadorId', 'buscar', 'top', 'sedeId', 'unidadOrganicaId', 'motivoId', 'regimen', 'soloConDescuento']);
     }
 
+    
+    /** @return BinaryFileResponse */
     public function exportar(ReporteHorasAcumuladasService $service)
     {
         $this->validate([
@@ -96,6 +103,12 @@ class HorasAcumuladasIndex extends Component
             ? User::role('trabajador')->orderBy('name')->get(['id', 'name', 'apellido'])
             : $user->trabajadoresParaReportes()->sortBy('name')->values();
 
+        
+        
+        
+        
+        
+        
         $sedesQuery = Sede::where('activo', true);
         $unidadesQuery = UnidadOrganica::where('activo', true);
 

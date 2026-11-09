@@ -8,6 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+
 class SustentoArchivoController extends Controller
 {
     public function show(Sustento $sustento): StreamedResponse|Response

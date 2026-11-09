@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/** Etiqueta visual del tipo de usuario (User::tipoUsuario()). */
+
 class TipoUsuarioTest extends TestCase
 {
     use CreaEscenarioPapeletas;

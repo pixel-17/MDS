@@ -11,6 +11,7 @@ use App\States\Papeleta\AutorizadaYCorriendo;
 use App\States\Papeleta\PendienteRrhh;
 use Illuminate\Support\Facades\DB;
 
+
 class AprobarRrhhAction
 {
     use ExigeDecisorAjeno;
@@ -20,7 +21,7 @@ class AprobarRrhhAction
     public function ejecutar(Papeleta $papeleta, User $rrhh): Papeleta
     {
         $papeleta = DB::transaction(function () use ($papeleta, $rrhh) {
-
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             $this->exigirDecisorAjeno($actual, $rrhh);

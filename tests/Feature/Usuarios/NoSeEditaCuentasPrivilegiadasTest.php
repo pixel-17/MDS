@@ -8,12 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Quien edita a un usuario puede cambiarle el correo y, con "olvidé mi
- * contraseña", tomar su cuenta. Por eso solo un admin puede editar a un
- * usuario con rol admin o rrhh: un jefe (de área o inmediato) no, aunque
- * esa persona esté en su área o sea su subordinada.
- */
+
 class NoSeEditaCuentasPrivilegiadasTest extends TestCase
 {
     use CreaEscenarioPapeletas;

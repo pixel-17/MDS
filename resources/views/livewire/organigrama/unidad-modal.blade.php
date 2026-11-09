@@ -10,7 +10,6 @@
                 </div>
             @endif
 
-            {{-- Datos --}}
             <section class="space-y-4">
                 <h3 class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Datos</h3>
 
@@ -32,7 +31,6 @@
                     @if ($esAdmin)
                         <x-organigrama.combobox id="org-unidad-padre" model="parentId" :options="$padres" :live="true" placeholder="Buscar unidad…" vacio="— Unidad raíz —" />
                     @else
-
                         <p class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-tinta-50/80">
                             {{ $padres[0]['label'] ?? '—' }}
                         </p>
@@ -40,13 +38,13 @@
                 </x-admin.campo>
             </section>
 
-            {{-- Jefatura --}}
             <section class="space-y-4 border-t border-gray-100 pt-5 dark:border-white/10">
                 <h3 class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Jefatura</h3>
 
                 <x-admin.campo label="Jefe inmediato de la unidad" for="org-unidad-jefe" ayuda="Es el jefe inmediato de todos sus trabajadores.">
                     <x-organigrama.combobox id="org-unidad-jefe" model="jefeId" :options="$jefes" :live="true" placeholder="Buscar por nombre…" vacio="— Sin jefe —" />
                 </x-admin.campo>
+
 
                 @if ($vista && ($vista['jefe']['cambia'] || $vista['padre']['cambia'] || $vista['error']))
                     <div class="space-y-2" wire:key="org-unidad-vista">
@@ -88,7 +86,6 @@
 
             </section>
 
-            {{-- Estado --}}
             <section class="border-t border-gray-100 pt-5 dark:border-white/10">
                 <x-organigrama.switch model="activo" label="Unidad activa" ayuda="Una unidad desactivada sigue visible, atenuada, en el organigrama." />
             </section>

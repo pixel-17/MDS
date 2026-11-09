@@ -17,7 +17,7 @@ class RrhhHorarioServiceTest extends TestCase
         parent::setUp();
 
         $this->prepararBase();
-        $this->travelTo('2026-09-21 10:00:00'); // lunes, dentro del horario
+        $this->travelTo('2026-09-21 10:00:00'); 
     }
 
     public function test_esta_en_horario_si_hay_personal_de_rrhh_activo(): void
@@ -42,7 +42,7 @@ class RrhhHorarioServiceTest extends TestCase
     public function test_fuera_de_los_dias_laborables_no_esta_en_horario(): void
     {
         $this->usuarioDePrueba(['regimen' => '276'], ['rrhh']);
-        $this->travelTo('2026-09-20 10:00:00'); // domingo
+        $this->travelTo('2026-09-20 10:00:00'); 
 
         $this->assertFalse(app(RrhhHorarioService::class)->estaEnHorarioAhora());
     }

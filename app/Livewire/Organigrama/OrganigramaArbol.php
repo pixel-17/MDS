@@ -16,6 +16,7 @@ use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+
 #[Layout('layouts.app')]
 #[Title('Organigrama del área')]
 class OrganigramaArbol extends Component
@@ -28,6 +29,7 @@ class OrganigramaArbol extends Component
 
     public bool $verInactivos = false;
 
+    
     public string $sede = '';
 
     public bool $modoEdicion = false;
@@ -40,6 +42,8 @@ class OrganigramaArbol extends Component
     {
         $this->autorizarLectura();
 
+        
+        
         $personaId = request()->integer('persona') ?: null;
 
         if ($personaId) {
@@ -49,7 +53,7 @@ class OrganigramaArbol extends Component
 
     public function updatedSede(): void
     {
-
+        
         if ($this->sede !== '' && $this->sede !== 'sin' && ! ctype_digit($this->sede)) {
             $this->sede = '';
         }
@@ -76,6 +80,7 @@ class OrganigramaArbol extends Component
         $this->propuestaJefe = null;
     }
 
+    
     #[On('org-actualizado')]
     public function alActualizar(?string $mensaje = null): void
     {
@@ -89,9 +94,10 @@ class OrganigramaArbol extends Component
         }
     }
 
+    
     private function autorizar(): User
     {
-
+        /** @var User|null $usuario */
         $usuario = auth()->user();
 
         abort_unless(
@@ -102,9 +108,10 @@ class OrganigramaArbol extends Component
         return $usuario;
     }
 
+    
     private function autorizarLectura(): User
     {
-
+        /** @var User|null $usuario */
         $usuario = auth()->user();
 
         abort_unless(
@@ -120,6 +127,10 @@ class OrganigramaArbol extends Component
         $usuario = $this->autorizarLectura();
         $puedeEditar = $usuario->hasRole('admin') || $usuario->esJefeDeEquipo();
 
+        
+        
+        
+        
         if (! $puedeEditar) {
             $this->modoEdicion = false;
         }
@@ -133,7 +144,8 @@ class OrganigramaArbol extends Component
             'raices' => $raices,
             'stats' => $stats,
             'esAdmin' => $usuario->hasRole('admin'),
-
+            
+            
             'esJefeDeArea' => $usuario->esJefeDeArea(),
             'puedeEditar' => $puedeEditar,
             'sedes' => Sede::orderBy('nombre')->get(['id', 'nombre']),

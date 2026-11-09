@@ -2,7 +2,6 @@
     x-data="{ todos: null, arrastrando: null, sobre: null, leyenda: false, ayuda: false, pendientes: false, bandeja: [], panelAbierto: true }"
     class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8 space-y-6"
 >
-
     <style>
         .org-tree { --org-line: #cbd5e1; }
         .dark .org-tree { --org-line: rgba(255, 255, 255, .18); }
@@ -12,7 +11,7 @@
         .org-tree ul > li:last-child::before { bottom: auto; height: 2.1rem; }
         .org-tree ul > li::after { content: ''; position: absolute; left: 0; top: 2.1rem; width: 1.3rem; border-top: 2px solid var(--org-line); }
         .org-editando .org-persona { outline: 1px dashed #f59e0b; outline-offset: 1px; }
-
+        /* Degradé de UNA sola gama (tinta): cuanto más hondo el nivel, más claro. Borde izquierdo + velo de fondo. */
         .org-nivel { border-left: 5px solid var(--org-tono); background-image: linear-gradient(90deg, var(--org-velo), transparent 55%); }
         .org-n0 { --org-tono: #223437; --org-velo: rgba(34, 52, 55, .16); }
         .org-n1 { --org-tono: #324e52; --org-velo: rgba(50, 78, 82, .13); }
@@ -26,7 +25,7 @@
         .dark .org-n3 { --org-tono: #436164; --org-velo: rgba(67, 97, 100, .14); }
         .dark .org-n4 { --org-tono: #324e52; --org-velo: rgba(50, 78, 82, .16); }
         .dark .org-n5 { --org-tono: #293f43; --org-velo: rgba(41, 63, 67, .18); }
-
+        /* Mientras se arrastra, toda unidad que puede recibir se marca; la que está bajo el cursor se resalta más. */
         .org-arrastrando .org-nivel { outline: 2px dashed rgba(245, 158, 11, .55); outline-offset: 2px; }
         .org-foco > .org-nivel { box-shadow: 0 0 0 3px rgba(245, 158, 11, .75); transition: box-shadow .3s; }
         .org-persona .org-asa { color: #94a3b8; }
@@ -36,11 +35,19 @@
         .org-tree > ul { margin-left: 0; }
         .org-tree > ul > li { padding-left: 0; }
         .org-tree > ul > li::before, .org-tree > ul > li::after { display: none; }
-
+        /* Barra del encabezado (título + Modo edición): ya NO se queda
+           pegada al hacer scroll, se desplaza con la página como
+           cualquier otro bloque. */
         .org-encabezado-fija {
             padding-block: .5rem;
         }
-
+        /* Panel de edición: ahora es flotante (fixed), anclado a la
+           esquina inferior derecha del viewport. Ya no vive en el flujo
+           de la fila junto a "Por atender" -- al salir del flujo, esa
+           caja simplemente ocupa el ancho libre. Agrupa lo que cambia
+           según el modo (entrar/salir de edición, Agregar, la bandeja)
+           y se queda siempre a la vista, sin importar cuánto se baje en
+           el árbol. */
         .org-panel-lateral {
             display: flex;
             flex-direction: column;
@@ -53,13 +60,16 @@
             bottom: 1.25rem;
             z-index: 30;
         }
-
+        /* Botón de edición flotante (fuera de modo edición): círculo
+           compacto, no la barra entera -- solo el FAB. */
         .org-boton-edicion-flotante {
             align-self: flex-end;
             border-radius: 9999px;
             box-shadow: 0 12px 28px -10px rgb(0 0 0 / .35);
         }
-
+        /* Tarjeta del panel: solo aparece como tal (fondo, borde, sombra)
+           cuando hay algo que agrupar dentro -- en modo edición. Fuera de
+           edición es nada más el botón flotante, sin chrome de tarjeta. */
         .org-panel-tarjeta {
             border-radius: 1rem;
             border: 1px solid rgb(0 0 0 / .08);
@@ -75,7 +85,6 @@
 
     <div class="org-encabezado-fija">
         <x-admin.encabezado titulo="Organigrama del área">
-
             <div class="inline-flex overflow-hidden rounded-lg border border-gray-200 text-xs dark:border-white/15" role="group" aria-label="Qué tanto del árbol se ve">
                 <button type="button" class="px-3 py-2 font-medium text-tinta-950 hover:bg-tinta-50 dark:text-white dark:hover:bg-white/10"
                         :class="todos === null && 'bg-tinta-50 dark:bg-white/10'" :aria-pressed="todos === null"
@@ -144,7 +153,7 @@
     </div>
 
     @php
-
+        // Unidades sin jefe activo, con la ruta de sus ancestros para poder abrir el árbol hasta ellas.
         $recolectarSinJefe = function ($nodos, array $ruta = []) use (&$recolectarSinJefe): array {
             $filas = [];
             foreach ($nodos as $n) {
@@ -195,7 +204,6 @@
 
         @if ($esAdmin || $esJefeDeArea)
             <div class="org-panel-lateral">
-
                 @unless ($modoEdicion)
                     <button type="button"
                             wire:click="alternarEdicion"
@@ -247,13 +255,11 @@
                         </div>
                     </div>
                 @elseif ($modoEdicion && $esJefeDeArea)
-
                     <button type="button" class="btn-primary flex w-full items-center justify-center gap-1 text-xs"
                             @click="$dispatch('org-persona-abrir', {})">
                         <x-icon name="plus-circle" class="size-4" /> Agregar trabajador o jefe inmediato
                     </button>
                 @elseif ($modoEdicion)
-
                     <button type="button" class="btn-primary flex w-full items-center justify-center gap-1 text-xs"
                             @click="$dispatch('org-persona-abrir', {})">
                         <x-icon name="plus-circle" class="size-4" /> Agregar trabajador
@@ -261,7 +267,6 @@
                 @endif
 
                 @if ($modoEdicion)
-
                     <div class="flex flex-col items-stretch gap-2 rounded-xl border border-dashed px-3 py-2 transition"
                          :class="bandeja.length > 0
                             ? 'border-amber-400/70 bg-amber-50/60 dark:border-amber-400/40 dark:bg-amber-500/10'
@@ -556,7 +561,7 @@
                                 <label class="mt-2 block text-xs font-semibold text-gray-600 dark:text-tinta-50/70" for="reemplazo-{{ $fila['unidad']->id }}">
                                     {{ $fila['es_area'] ? 'Nuevo jefe de área (opcional)' : 'Nuevo jefe inmediato (opcional)' }}
                                 </label>
-                                <select id="reemplazo-{{ $fila['unidad']->id }}" wire:model="reemplazos.{{ $fila['unidad']->id }}" class="mt-1 w-full rounded-lg border-gray-300 text-sm dark:border-white/20 dark:bg-gray-800">
+                                <select id="reemplazo-{{ $fila['unidad']->id }}" wire:model="reemplazos.{{ $fila['unidad']->id }}" class="mt-1 w-full rounded-lg border-gray-300 text-sm dark:border-white/20 dark:bg-gray-800 dark:[color-scheme:dark]">
                                     <option value="">Sin reemplazo: la unidad queda sin jefe</option>
                                     @foreach ($fila['candidatos'] as $c)
                                         <option value="{{ $c->id }}">{{ $c->nombre_completo }}</option>
@@ -597,7 +602,7 @@
                         @if ($mp['necesita_turno'])
                             <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
                                 <div class="col-span-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-tinta-50/60">Turno como trabajador (728)</div>
-                                <select wire:model="turnoJefe.turno" class="rounded-lg border-gray-300 text-sm dark:border-white/20 dark:bg-gray-800">
+                                <select wire:model="turnoJefe.turno" class="rounded-lg border-gray-300 text-sm dark:border-white/20 dark:bg-gray-800 dark:[color-scheme:dark]">
                                     <option value="">Turno…</option>
                                     @foreach ($mp['turnos_validos'] as $codigo)
                                         <option value="{{ $codigo }}">{{ \App\Models\ConfiguracionTurno::etiquetaDeTurno($codigo) }}</option>
@@ -654,7 +659,7 @@
         <div class="fixed inset-0 z-40" @keydown.escape.window="$wire.cerrarPersona()">
             <div class="absolute inset-0 bg-black/30" wire:click="cerrarPersona" aria-hidden="true"></div>
 
-            <aside class="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto bg-white p-6 shadow-xl dark:bg-gray-900"
+            <aside class="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto bg-white p-6 shadow-xl dark:bg-[var(--surface)]"
                    role="dialog" aria-modal="true" aria-label="Ficha de {{ $p->nombre_completo }}"
                    x-trap.noscroll="true">
                 <div class="flex items-start justify-between gap-3">

@@ -13,11 +13,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Organigrama: filtro por sede, panel lateral (ficha) y modo edición.
- * Escenario: Gerencia (raíz, jefe Gina) → Oficina A (jefe Omar, con un
- * trabajador en la sede central y otro sin sede) y Oficina B (otra rama).
- */
+
 class OrganigramaArbolTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -147,7 +143,7 @@ class OrganigramaArbolTest extends TestCase
             ->assertDontSee('Edición activa');
     }
 
-    // ---- «Mover a otra unidad» desde la ficha (alternativa al arrastre) ----
+    
 
     public function test_desde_la_ficha_se_propone_el_movimiento_sin_arrastrar(): void
     {
@@ -157,7 +153,7 @@ class OrganigramaArbolTest extends TestCase
             ->call('verPersona', $this->trabajadorCentral->id)
             ->set('destinoMover', $this->oficinaB->id)
             ->call('moverDesdeFicha')
-            // La ficha se cierra para que la confirmación no quede apilada sobre ella.
+            
             ->assertSet('personaId', null)
             ->assertSet('destinoMover', null)
             ->assertSet('propuesta.trabajador', $this->trabajadorCentral->id)
@@ -165,7 +161,7 @@ class OrganigramaArbolTest extends TestCase
             ->assertSet('propuesta.destino', $this->oficinaB->id)
             ->assertSee('Confirmar movimiento');
 
-        // Solo es una propuesta: nadie se mueve hasta confirmar.
+        
         $this->assertSame($this->oficinaA->id, $this->trabajadorCentral->fresh()->unidad_organica_id);
     }
 

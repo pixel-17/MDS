@@ -4,13 +4,15 @@ namespace App\Http\Requests\Papeleta;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+
 class RetornoManualRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('marcarRetornoManual', $this->route('papeleta'));
+        return (bool) $this->user()?->can('marcarRetornoManual', $this->route('papeleta'));
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [

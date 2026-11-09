@@ -9,17 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Regresión: el alcance de "mi equipo" en las pantallas de turnos
- * (calendario/programación) debe ser más angosto que el de
- * papeletas/reportes (User::equipoDe):
- *
- * - El Jefe Inmediato ve a sus trabajadores directos y a sí mismo.
- * - El Jefe de Área ve a sus Jefes Inmediatos (los jefes de las
- *   sub-unidades de su área, en cualquier nivel) y a sí mismo, pero
- *   NO a los trabajadores de esas sub-unidades — salvo los que tenga
- *   asignados a él de forma directa.
- */
+
 class EquipoDelJefeServiceTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -86,8 +76,8 @@ class EquipoDelJefeServiceTest extends TestCase
         $unidadArea = UnidadOrganica::create(['nombre' => 'Gerencia', 'jefe_id' => $jefeDeArea->id]);
         $jefeDeArea->update(['unidad_organica_id' => $unidadArea->id]);
 
-        // Trabajador de su propia oficina: jefe_inmediato_id lo apunta a
-        // él directamente (miembro de la misma unidad que encabeza).
+        
+        
         $trabajadorDirecto = $this->usuarioDePrueba(['unidad_organica_id' => $unidadArea->id], ['trabajador']);
 
         [$trabajadores] = app(EquipoDelJefeService::class)->para($jefeDeArea->fresh());

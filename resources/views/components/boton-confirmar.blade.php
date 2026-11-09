@@ -7,7 +7,8 @@
 ])
 
 @php
-
+    // Mismos tonos que x-accion-comentario, para que "Aprobar" no se vea
+    // desentonado junto a "Observar"/"Rechazar" en la misma fila.
     $colores = [
         'red' => 'bg-red-600 hover:bg-red-700',
         'orange' => 'bg-orange-500 hover:bg-orange-600',

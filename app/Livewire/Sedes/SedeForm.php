@@ -10,6 +10,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+
 #[Layout('layouts.app')]
 #[Title('Sede')]
 class SedeForm extends Component
@@ -27,10 +28,11 @@ class SedeForm extends Component
 
     public ?float $longitud = null;
 
-    public int $radioMetros = 150;
+    public int $radioMetros = 100;
 
     public bool $activo = true;
 
+    
     public const RADIO_MAXIMO_METROS = 1000;
 
     public function mount(?Sede $sede = null): void
@@ -46,6 +48,7 @@ class SedeForm extends Component
         }
     }
 
+    /** @return array<string, mixed> */
     protected function rules(): array
     {
         return [
@@ -58,6 +61,7 @@ class SedeForm extends Component
         ];
     }
 
+    /** @var array<string, string> */
     protected $messages = [
         'radioMetros.max' => 'El radio no puede superar los '.self::RADIO_MAXIMO_METROS.' metros.',
         'radioMetros.min' => 'El radio mínimo es de 10 metros.',

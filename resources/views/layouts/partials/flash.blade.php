@@ -1,4 +1,3 @@
-
 @php
     $flash = collect([
         ['tipo' => 'error', 'texto' => session('error')],

@@ -18,9 +18,10 @@ use App\Support\Minutos;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
+
 class ResumenPapeletasService
 {
-
+    
     private const GRUPOS = [
         'autorizadas' => [
             AutorizadaYCorriendo::class, Cerrada::class, EnJustificacion::class, Finalizada::class,
@@ -33,143 +34,178 @@ class ResumenPapeletasService
     public function __construct(private ReporteHorasAcumuladasService $reporte) {}
 
     /**
-     * @return array{por_motivo: Collection, por_unidad: Collection, total: int, minutos_rrhh: ?int, minutos_jefe: ?int, jefes_lentos: Collection}
+     * @return array{
+     *     por_motivo: Collection<int, array{nombre: string, autorizadas: int, rechazadas: int, no_prosperaron: int, en_tramite: int, total: int}>,
+     *     por_unidad: Collection<int, array{nombre: string, autorizadas: int, rechazadas: int, no_prosperaron: int, en_tramite: int, total: int}>,
+     *     total: int,
+     *     minutos_rrhh: ?int,
+     *     minutos_jefe: ?int,
+     *     jefes_lentos: Collection<int, array{nombre: string, papeletas: int, minutos: int}>
+     * }
      */
+    public function resumen(string $mes): array
+    {
+        [$inicio, $fin] = $this->reporte->rangoDelMes($mes);
 
-public function resumen(string $mes): array
-{
-    [$inicio, $fin] = $this->reporte->rangoDelMes($mes);
+        $papeletas = Papeleta::query()
+            ->select([
+                'id',
+                'motivo_id',
+                'trabajador_id',
+                'estado',
+                'dia_operativo',
+                'created_at',
+                'jefe_resuelto_at',
+                'rrhh_resuelto_at',
+                'resuelto_por_jefe_id',
+            ])
+            ->with([
+                'motivo:id,nombre',
+                'trabajador:id,unidad_organica_id',
+                'trabajador.unidadOrganica:id,nombre',
+                'resueltoPorJefe:id,name,apellido',
+            ])
+            ->whereBetween('dia_operativo', [
+                $inicio->toDateString(),
+                $fin->toDateString(),
+            ])
+            ->get();
 
-    $papeletas = Papeleta::query()
-        ->select([
-            'id',
-            'motivo_id',
-            'trabajador_id',
-            'estado',
-            'dia_operativo',
-            'created_at',
-            'jefe_resuelto_at',
-            'rrhh_resuelto_at',
-            'resuelto_por_jefe_id',
-        ])
-        ->with([
-            'motivo:id,nombre',
-            'trabajador:id,unidad_organica_id',
-            'trabajador.unidadOrganica:id,nombre',
-            'resueltoPorJefe:id,name,apellido',
-        ])
-        ->whereBetween('dia_operativo', [
-            $inicio->toDateString(),
-            $fin->toDateString(),
-        ])
-        ->get();
+        return [
+            'por_motivo' => $this->agrupar(
+                $papeletas,
+                fn (Papeleta $p) => $p->motivo->nombre,
+            ),
+            'por_unidad' => $this->agrupar(
+                $papeletas,
+                fn (Papeleta $p) => $p->trabajador->unidadOrganica->nombre ?? 'Sin unidad',
+            ),
+            'total' => $papeletas->count(),
+            'minutos_rrhh' => $this->promedio(
+                $papeletas,
+                fn (Papeleta $p) => $p->jefe_resuelto_at,
+                fn (Papeleta $p) => $p->rrhh_resuelto_at,
+            ),
+            'minutos_jefe' => $this->promedio(
+                $papeletas,
+                fn (Papeleta $p) => $p->created_at,
+                fn (Papeleta $p) => $p->jefe_resuelto_at,
+            ),
+            'jefes_lentos' => $this->jefesMasLentos($papeletas),
+        ];
+    }
 
-    return [
-        'por_motivo' => $this->agrupar(
-            $papeletas,
-            fn (Papeleta $p) => $p->motivo->nombre,
-        ),
-        'por_unidad' => $this->agrupar(
-            $papeletas,
-            fn (Papeleta $p) => $p->trabajador?->unidadOrganica?->nombre ?? 'Sin unidad',
-        ),
-        'total' => $papeletas->count(),
-        'minutos_rrhh' => $this->promedio(
-            $papeletas,
-            fn (Papeleta $p) => $p->jefe_resuelto_at,
-            fn (Papeleta $p) => $p->rrhh_resuelto_at,
-        ),
-        'minutos_jefe' => $this->promedio(
-            $papeletas,
-            fn (Papeleta $p) => $p->created_at,
-            fn (Papeleta $p) => $p->jefe_resuelto_at,
-        ),
-        'jefes_lentos' => $this->jefesMasLentos($papeletas),
-    ];
-}
+    /**
+     * @param  Collection<int, Papeleta>  $papeletas
+     * @param  callable(Papeleta): string  $clave
+     * @return Collection<int, array{
+     *     nombre: string,
+     *     autorizadas: int,
+     *     rechazadas: int,
+     *     no_prosperaron: int,
+     *     en_tramite: int,
+     *     total: int
+     * }>
+     */
+    private function agrupar(Collection $papeletas, callable $clave): Collection
+    {
+        return $papeletas
+            ->groupBy($clave)
+            ->map(
+                /** @param Collection<int, Papeleta> $filas */
+                function (Collection $filas, string $nombre): array {
+                    $fila = [
+                        'nombre' => $nombre,
+                        'autorizadas' => 0,
+                        'rechazadas' => 0,
+                        'no_prosperaron' => 0,
+                        'en_tramite' => 0,
+                    ];
 
-private function agrupar(Collection $papeletas, callable $clave): Collection
-{
-    return $papeletas
-        ->groupBy($clave)
-        ->map(function (Collection $filas, string $nombre): array {
-            $fila = [
-                'nombre' => $nombre,
-                'autorizadas' => 0,
-                'rechazadas' => 0,
-                'no_prosperaron' => 0,
-                'en_tramite' => 0,
-            ];
+                    foreach (self::GRUPOS as $grupo => $estados) {
+                        $fila[$grupo] = $filas
+                            ->filter(
+                                fn (Papeleta $p): bool => in_array(
+                                    $p->estado::class,
+                                    $estados,
+                                    true,
+                                ),
+                            )
+                            ->count();
+                    }
 
-            foreach (self::GRUPOS as $grupo => $estados) {
-                $fila[$grupo] = $filas
-                    ->filter(
-                        fn (Papeleta $p): bool => in_array(
-                            $p->estado::class,
-                            $estados,
-                            true,
-                        ),
-                    )
-                    ->count();
-            }
+                    $fila['total'] = $filas->count();
 
-            $fila['total'] = $filas->count();
+                    return $fila;
+                }
+            )
+            ->sortByDesc('total')
+            ->values();
+    }
 
-            return $fila;
-        })
-        ->sortByDesc('total')
-        ->values();
-}
+    
 
-private function promedio(
-    Collection $papeletas,
-    callable $obtenerInicio,
-    callable $obtenerFin,
-): ?int {
-    $minutos = $papeletas
-        ->map(function (Papeleta $p) use ($obtenerInicio, $obtenerFin): ?int {
-            $inicio = $obtenerInicio($p);
-            $fin = $obtenerFin($p);
+    /**
+     * @param  Collection<int, Papeleta>  $papeletas
+     * @param  callable(Papeleta): (CarbonInterface|null)  $obtenerInicio
+     * @param  callable(Papeleta): (CarbonInterface|null)  $obtenerFin
+     */
+    private function promedio(
+        Collection $papeletas,
+        callable $obtenerInicio,
+        callable $obtenerFin,
+    ): ?int {
+        $minutos = $papeletas
+            ->map(function (Papeleta $p) use ($obtenerInicio, $obtenerFin): ?int {
+                $inicio = $obtenerInicio($p);
+                $fin = $obtenerFin($p);
 
-            if ($inicio === null || $fin === null) {
-                return null;
-            }
+                if ($inicio === null || $fin === null) {
+                    return null;
+                }
 
-            return Minutos::entre($inicio, $fin);
-        })
-        ->filter(fn (?int $minutos): bool => $minutos !== null);
+                return Minutos::entre($inicio, $fin);
+            })
+            ->filter(fn (?int $minutos): bool => $minutos !== null);
 
-    return $minutos->isEmpty() ? null : (int) round($minutos->avg());
-}
+        return $minutos->isEmpty() ? null : (int) round($minutos->avg() ?? 0);
+    }
 
+    /**
+     * @param  Collection<int, Papeleta>  $papeletas
+     * @return Collection<int, array{nombre: string, papeletas: int, minutos: int}>
+     */
     private function jefesMasLentos(Collection $papeletas): Collection
     {
         return $papeletas
             ->filter(fn (Papeleta $p) => $p->resueltoPorJefe && $p->jefe_resuelto_at)
             ->groupBy('resuelto_por_jefe_id')
-            ->map(function (Collection $filas): array {
+            ->map(
+                /** @param Collection<int, Papeleta> $filas */
+                function (Collection $filas): array {
+                    /** @var Papeleta $primera */
+                    $primera = $filas->first();
 
-                $primera = $filas->first();
+                    $minutos = $filas
+                        ->map(function (Papeleta $p): ?int {
+                            if (! $p->created_at instanceof CarbonInterface
+                                || ! $p->jefe_resuelto_at instanceof CarbonInterface) {
+                                return null;
+                            }
 
-                $minutos = $filas
-                    ->map(function (Papeleta $p): ?int {
-                        if (! $p->created_at instanceof CarbonInterface
-                            || ! $p->jefe_resuelto_at instanceof CarbonInterface) {
-                            return null;
-                        }
+                            return Minutos::entre($p->created_at, $p->jefe_resuelto_at);
+                        })
+                        ->filter(fn (?int $minutos): bool => $minutos !== null);
 
-                        return Minutos::entre($p->created_at, $p->jefe_resuelto_at);
-                    })
-                    ->filter(fn (?int $minutos): bool => $minutos !== null);
-
-                return [
-                    'nombre' => (string) $primera->resueltoPorJefe->nombre_completo,
-                    'papeletas' => $filas->count(),
-                    'minutos' => $minutos->isEmpty()
-                        ? 0
-                        : (int) round($minutos->avg()),
-                ];
-            })
+                    return [
+                        'nombre' => (string) $primera->resueltoPorJefe?->nombre_completo,
+                        'papeletas' => $filas->count(),
+                        'minutos' => $minutos->isEmpty()
+                            ? 0
+                            : (int) round($minutos->avg() ?? 0),
+                    ];
+                }
+            )
             ->sortByDesc('minutos')
             ->take(10)
             ->values();

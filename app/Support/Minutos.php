@@ -4,6 +4,7 @@ namespace App\Support;
 
 use Carbon\CarbonInterface;
 
+
 class Minutos
 {
     public static function entre(CarbonInterface $desde, CarbonInterface $hasta): int

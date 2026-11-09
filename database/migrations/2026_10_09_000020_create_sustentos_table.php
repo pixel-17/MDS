@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-
+    
     public function up(): void
     {
         Schema::create('sustentos', function (Blueprint $table) {
@@ -15,7 +15,15 @@ return new class extends Migration
 
             $table->string('archivo_path')->nullable();
             $table->timestamp('fecha_limite');
-            $table->enum('estado', ['pendiente', 'presentado', 'vencido', 'aprobado', 'observado'])
+            
+            
+            
+            
+            
+            
+            
+            
+            $table->enum('estado', ['pendiente', 'presentado', 'vencido', 'aprobado', 'observado', 'rechazado'])
                 ->default('pendiente');
 
             $table->timestamp('presentado_at')->nullable();
@@ -24,6 +32,8 @@ return new class extends Migration
 
             $table->timestamps();
 
+            
+            
             $table->index(['estado', 'fecha_limite']);
         });
     }

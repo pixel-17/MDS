@@ -1,4 +1,3 @@
-
 <div
     x-data="{
         abierto: false,

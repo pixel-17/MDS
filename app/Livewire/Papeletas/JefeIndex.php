@@ -16,6 +16,19 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
+/**
+ * Bandeja del Jefe Inmediato, migrada de
+ * App\Http\Controllers\Jefe\PapeletaController@index a Livewire puro.
+ * Decidir es siempre responsabilidad del Jefe Inmediato: no hay
+ * escalamiento a Jefe de Área, así que esta bandeja solo muestra lo
+ * que el jefe autenticado puede decidir (deJefeInmediato).
+ * Se re-renderiza sola en cuanto le llega una PapeletaNotification
+ * (papeleta nueva por decidir, observación de RRHH, etc.) — ver
+ * EscuchaNotificacionesEnVivo.
+ *
+ * Las acciones (aprobar/rechazar/observar/...) siguen siendo del
+ * Controller original vía <form>; solo el listado necesitaba vivo.
+ */
 #[Layout('layouts.app')]
 #[Title('Bandeja de Jefe')]
 class JefeIndex extends Component
@@ -39,10 +52,13 @@ class JefeIndex extends Component
 
     public function render(): View
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
+        
         abort_unless($user->esJefeDeEquipo(), 403);
 
+        
         $termino = trim($this->buscar);
         $filtroBuscar = fn ($query) => $query->whereHas('trabajador', fn ($q) => $q
             ->where(fn ($w) => $w
@@ -50,15 +66,19 @@ class JefeIndex extends Component
                 ->orWhere('apellido', 'like', "%{$termino}%")
                 ->orWhere('dni', 'like', "%{$termino}%")));
 
+        
+        
+        
+        
         $bases = [
             'porDecidir' => fn () => Papeleta::whereState('estado', PendienteJefe::class)
                 ->deJefeInmediato($user),
-
+            
             'observadasPorMi' => fn () => Papeleta::whereState('estado', ObservadaPorJefe::class)
                 ->deJefeInmediato($user),
             'observacionesRrhh' => fn () => Papeleta::whereState('estado', ObservadaPorRrhh::class)
                 ->deJefeInmediato($user),
-
+            
             'posthocPorResponder' => fn () => Papeleta::where('autorizado_con_rrhh_fuera_horario', true)
                 ->where('revision_posthoc_estado', 'observada')
                 ->where('resuelto_por_jefe_id', $user->id),
@@ -81,6 +101,10 @@ class JefeIndex extends Component
         $posthocPorResponder = $listar($bases['posthocPorResponder'](), 'posthocPorResponder');
         $enCurso = $listar($bases['enCurso'](), 'enCurso');
 
+        
+        
+        
+        
         $delTurnoConsulta = Papeleta::deJefeInmediato($user)->delTurnoVigente();
 
         foreach ($bases as $base) {

@@ -4,18 +4,14 @@ namespace Tests\Feature\Turnos;
 
 use App\Livewire\Turnos\CalendarioEquipoIndex;
 use App\Models\UnidadOrganica;
+use Carbon\Carbon;
 use Database\Seeders\ConfiguracionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Regresión: "Calendario del equipo" ya no es solo lectura para los
- * trabajadores 728 — el Jefe pinta M/T/N/D directo en la grilla y
- * guarda sin pasar por otra pantalla (ver CalendarioEquipoIndex::guardar,
- * que reutiliza ProgramacionTurnoService::guardarEquipo).
- */
+
 class CalendarioEquipoGuardadoTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -27,6 +23,11 @@ class CalendarioEquipoGuardadoTest extends TestCase
 
         $this->prepararBase();
         $this->seed(ConfiguracionSeeder::class);
+
+        
+        
+        
+        $this->travelTo(Carbon::parse('2026-10-15'));
     }
 
     public function test_el_jefe_inmediato_guarda_turnos_728_de_su_trabajador_desde_el_calendario(): void

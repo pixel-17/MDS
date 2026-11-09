@@ -6,6 +6,7 @@ use App\Models\Papeleta;
 use App\Models\Sustento;
 use Carbon\Carbon;
 
+
 class AbrirJustificacion
 {
     public function __construct(private CalculadorDiasHabiles $diasHabiles) {}

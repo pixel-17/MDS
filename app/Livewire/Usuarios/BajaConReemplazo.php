@@ -14,6 +14,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+
 class BajaConReemplazo extends Component
 {
     use ManejaExcepcionesDeUsuario;
@@ -90,8 +91,11 @@ class BajaConReemplazo extends Component
             }
         }
 
+        /** @var User $actor */
+        $actor = auth()->user();
+
         if (! $this->intentar(
-            fn () => $estado->desactivar(auth()->user(), $usuario, $reemplazos),
+            fn () => $estado->desactivar($actor, $usuario, $reemplazos),
             fn ($e) => $this->error = $e->getMessage(),
         )) {
             return;

@@ -10,21 +10,24 @@ use App\Actions\Papeleta\ReconocerObservacionRrhhAction;
 use App\Actions\Papeleta\ResponderPosthocAction;
 use App\Exceptions\PapeletaException;
 use App\Http\Controllers\Concerns\ResuelveDecisionDePapeleta;
+use App\Http\Controllers\Concerns\ResuelveUsuarioAutenticado;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Papeleta\ComentarioRequest;
 use App\Http\Requests\Papeleta\ObservarJefeRequest;
 use App\Http\Requests\Papeleta\ResponderPosthocRequest;
 use App\Http\Requests\Papeleta\RetornoManualRequest;
 use App\Models\Papeleta;
+use App\Services\ArchivoSubidaService;
 use App\States\Papeleta\ObservadaPorRrhh;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
+
 
 class DecisionController extends Controller
 {
     use ResuelveDecisionDePapeleta;
+    use ResuelveUsuarioAutenticado;
 
     public function aprobar(Papeleta $papeleta, AprobarJefeAction $action): RedirectResponse
     {
@@ -33,7 +36,7 @@ class DecisionController extends Controller
         $this->reabrirSiObservadaPorRrhh($papeleta, 'Aprobada directamente tras observación de RRHH.');
 
         return $this->resolverDecision(
-            fn () => $action->ejecutar($papeleta, Auth::user()),
+            fn () => $action->ejecutar($papeleta, $this->usuarioAutenticado()),
             'success',
             'Papeleta aprobada.',
         );
@@ -46,7 +49,7 @@ class DecisionController extends Controller
         $this->reabrirSiObservadaPorRrhh($papeleta, 'Rechazada directamente tras observación de RRHH.');
 
         return $this->resolverDecision(
-            fn () => $action->ejecutar($papeleta, Auth::user(), $request->input('comentario')),
+            fn () => $action->ejecutar($papeleta, $this->usuarioAutenticado(), $request->input('comentario')),
             'warning',
             'Papeleta rechazada.',
         );
@@ -61,7 +64,7 @@ class DecisionController extends Controller
         return $this->resolverDecision(
             fn () => $action->ejecutar(
                 $papeleta,
-                Auth::user(),
+                $this->usuarioAutenticado(),
                 $request->input('comentario'),
                 requiereAdjunto: $request->boolean('requiere_adjunto'),
             ),
@@ -75,22 +78,23 @@ class DecisionController extends Controller
         $this->authorize('reconocerObservacionRrhh', $papeleta);
 
         return $this->resolverDecision(
-            fn () => $action->ejecutar($papeleta, Auth::user(), $request->input('comentario')),
+            fn () => $action->ejecutar($papeleta, $this->usuarioAutenticado(), $request->input('comentario')),
             'success',
             'Observación de RRHH reconocida, papeleta reabierta para tu decisión.',
         );
     }
 
-    public function responderPosthoc(ResponderPosthocRequest $request, Papeleta $papeleta, ResponderPosthocAction $action): RedirectResponse
+    
+    public function responderPosthoc(ResponderPosthocRequest $request, Papeleta $papeleta, ResponderPosthocAction $action, ArchivoSubidaService $archivos): RedirectResponse
     {
         $this->authorize('responderPosthoc', $papeleta);
 
         $archivoPath = $request->hasFile('archivo')
-            ? $request->file('archivo')->store('papeletas/posthoc', 'local')
+            ? ($archivos->guardar($request->file('archivo'), 'papeletas/posthoc') ?: null)
             : null;
 
         try {
-            $action->ejecutar($papeleta, Auth::user(), $request->input('respuesta'), $archivoPath);
+            $action->ejecutar($papeleta, $this->usuarioAutenticado(), $request->input('respuesta'), $archivoPath);
         } catch (PapeletaException $e) {
             $this->descartarAdjunto($archivoPath);
 
@@ -118,18 +122,19 @@ class DecisionController extends Controller
         $this->authorize('marcarRetornoManual', $papeleta);
 
         return $this->resolverDecision(
-            fn () => $action->manual($papeleta, Auth::user(), $request->input('justificacion')),
+            fn () => $action->manual($papeleta, $this->usuarioAutenticado(), $request->input('justificacion')),
             'success',
             'Retorno manual registrado por falla de conectividad.',
         );
     }
 
+    
     private function reabrirSiObservadaPorRrhh(Papeleta $papeleta, string $motivo): void
     {
         $papeleta->refresh();
 
         if ($papeleta->estado->equals(ObservadaPorRrhh::class)) {
-            app(ReconocerObservacionRrhhAction::class)->ejecutar($papeleta, Auth::user(), $motivo);
+            app(ReconocerObservacionRrhhAction::class)->ejecutar($papeleta, $this->usuarioAutenticado(), $motivo);
         }
     }
 }

@@ -12,12 +12,14 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+
 #[Layout('layouts.app')]
 #[Title('Turnos')]
 class DefinicionTurnos extends Component
 {
     use RequiereAdmin;
 
+    /** @var array<string, array{nombre: string, sigla: string, regimen: string}> */
     public const TURNOS = [
         'MANANA' => ['nombre' => 'Mañana', 'sigla' => 'M', 'regimen' => '728'],
         'TARDE' => ['nombre' => 'Tarde', 'sigla' => 'T', 'regimen' => '728'],
@@ -25,6 +27,7 @@ class DefinicionTurnos extends Component
         'DIA' => ['nombre' => 'Día', 'sigla' => 'DIA', 'regimen' => '276'],
     ];
 
+    /** @var array<string, array{inicio: string, fin: string}> código => horas en H:i */
     public array $horas = [];
 
     public function mount(GeneradorTurnoMensualService $generador): void
@@ -47,7 +50,7 @@ class DefinicionTurnos extends Component
         $reglas = [];
 
         foreach (array_keys(self::TURNOS) as $codigo) {
-
+            
             $reglas["horas.{$codigo}.inicio"] = ConfiguracionForm::reglasParaClave(GeneradorTurnoMensualService::claveDeHora($codigo, 'INICIO'));
             $reglas["horas.{$codigo}.fin"] = [
                 ...ConfiguracionForm::reglasParaClave(GeneradorTurnoMensualService::claveDeHora($codigo, 'FIN')),
@@ -79,7 +82,7 @@ class DefinicionTurnos extends Component
         DB::transaction(function () use ($datos) {
             foreach (array_keys(self::TURNOS) as $codigo) {
                 foreach (['inicio' => 'INICIO', 'fin' => 'FIN'] as $campo => $sufijo) {
-
+                    
                     Configuracion::updateOrCreate(
                         ['clave' => GeneradorTurnoMensualService::claveDeHora($codigo, $sufijo)],
                         ['valor' => $datos['horas'][$codigo][$campo]],

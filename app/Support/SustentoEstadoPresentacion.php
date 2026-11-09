@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+
 class SustentoEstadoPresentacion
 {
     /** @return array{0: string, 1: string} [etiqueta, clases_badge] */

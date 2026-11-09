@@ -18,6 +18,7 @@ use App\States\Papeleta\PendienteRrhh;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
+
 class CrearPapeletaAction
 {
     public function __construct(
@@ -25,6 +26,9 @@ class CrearPapeletaAction
         private RrhhHorarioService $horarioRrhh,
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $datos
+     */
     public function ejecutar(User $trabajador, Motivo $motivo, array $datos): Papeleta
     {
         $this->validarMotivoYRegimen($trabajador, $motivo, $datos);
@@ -49,15 +53,25 @@ class CrearPapeletaAction
             $autorizaSistema,
         ));
 
-        // confirmada en BD.
+        
+        
+        
         $this->notificarCreacion($papeleta, $estadoInicial, $autorizaSistema);
 
         return $papeleta;
     }
 
+    /**
+     * Validaciones que no dependen de jefatura ni de turno: régimen
+     * asignado, motivo vigente y justificación cuando el motivo la exige.
+     *
+     * @param  array<string, mixed>  $datos
+     */
     private function validarMotivoYRegimen(User $trabajador, Motivo $motivo, array $datos): void
     {
-
+        
+        
+        
         if (! in_array($trabajador->regimen, ['276', '728'], true)) {
             throw new PapeletaException(
                 'Tu usuario no tiene un régimen (276 o 728) asignado. Comunícate con Administración para regularizarlo antes de crear una papeleta.'
@@ -73,10 +87,21 @@ class CrearPapeletaAction
         }
     }
 
+    /**
+     * Resuelve a quién le corresponde decidir esta papeleta: directo a RRHH
+     * (jefe de área), o jefe inmediato (y, si quien crea es él mismo jefe de
+     * su unidad, su disponibilidad real para decidir ahora).
+     *
+     * @return array{directoARrhh: bool, jefeInmediatoId: ?int, jefeAreaId: ?int, esJefeInmediatoDeLaUnidad: bool, rrhhEnHorario: bool}
+     */
     private function resolverJefatura(User $trabajador): array
     {
         $unidad = $trabajador->unidadOrganica;
 
+        
+        
+        
+        
         $directoARrhh = $trabajador->esJefeDeArea();
 
         if ($directoARrhh && ! User::role('rrhh')->where('activo', true)->exists()) {
@@ -89,12 +114,23 @@ class CrearPapeletaAction
             ? $unidad->jefaturasDe($trabajador)
             : [null, null];
 
+        
         $jefeInmediato = $jefeInmediatoResuelto !== null
             ? User::whereKey($jefeInmediatoResuelto)->where('activo', true)->first()
             : null;
 
+        
+        
+        
+        
+        
         $esJefeInmediatoDeLaUnidad = $unidad?->esJefeDeLaUnidad($trabajador) ?? false;
 
+        
+        
+        
+        
+        
         if (! $directoARrhh && ! $jefeInmediato) {
             if ($esJefeInmediatoDeLaUnidad) {
                 throw new PapeletaException(
@@ -107,6 +143,10 @@ class CrearPapeletaAction
             );
         }
 
+        
+        
+        
+        
         return [
             'directoARrhh' => $directoARrhh,
             'jefeInmediatoId' => $jefeInmediato?->id,
@@ -122,9 +162,19 @@ class CrearPapeletaAction
      */
     private function determinarEstadoInicial(array $jefatura): string
     {
-
-        //
-
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         return match (true) {
             $jefatura['directoARrhh'] && ! $jefatura['rrhhEnHorario'] => AutorizadaYCorriendo::class,
             $jefatura['directoARrhh'] => PendienteRrhh::class,
@@ -132,6 +182,14 @@ class CrearPapeletaAction
         };
     }
 
+    /**
+     * Crea la papeleta y su historial inicial. Debe correr dentro de
+     * DB::transaction (ver ejecutar()): revalida bajo lock que el
+     * trabajador sigue sin papeleta viva antes de insertar.
+     *
+     * @param  array<string, mixed>  $datos
+     * @param  array{directoARrhh: bool, jefeInmediatoId: ?int, jefeAreaId: ?int, esJefeInmediatoDeLaUnidad: bool}  $jefatura
+     */
     private function crearPapeletaConHistorial(
         User $trabajador,
         Motivo $motivo,
@@ -142,7 +200,8 @@ class CrearPapeletaAction
         string $estadoInicial,
         bool $autorizaSistema,
     ): Papeleta {
-
+        
+        
         User::whereKey($trabajador->id)->lockForUpdate()->first();
         $this->exigirSinPapeletaViva($trabajador);
 
@@ -151,7 +210,7 @@ class CrearPapeletaAction
             'motivo_id' => $motivo->id,
             'sede_id' => $trabajador->sede_id,
             'regimen' => $trabajador->regimen,
-            'dia_operativo' => $turno?->fecha ?? now()->toDateString(),
+            'dia_operativo' => $turno->fecha ?? now()->toDateString(),
             'fin_turno_at' => $finTurno,
             'estado' => $estadoInicial,
             'jefe_inmediato_id' => $jefatura['jefeInmediatoId'],
@@ -163,6 +222,11 @@ class CrearPapeletaAction
             'hora_salida_real' => $autorizaSistema ? now() : null,
         ];
 
+        
+        
+        
+        
+        
         if ($autorizaSistema) {
             $campos['revision_posthoc_estado'] = 'pendiente';
         }
@@ -183,6 +247,14 @@ class CrearPapeletaAction
         return $papeleta;
     }
 
+    /**
+     * Historial explicativo del sistema cuando la papeleta no quedó en el
+     * flujo "normal" (PendienteJefe): siempre y únicamente el caso del
+     * propio Jefe de Área, que no tiene a nadie más arriba y por eso va
+     * directo a RRHH (ver determinarEstadoInicial()).
+     *
+     * @param  array{directoARrhh: bool}  $jefatura
+     */
     private function registrarHistorialDeEscalamiento(Papeleta $papeleta, array $jefatura, bool $autorizaSistema): void
     {
         if ($jefatura['directoARrhh']) {
@@ -199,6 +271,10 @@ class CrearPapeletaAction
             return;
         }
 
+        
+        
+        
+        
     }
 
     private function notificarCreacion(Papeleta $papeleta, string $estadoInicial, bool $autorizaSistema): void
@@ -222,10 +298,13 @@ class CrearPapeletaAction
         }
     }
 
+    
     private function resolverTurnoActivo(User $trabajador): ?Turno
     {
         if ($trabajador->regimen === '728') {
-
+            
+            
+            
             $turno = Turno::vigenteParaUsuario($trabajador->id);
 
             if (! $turno || $turno->es_descanso) {
@@ -248,10 +327,11 @@ class CrearPapeletaAction
         return null;
     }
 
+    
     private function resolverFinDeTurno(User $trabajador, ?Turno $turno): Carbon
     {
         if ($trabajador->regimen === '728') {
-            return $turno->finReal() ?? now()->endOfDay();
+            return $turno?->finReal() ?? now()->endOfDay();
         }
 
         return app(HorarioOrdinarioService::class)->finDelDia(now());

@@ -9,12 +9,17 @@ use App\States\Papeleta\Finalizada;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Symfony\Component\HttpFoundation\Response;
 
+
 class PdfController extends Controller
 {
     public function papeleta(Papeleta $papeleta): Response
     {
         $this->authorize('view', $papeleta);
 
+        
+        
+        
+        
         $puedeDescargar = $papeleta->estado->equals(Cerrada::class)
             || $papeleta->estado->equals(Finalizada::class);
 

@@ -14,11 +14,7 @@ use Spatie\Permission\Models\Role;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * El admin administra cuentas: no pertenece al organigrama, no encabeza
- * unidades ni es jefe inmediato de nadie. Y puede crear
- * a otro admin desde «Nuevo administrador».
- */
+
 class AdminFueraDelOrganigramaTest extends TestCase
 {
     use CreaEscenarioPapeletas;

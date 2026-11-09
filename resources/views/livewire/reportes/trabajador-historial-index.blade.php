@@ -11,7 +11,6 @@
         </div>
 
         @if (! $trabajador)
-            {{-- ============================= BUSCADOR ============================= --}}
             <div class="glass-card p-4 space-y-3">
                 <label for="trabajador-historial-index-buscar" class="block text-sm font-medium mb-1">Buscar trabajador</label>
                 <input id="trabajador-historial-index-buscar"
@@ -44,7 +43,6 @@
                 @endif
             </div>
         @else
-
             <div class="flex items-center justify-between flex-wrap gap-2 print:hidden">
                 <div>
                     <h3 class="text-lg font-bold text-tinta-950 dark:text-white">{{ $trabajador->nombre_completo }}</h3>
@@ -85,7 +83,11 @@
                     <p class="p-4 text-sm text-gray-500">Este trabajador no tiene papeletas registradas.</p>
                 @else
                     @php
-
+                        // A qué bandeja pertenece quien mira esta ficha: decide a qué
+                        // ruta de detalle (solo lectura via PapeletaPolicy::view)
+                        // apunta el "Ver" de cada fila. admin/RRHH ven cualquier
+                        // papeleta; jefe solo las de su propio equipo (la Policy
+                        // igual lo filtra si el caso no le corresponde).
                         $rutaDetalle = match (true) {
                             auth()->user()->hasRole('admin') => 'admin.papeletas.show',
                             auth()->user()->hasRole('rrhh') => 'rrhh.papeletas.show',

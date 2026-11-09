@@ -16,6 +16,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
+
 class ProcesarVencimientosPapeletas extends Command
 {
     protected $signature = 'papeletas:procesar-vencimientos';
@@ -33,19 +34,28 @@ class ProcesarVencimientosPapeletas extends Command
     public function handle(): int
     {
         $this->vencerPapeletasSinTurnoVigente();
-
-        // Vencida, no autorizada.
+        
+        
         $this->autorizarPendientesDeRrhhFueraDeHorario();
 
         return self::SUCCESS;
     }
 
+    
     private function autorizarPendientesDeRrhhFueraDeHorario(): void
     {
         if ($this->horarioRrhh->estaEnHorarioAhora()) {
             return;
         }
 
+        
+        
+        
+        
+        
+        
+        
+        
         Papeleta::whereState('estado', PendienteRrhh::class)
             ->whereNotNull('jefe_resuelto_at')
             ->conTurnoSinTerminar()
@@ -64,8 +74,8 @@ class ProcesarVencimientosPapeletas extends Command
     private function autorizarPorCierreDeRrhh(Papeleta $candidata): void
     {
         $papeleta = DB::transaction(function () use ($candidata) {
-            // Relectura bajo lock: RRHH pudo decidir (aprobar, observar,
-
+            
+            
             $actual = Papeleta::whereKey($candidata->id)->lockForUpdate()->first();
 
             if (! $actual
@@ -117,7 +127,8 @@ class ProcesarVencimientosPapeletas extends Command
     private function vencer(Papeleta $candidata): void
     {
         $papeleta = DB::transaction(function () use ($candidata) {
-
+            
+            
             $actual = Papeleta::whereKey($candidata->id)->lockForUpdate()->first();
 
             if (! $actual
@@ -131,7 +142,9 @@ class ProcesarVencimientosPapeletas extends Command
                 null,
                 'sistema',
                 'Vencida automáticamente: fin de turno/día sin decisión.',
-                fn (Papeleta $p) => $p->vencida_at = now(),
+                function (Papeleta $p): void {
+                    $p->vencida_at = now();
+                },
             );
 
             return $actual;

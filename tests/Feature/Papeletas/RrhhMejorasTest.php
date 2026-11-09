@@ -15,10 +15,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Mejoras del rol RRHH: filtros de la bandeja, corrección de papeletas
- * cerradas, lista de abandonos y accesos a los reportes de RRHH.
- */
+
 class RrhhMejorasTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -31,7 +28,7 @@ class RrhhMejorasTest extends TestCase
         $this->prepararBase();
     }
 
-    // ---- Bandeja: filtros -------------------------------------------------
+    
 
     public function test_la_bandeja_filtra_por_regimen_y_por_motivo(): void
     {
@@ -81,7 +78,7 @@ class RrhhMejorasTest extends TestCase
                 && $lista->last()->is($reciente));
     }
 
-    // ---- Corrección de papeletas cerradas --------------------------------
+    
 
     private function papeletaCerradaConRetorno(string $regimen = '728')
     {
@@ -177,7 +174,7 @@ class RrhhMejorasTest extends TestCase
         $this->assertSame($this->motivoDe('SALUD')->id, $papeleta->refresh()->motivo_id);
     }
 
-    // ---- Abandonos y accesos ---------------------------------------------
+    
 
     public function test_la_lista_de_abandonos_muestra_quien_lo_marco_o_sistema(): void
     {
@@ -223,10 +220,10 @@ class RrhhMejorasTest extends TestCase
             ->assertSee('Ausente')
             ->assertDontSee('Cumplida');
 
-        // La etiqueta del estado las distingue a simple vista. Cerrada se
-        // muestra como "Finalizada" (mismo criterio que la etiqueta normal
-        // de este estado, ver PapeletaEstadoPresentacion::para()), con el
-        // sufijo de abandono distinguiendo si hubo descuento o no.
+        
+        
+        
+        
         $this->assertStringContainsString('Finalizado · abandono', view('components.estado-papeleta', ['estado' => $cerradaAbandono->estado, 'abandono' => true])->render());
         $this->assertStringNotContainsString('Abandono', view('components.estado-papeleta', ['estado' => $cerradaNormal->estado, 'abandono' => false])->render());
     }
@@ -239,11 +236,11 @@ class RrhhMejorasTest extends TestCase
         $this->actingAs($rrhh)->get(route('reportes.decisiones-rrhh'))->assertOk();
         $this->actingAs($trabajador)->get(route('reportes.decisiones-rrhh'))->assertForbidden();
 
-        // reportes.resumen-papeletas ya no es exclusivo de rrhh|admin: ahora
-        // fusiona la pestaña "horas" (antes HorasAcumuladasIndex), accesible
-        // también a jefes. Un trabajador sin equipo sigue sin poder entrar,
-        // pero el corte lo aplica RestringeAReportes (redirect), no el
-        // middleware de rol (403).
+        
+        
+        
+        
+        
         $this->actingAs($rrhh)->get(route('reportes.resumen-papeletas'))->assertOk();
         $this->actingAs($trabajador)->get(route('reportes.resumen-papeletas'))
             ->assertRedirect(route('trabajador.papeletas.index'));

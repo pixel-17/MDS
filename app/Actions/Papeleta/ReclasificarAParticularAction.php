@@ -10,6 +10,7 @@ use App\States\Papeleta\EnJustificacion;
 use App\States\Papeleta\Finalizada;
 use Illuminate\Support\Facades\DB;
 
+
 class ReclasificarAParticularAction
 {
     public function __construct(private NotificarPapeletaService $notificar) {}
@@ -27,7 +28,10 @@ class ReclasificarAParticularAction
         }
 
         $papeleta = DB::transaction(function () use ($papeleta, $motivoParticular, $actorId, $actorTipo, $justificacion) {
-
+            
+            
+            
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             if (! $actual->estado->equals(EnJustificacion::class)) {

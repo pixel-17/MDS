@@ -12,10 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Un reingreso reemplaza correo y contraseña (= DNI) de una cuenta
- * existente: solo es aceptable para un ex-trabajador común desactivado.
- */
+
 class ReingresoUsuarioTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -47,7 +44,7 @@ class ReingresoUsuarioTest extends TestCase
             'sede_id' => $this->sedeDePrueba()->id,
             'unidad_organica_id' => $this->unidad->id,
             'tipo' => 'trabajador',
-            // 728 siempre exige turno inicial (ver CrearUsuarioAction).
+            
             'turno' => 'MANANA',
             'fecha_ancla' => now()->toDateString(),
         ];

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+
 class TurnoColores
 {
     /** @return array<string, string> sigla => clases (claro + oscuro) */
@@ -23,6 +24,12 @@ class TurnoColores
         return $mapa[$sigla] ?? $mapa['DIA'];
     }
 
+    /**
+     * Misma paleta indexada por el código que usan los pinceles de
+     * programación (Alpine): MANANA, TARDE, NOCHE, DESCANSO.
+     *
+     * @return array<string, string>
+     */
     public static function porCodigo(): array
     {
         $mapa = self::porSigla();

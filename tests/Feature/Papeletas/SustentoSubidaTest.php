@@ -13,10 +13,7 @@ use RuntimeException;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Subida del sustento por el trabajador: el archivo nuevo nunca debe quedar
- * en el disco si la fila no llegó a referenciarlo.
- */
+
 class SustentoSubidaTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -90,7 +87,7 @@ class SustentoSubidaTest extends TestCase
 
         $this->assertNotSame('papeletas/sustentos/observado.pdf', $sustento->archivo_path);
         Storage::disk('local')->assertExists($sustento->archivo_path);
-        Storage::disk('local')->assertExists('papeletas/sustentos/observado.pdf'); // lo retira archivos:huerfanos tras el plazo de gracia
+        Storage::disk('local')->assertExists('papeletas/sustentos/observado.pdf'); 
     }
 
     public function test_si_la_base_de_datos_falla_el_archivo_recien_subido_se_descarta(): void

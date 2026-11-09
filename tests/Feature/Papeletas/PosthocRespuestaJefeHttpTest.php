@@ -14,11 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Recorrido HTTP del ida y vuelta post-hoc: las vistas Blade renderizan,
- * el formulario del jefe (texto + adjunto opcional) responde y solo el
- * jefe que autorizó puede hacerlo.
- */
+
 class PosthocRespuestaJefeHttpTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -89,7 +85,7 @@ class PosthocRespuestaJefeHttpTest extends TestCase
 
     public function test_las_bandejas_reflejan_cada_estado_de_la_revision(): void
     {
-        // observada: la lista el jefe que autorizó, RRHH aún no.
+        
         $this->actingAs($this->jefe)
             ->get(route('jefe.papeletas.index'))
             ->assertOk()
@@ -100,7 +96,7 @@ class PosthocRespuestaJefeHttpTest extends TestCase
             ->assertOk()
             ->assertDontSee('Jefe respondió');
 
-        // respondida: pasa a la bandeja de RRHH con su etiqueta.
+        
         $this->actingAs($this->jefe)
             ->post(route('jefe.papeletas.responder-posthoc', $this->papeleta), ['respuesta' => 'Fue una emergencia']);
 

@@ -13,13 +13,7 @@ use Illuminate\Support\Carbon;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Régimen 728: crear una papeleta exige SIEMPRE tener un turno vigente
- * cargado en `turnos` para hoy (fila real, y que no sea es_descanso).
- * Ya no es el interruptor MODO_ESTRICTO_728 que el admin podía
- * activar/desactivar: es la única regla, siempre activa. Fecha de
- * referencia: lunes 2026-09-21.
- */
+
 class TurnoVigenteRequeridoTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -84,18 +78,14 @@ class TurnoVigenteRequeridoTest extends TestCase
         $this->assertTrue($papeleta->fresh()->estado->equals(PendienteJefe::class));
     }
 
-    /**
-     * El turno Noche cargado ayer sigue vigente hasta su fin real hoy de
-     * madrugada (Turno::vigenteParaUsuario resuelve el cruce de
-     * medianoche): no exige una fila nueva para "hoy".
-     */
+    
     public function test_turno_noche_de_ayer_todavia_vigente_de_madrugada_si_permite_crear(): void
     {
         $trabajador = $this->usuarioDePrueba();
         $jefe = $this->conJefeDePrueba($trabajador);
 
-        // En 728 el jefe solo resuelve si hoy tiene un turno vigente con el
-        // mismo código que el del trabajador.
+        
+        
         foreach ([$trabajador, $jefe] as $quien) {
             Turno::create([
                 'user_id' => $quien->id,
@@ -108,7 +98,7 @@ class TurnoVigenteRequeridoTest extends TestCase
             ]);
         }
 
-        $this->ir('2026-09-21 02:00:00'); // madrugada: la noche empezó el 20
+        $this->ir('2026-09-21 02:00:00'); 
 
         $papeleta = app(CrearPapeletaAction::class)->ejecutar($trabajador, $this->motivoDe('PARTICULAR'), []);
 

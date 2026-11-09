@@ -6,6 +6,7 @@ use App\Models\Papeleta;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+
 class SubsanarObservacionRequest extends FormRequest
 {
     public function authorize(): bool
@@ -16,9 +17,10 @@ class SubsanarObservacionRequest extends FormRequest
             return false;
         }
 
-        return (int) $papeleta->trabajador_id === (int) $this->user()->id;
+        return (int) $papeleta->trabajador_id === (int) $this->user()?->id;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         $papeleta = $this->route('papeleta');

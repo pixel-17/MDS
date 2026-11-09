@@ -8,11 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Formulario «Crear usuario» (jefe de área). Solo cubre lo que se ve:
- * las reglas de sede y turno las prueban TurnoInicialAlCrearTest y
- * JefesPorRegimenTest contra CrearUsuarioAction.
- */
+
 class FormularioCrearUsuarioTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -26,8 +22,8 @@ class FormularioCrearUsuarioTest extends TestCase
 
         $this->prepararBase();
 
-        // Jefe de área = trabajador que encabeza la unidad. Un admin no sirve aquí:
-        // UserPolicy::puedeCrearAlgo() lo excluye a propósito (sus altas van por Cuentas).
+        
+        
         $this->jefeDeArea = $this->usuarioDePrueba();
         $unidad = UnidadOrganica::create(['nombre' => 'Oficina', 'jefe_id' => $this->jefeDeArea->id]);
         $this->conUnidadHija($unidad);
@@ -39,7 +35,7 @@ class FormularioCrearUsuarioTest extends TestCase
             ->get(route('usuarios.crear'))
             ->assertOk()
             ->assertSee('Sede del trabajador')
-            // La sede del jefe de la unidad viaja al formulario para mostrarse en vivo.
+            
             ->assertSee('Sede central');
     }
 

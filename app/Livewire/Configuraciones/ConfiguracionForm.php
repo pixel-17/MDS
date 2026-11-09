@@ -10,6 +10,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+
 #[Layout('layouts.app')]
 #[Title('Editar configuración')]
 class ConfiguracionForm extends Component
@@ -21,6 +22,7 @@ class ConfiguracionForm extends Component
 
     public string $valor = '';
 
+    
     public static function esClaveDeTurno(string $clave): bool
     {
         return (bool) preg_match('/^(TURNO_[A-Z]+_HORA|HORARIO_ORDINARIO_HORA)_(INICIO|FIN)$/', $clave);
@@ -34,11 +36,19 @@ class ConfiguracionForm extends Component
         $this->valor = $configuracion->valor;
     }
 
+    /** @return array<string, mixed> */
     protected function rules(): array
     {
         return ['valor' => self::reglasParaClave($this->configuracion->clave)];
     }
 
+    /**
+     * Las horas se comparan como texto "H:i" (ver HorarioOrdinarioService), así
+     * que "8:00", "25:99" o "8am" no dan un error: dejan el horario roto en
+     * silencio. Cada tipo de clave se valida con su formato.
+     *
+     * @return array<int, string>
+     */
     public static function reglasParaClave(string $clave): array
     {
         if (preg_match('/(_HORA_(INICIO|FIN)|^BLOQUE_ALMUERZO_(INICIO|FIN))$/', $clave)) {

@@ -1,6 +1,5 @@
 <div>
     <div class="max-w-7xl mx-auto pt-10 sm:px-6 lg:px-8 space-y-4">
-
         <div class="space-y-1">
             <x-admin.encabezado titulo="Programar horarios" />
             <p class="text-sm text-gray-500">
@@ -24,6 +23,8 @@
                     @php
                         $esJefeDeArea = in_array($usuario->id, $idsJefesDeArea, true);
                         $esJefe = in_array($usuario->id, $idsJefes, true);
+                        $esAdmin = $usuario->hasRole('admin');
+                        $esRrhh = $usuario->hasRole('rrhh');
                     @endphp
                     <tr wire:key="programacion-admin-{{ $usuario->id }}">
                         <td class="px-4 py-3">
@@ -34,7 +35,11 @@
                         </td>
                         <td class="px-4 py-3">{{ $usuario->dni }}</td>
                         <td class="px-4 py-3">
-                            @if ($esJefeDeArea)
+                            @if ($esAdmin)
+                                <span class="inline-flex items-center rounded bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-800">Administrador</span>
+                            @elseif ($esRrhh)
+                                <span class="inline-flex items-center rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">RRHH</span>
+                            @elseif ($esJefeDeArea)
                                 <span class="inline-flex items-center rounded bg-tinta-100 px-2 py-0.5 text-xs font-semibold text-tinta-800">Jefe de área</span>
                             @elseif ($esJefe)
                                 <span class="inline-flex items-center rounded bg-tinta-100 px-2 py-0.5 text-xs font-semibold text-tinta-800">Jefe inmediato</span>
@@ -45,7 +50,9 @@
                         <td class="px-4 py-3">{{ $usuario->regimen }}</td>
                         <td class="px-4 py-3">{{ $usuario->unidadOrganica?->nombre ?? '—' }}</td>
                         <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                            @if ($esJefe)
+                            @if ($esAdmin)
+                                <span class="text-xs text-gray-400">—</span>
+                            @elseif ($esJefe)
                                 <button type="button" wire:click="seleccionarJefe({{ $usuario->id }})" class="btn-row">
                                     <x-icon name="users" class="size-3.5" />
                                     Programar su equipo
@@ -58,7 +65,7 @@
                             @else
                                 <a href="{{ route('turnos.configuracion', $usuario) }}" class="btn-row">
                                     <x-icon name="clock" class="size-3.5" />
-                                    Crear/editar horario
+                                    Cargar horario ordinario
                                 </a>
                             @endif
                         </td>

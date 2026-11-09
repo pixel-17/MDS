@@ -6,14 +6,16 @@ use App\Models\Papeleta;
 use App\Models\User;
 use Carbon\Carbon;
 
+
 class BloqueoRevisionService
 {
-
+    
     private const MINUTOS_RENOVACION = 2;
 
+    
     public function marcar(Papeleta $papeleta, User $usuario): bool
     {
-
+        
         if (
             $papeleta->en_revision_por_id &&
             $papeleta->en_revision_por_id !== $usuario->id
@@ -21,6 +23,10 @@ class BloqueoRevisionService
             return false;
         }
 
+        
+        
+        
+        
         if (
             $papeleta->en_revision_por_id === $usuario->id
             && $papeleta->en_revision_desde
@@ -37,6 +43,7 @@ class BloqueoRevisionService
         return true;
     }
 
+    
     public function liberar(Papeleta $papeleta, User $usuario): void
     {
         if ($papeleta->en_revision_por_id === $usuario->id) {
@@ -47,6 +54,7 @@ class BloqueoRevisionService
         }
     }
 
+    
     public function nombreRevisor(Papeleta $papeleta): ?string
     {
         return $papeleta->enRevisionPor?->name;

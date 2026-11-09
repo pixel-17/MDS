@@ -18,13 +18,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Descarga del PDF de una papeleta individual (trabajador.papeletas.pdf).
- * La autorización vive en PapeletaPolicy::view; además, el PDF certifica
- * una papeleta ya aprobada, así que PdfController::papeleta solo lo permite
- * en Cerrada o Finalizada. Rechazada, Cancelada y Vencida son estados
- * terminales pero no permiten la descarga: no hay nada que certificar.
- */
+
 class PdfPapeletaTest extends TestCase
 {
     use CreaEscenarioPapeletas;

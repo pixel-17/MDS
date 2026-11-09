@@ -12,11 +12,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * CRUD de Motivos. Sus banderas (suma_descuento, cierre sin retorno...) son
- * la única fuente de verdad del flujo de papeletas, por eso se comprueba que
- * cada una viaje bien del formulario a la BD.
- */
+
 class MotivoCrudTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -65,11 +61,11 @@ class MotivoCrudTest extends TestCase
     public function test_las_dos_reglas_producen_una_sola_consecuencia(): void
     {
         $casos = [
-            // [requiereJustificacion, aplicaDescuento, suma_descuento, requiere_sustento, consecuencia]
+            
             'particular' => [false, true, true, false, 'descuenta'],
             'salud' => [true, false, false, true, 'justificar'],
             'comision' => [false, false, false, false, 'libre'],
-            // Si requiere justificación, el descuento no se guarda: depende de si la presenta.
+            
             'ambas' => [true, true, false, true, 'justificar'],
         ];
 
@@ -79,6 +75,9 @@ class MotivoCrudTest extends TestCase
                 ->set('nombre', 'Regla '.$codigo)
                 ->set('requiereJustificacion', $requiere)
                 ->set('aplicaDescuento', $descuento)
+                
+                
+                ->set('plazoJustificacionHorasHabiles', $requiere ? 48 : null)
                 ->call('guardar')
                 ->assertHasNoErrors();
 
@@ -111,6 +110,31 @@ class MotivoCrudTest extends TestCase
         $this->assertNull(Motivo::where('nombre', 'Sin plazo')->firstOrFail()->plazo_justificacion_horas_habiles);
     }
 
+    
+    public function test_el_plazo_es_obligatorio_si_requiere_justificacion(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(MotivoForm::class)
+            ->set('nombre', 'Sin plazo pero justifica')
+            ->set('requiereJustificacion', true)
+            ->set('plazoJustificacionHorasHabiles', null)
+            ->call('guardar')
+            ->assertHasErrors(['plazoJustificacionHorasHabiles' => 'required']);
+
+        $this->assertFalse(Motivo::where('nombre', 'Sin plazo pero justifica')->exists());
+    }
+
+    
+    public function test_el_plazo_en_null_se_trata_como_cero_horas_habiles(): void
+    {
+        $motivo = $this->motivoNuevo([
+            'requiere_sustento_en_retorno' => true,
+            'plazo_justificacion_horas_habiles' => null,
+        ]);
+
+        $this->assertSame(0, $motivo->plazoJustificacionHorasHabiles());
+    }
+
     public function test_editar_precarga_las_reglas_y_conserva_el_codigo_original(): void
     {
         $motivo = $this->motivoNuevo(['suma_descuento' => true]);
@@ -134,7 +158,7 @@ class MotivoCrudTest extends TestCase
 
     public function test_un_motivo_con_ambas_banderas_se_muestra_como_requiere_justificacion(): void
     {
-        // Misma prioridad que MarcarRetornoAction: si pide justificación, ese camino manda.
+        
         $motivo = $this->motivoNuevo(['suma_descuento' => true, 'requiere_sustento_en_retorno' => true]);
 
         Livewire::actingAs($this->admin)

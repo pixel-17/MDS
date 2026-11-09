@@ -12,10 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Un solo jefe por unidad (sin importar régimen), baja con reemplazo y
- * jefatura vacante. Prueba la capa de modelos y acciones, no la pantalla.
- */
+
 class JefeUnicoYReemplazoTest extends TestCase
 {
     use CreaEscenarioPapeletas;

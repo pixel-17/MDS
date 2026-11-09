@@ -6,11 +6,26 @@ use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * Arma la navegación del shell (sidebar para quien gestiona a otros,
+ * barra inferior para el trabajador). Antes esto vivía en un @php de
+ * ~90 líneas dentro de layouts/app.blade.php, con dos consultas COUNT en
+ * cada carga de página. Ahora:
+ *
+ *  - la estructura de menús se arma aquí (y se puede probar);
+ *  - los contadores de las bandejas NO se calculan aquí: cada ítem lleva
+ *    `bandeja => 'jefe'|'rrhh'` y el sidebar pinta el componente Livewire
+ *    Navegacion\InsigniaBandeja, que se actualiza en vivo.
+ *
+ * Se registra para 'layouts.app' y 'components.trabajador-layout'
+ * (AppServiceProvider). Variables que entrega a la vista: usuario, esAdmin,
+ * esRrhh, esJefe, puedeAltaUsuarios, conSidebar, rolLabel, secciones, navItems.
+ */
 class NavegacionComposer
 {
     public function compose(View $view): void
     {
-
+        /** @var User|null $usuario */
         $usuario = Auth::user();
 
         if (! $usuario) {
@@ -32,6 +47,7 @@ class NavegacionComposer
         $esAdmin = $usuario->hasRole('admin');
         $esRrhh = $usuario->hasRole('rrhh');
         $esJefe = $usuario->can('crearTrabajadorPropio', User::class);
+        $esJefeDeArea = $usuario->esJefeDeArea();
         $puedeAltaUsuarios = $usuario->can('puedeCrearAlgo', User::class);
 
         $view->with([
@@ -40,10 +56,11 @@ class NavegacionComposer
             'esRrhh' => $esRrhh,
             'esJefe' => $esJefe,
             'puedeAltaUsuarios' => $puedeAltaUsuarios,
-
+            
+            
             'conSidebar' => $esAdmin || $esRrhh || $esJefe,
             'rolLabel' => $esAdmin ? 'Administración' : ($esRrhh ? 'Recursos Humanos' : 'Jefatura'),
-            'secciones' => $this->secciones($usuario, $esAdmin, $esRrhh, $esJefe, $puedeAltaUsuarios),
+            'secciones' => $this->secciones($usuario, $esAdmin, $esRrhh, $esJefe, $esJefeDeArea, $puedeAltaUsuarios),
             'navItems' => $this->navegacionDelTrabajador($esAdmin || $esRrhh || $esJefe),
         ]);
     }
@@ -51,7 +68,7 @@ class NavegacionComposer
     /**
      * @return array<int, array{label: ?string, items: array<int, array<string, mixed>>}>
      */
-    private function secciones(User $usuario, bool $esAdmin, bool $esRrhh, bool $esJefe, bool $puedeAltaUsuarios): array
+    private function secciones(User $usuario, bool $esAdmin, bool $esRrhh, bool $esJefe, bool $esJefeDeArea, bool $puedeAltaUsuarios): array
     {
         $secciones = [[
             'label' => null,
@@ -70,7 +87,7 @@ class NavegacionComposer
             $bandejas[] = ['label' => 'Papeletas de RR. HH.', 'route' => route('rrhh.papeletas.index'), 'active' => request()->routeIs('rrhh.papeletas.*'), 'icon' => 'clipboard', 'bandeja' => 'rrhh'];
         }
 
-        if ($esAdmin) {
+        if ($esAdmin || $esRrhh) {
             $bandejas[] = ['label' => 'Todas las papeletas', 'route' => route('admin.papeletas.index'), 'active' => request()->routeIs('admin.papeletas.*'), 'icon' => 'document'];
         }
 
@@ -92,8 +109,13 @@ class NavegacionComposer
             $turnosJefe[] = ['label' => 'Programar por usuario', 'route' => route('turnos.administrar'), 'active' => request()->routeIs('turnos.administrar'), 'icon' => 'users'];
         }
 
+        
+        
         if ($esJefe && ! $esAdmin) {
-
+            
+            
+            
+            
             $turnosJefe[] = ['label' => 'Calendario del equipo', 'route' => route('turnos.calendario.equipo'), 'active' => request()->routeIs('turnos.calendario.equipo'), 'icon' => 'calendar'];
         }
 
@@ -101,14 +123,14 @@ class NavegacionComposer
             $secciones[] = ['label' => 'Turnos', 'items' => $turnosJefe];
         }
 
+        
+        
+        
+        
         $reportes = [
             ['label' => 'Resumen de papeletas', 'route' => route('reportes.resumen-papeletas'), 'active' => request()->routeIs('reportes.resumen-papeletas'), 'icon' => 'chart'],
             ['label' => 'Sustentos', 'route' => route('reportes.sustentos'), 'active' => request()->routeIs('reportes.sustentos'), 'icon' => 'clipboard'],
         ];
-
-        if ($esRrhh || $esAdmin) {
-            $reportes[] = ['label' => 'Decisiones de RR. HH.', 'route' => route('reportes.decisiones-rrhh'), 'active' => request()->routeIs('reportes.decisiones-rrhh'), 'icon' => 'clipboard'];
-        }
 
         $secciones[] = ['label' => 'Reportes', 'items' => $reportes];
 
@@ -118,7 +140,9 @@ class NavegacionComposer
             $personas[] = ['label' => 'Trabajadores', 'route' => route('usuarios.index'), 'active' => request()->routeIs('usuarios.*'), 'icon' => 'users'];
         }
 
-        if ($esAdmin || $esJefe) {
+        
+        
+        if ($esAdmin || $esJefeDeArea) {
             $personas[] = ['label' => 'Organigrama', 'route' => route('organigrama.index'), 'active' => request()->routeIs('organigrama.*'), 'icon' => 'share'];
         }
 
@@ -133,7 +157,6 @@ class NavegacionComposer
         if ($esAdmin) {
             $secciones[] = ['label' => 'Catálogos', 'items' => [
                 ['label' => 'Sedes', 'route' => route('sedes.index'), 'active' => request()->routeIs('sedes.*'), 'icon' => 'map-pin'],
-                ['label' => 'Unidades orgánicas', 'route' => route('unidades-organicas.index'), 'active' => request()->routeIs('unidades-organicas.*'), 'icon' => 'building'],
                 ['label' => 'Motivos', 'route' => route('motivos.index'), 'active' => request()->routeIs('motivos.*'), 'icon' => 'tag'],
                 ['label' => 'Turnos', 'route' => route('turnos.index'), 'active' => request()->routeIs('turnos.index', 'turnos.crear', 'turnos.editar'), 'icon' => 'clock'],
             ]];
@@ -146,6 +169,15 @@ class NavegacionComposer
         return $secciones;
     }
 
+    /**
+     * Barra inferior del shell móvil. Las pantallas del trabajador
+     * (Papeletas, Nueva, Calendario, Perfil) siempre usan este shell, también
+     * para quien gestiona a otros (jefe, RR. HH., admin). A ese usuario se le
+     * agrega "Panel" para volver al shell con sidebar (bandejas, programación
+     * de turnos, reportes); sin él, quedaba atrapado en la vista de trabajador.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     private function navegacionDelTrabajador(bool $conSidebar = false): array
     {
         $panel = $conSidebar

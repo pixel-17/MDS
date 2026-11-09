@@ -18,12 +18,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Observación del jefe: el trabajador SIEMPRE responde por escrito y, si
- * el jefe lo exigió al observar, además adjunta un archivo. Al responder
- * la papeleta vuelve a PENDIENTE_JEFE. Mientras espera, el jefe solo puede
- * rechazarla. RRHH ve el adjunto y la respuesta.
- */
+
 class ObservacionJefeTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -139,7 +134,7 @@ class ObservacionJefeTest extends TestCase
         $adjuntoPrimeraRonda = $papeleta->fresh()->observacion_adjunto_path;
         $this->assertNotNull($adjuntoPrimeraRonda);
 
-        // Segunda ronda: el jefe observa otra vez, ahora sin exigir adjunto.
+        
         $this->actingAs($this->jefe)->post(route('jefe.papeletas.observar', $papeleta), [
             'comentario' => 'Aclárame la hora de retorno.',
         ])->assertSessionHas('success');
@@ -237,9 +232,9 @@ class ObservacionJefeTest extends TestCase
 
         $this->actingAs($this->jefe)
             ->post(route('jefe.papeletas.rechazar', $papeleta), ['comentario' => 'No corresponde a la jornada.'])
-            // Un rechazo flashea 'warning', no 'success' (mismo criterio que
-            // Rrhh\DecisionController::rechazar()): no es un resultado
-            // positivo para el trabajador aunque la acción se haya ejecutado bien.
+            
+            
+            
             ->assertSessionHas('warning');
 
         $this->assertTrue($papeleta->fresh()->estado->equals(Rechazada::class));

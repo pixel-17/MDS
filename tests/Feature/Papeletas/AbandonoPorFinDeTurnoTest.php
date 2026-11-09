@@ -16,11 +16,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * El abandono no marcado se decide contra fin_turno_at: un 728 de turno
- * Noche que sale a las 23:30 y vuelve a las 00:30 ya no queda como
- * abandono falso a medianoche.
- */
+
 class AbandonoPorFinDeTurnoTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -78,8 +74,8 @@ class AbandonoPorFinDeTurnoTest extends TestCase
         $this->abandonos();
 
         $papeleta = $papeleta->fresh();
-        // Particular descuenta: termina de una vez en Finalizada, sin plazo ni
-        // visto bueno, y queda marcada como abandono.
+        
+        
         $this->assertTrue($papeleta->estado->equals(Finalizada::class));
         $this->assertSame('abandono_no_marcado', $papeleta->causa_finalizacion_sin_retorno);
         $this->assertTrue($papeleta->esAbandono());
@@ -87,11 +83,7 @@ class AbandonoPorFinDeTurnoTest extends TestCase
         $this->assertNull($papeleta->regularizacion_fecha_limite);
     }
 
-    /**
-     * El estado queda "finalizada" como siempre, pero igual se registra la
-     * hora de fin (la del turno, 06:00, no la del cron corriendo a 06:01)
-     * para que se pueda calcular cuánto tiempo estuvo afuera.
-     */
+    
     public function test_abandono_finalizado_registra_hora_de_fin_de_turno_como_retorno(): void
     {
         $papeleta = $this->papeletaNocheEnCurso();
@@ -109,11 +101,7 @@ class AbandonoPorFinDeTurnoTest extends TestCase
         $this->assertSame(6 * 60 + 30, $minutos, 'ahora sí se puede calcular cuánto tiempo estuvo afuera (23:30 -> 06:00 = 6h30)');
     }
 
-    /**
-     * La hora de fin se registra igual aunque el abandono no termine en
-     * Finalizada directo (Cerrada o EnJustificacion): es el mismo instante
-     * de "turno terminado", no depende de a dónde vaya el estado después.
-     */
+    
     public function test_abandono_de_comision_tambien_registra_hora_de_fin(): void
     {
         $papeleta = $this->papeletaNocheEnCurso('COMISION');
@@ -128,12 +116,7 @@ class AbandonoPorFinDeTurnoTest extends TestCase
         $this->assertTrue($papeleta->retorno->hora_servidor->equalTo(Carbon::parse('2026-09-22 06:00:00')));
     }
 
-    /**
-     * El refrigerio (Paso 7) también se calcula para el abandono, no solo
-     * para un retorno marcado a mano: si no, el reporte de horas
-     * acumuladas sobrecontaba en 276 cuando la ausencia cruzaba el
-     * bloque de almuerzo.
-     */
+    
     public function test_abandono_regimen_276_calcula_descuento_de_refrigerio_igual_que_un_retorno_normal(): void
     {
         $papeleta = $this->papeletaDePrueba($this->usuarioDePrueba(), AutorizadaYCorriendo::class, [
@@ -149,9 +132,9 @@ class AbandonoPorFinDeTurnoTest extends TestCase
 
         $papeleta = $papeleta->fresh();
         $this->assertTrue($papeleta->estado->equals(Finalizada::class));
-        // Bloque de almuerzo por defecto 13:00-14:00, íntegro dentro de la
-        // ausencia (12:30 -> 15:00): 60 minutos, igual que si hubiera
-        // marcado retorno normalmente.
+        
+        
+        
         $this->assertSame(60, $papeleta->descuento_refrigerio_minutos);
     }
 
@@ -173,7 +156,7 @@ class AbandonoPorFinDeTurnoTest extends TestCase
 
         $papeleta = $papeleta->fresh();
         $this->assertTrue($papeleta->estado->equals(Finalizada::class));
-        // No se pisa ni se duplica: sigue siendo el mismo registro del fin de turno.
+        
         $this->assertTrue($papeleta->retorno->hora_servidor->equalTo(Carbon::parse('2026-09-22 06:00:00')));
     }
 

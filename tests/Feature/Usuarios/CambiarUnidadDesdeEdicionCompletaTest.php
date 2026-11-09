@@ -10,15 +10,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * «Edición completa» (UsuarioForm, usuarios.editar) escribe
- * unidad_organica_id directo, sin pasar por MoverTrabajadorAction. Si a
- * quien encabeza una unidad (jefe_id) se le cambiaba la unidad por aquí sin
- * reasignar antes esa jefatura, jefe_id de la unidad vieja no se tocaba:
- * la persona quedaba «duplicada» en el organigrama (jefe en una unidad,
- * miembro en otra). Mismo guard que ya protege el arrastre en
- * MoverTrabajadorAction (MoverTrabajadorTest).
- */
+
 class CambiarUnidadDesdeEdicionCompletaTest extends TestCase
 {
     use CreaEscenarioPapeletas;

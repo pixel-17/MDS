@@ -9,10 +9,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * "Mis papeletas" muestra por defecto solo las del turno en curso (salen
- * de la vista cuando el turno termina) y un botón permite ver todas.
- */
+
 class TrabajadorIndexTurnoTest extends TestCase
 {
     use CreaEscenarioPapeletas;

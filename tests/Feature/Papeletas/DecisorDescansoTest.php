@@ -13,10 +13,7 @@ use Illuminate\Support\Carbon;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Un decisor 728 está disponible las 24 h, salvo en su día de descanso.
- * Lunes de referencia: 2026-09-21.
- */
+
 class DecisorDescansoTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -86,9 +83,9 @@ class DecisorDescansoTest extends TestCase
         $this->turnoDePrueba($jefe, ['fecha' => '2026-09-20', 'hora_inicio' => '22:00:00', 'hora_fin' => '06:00:00']);
         $this->turnoDePrueba($jefe, $this->descanso('2026-09-21'));
 
-        // 03:00 del lunes: aún corre la Noche del domingo.
+        
         $this->assertTrue($this->disponible($jefe, '2026-09-21 03:00:00'));
-        // 07:00: la Noche ya terminó y hoy es su descanso.
+        
         $this->assertFalse($this->disponible($jefe, '2026-09-21 07:00:00'));
     }
 
@@ -97,19 +94,11 @@ class DecisorDescansoTest extends TestCase
         $jefe = $this->usuarioDePrueba(['regimen' => '276']);
         $this->turnoDePrueba($jefe, $this->descanso('2026-09-21'));
 
-        // 276 se rige por el horario ordinario, no por filas de turnos.
+        
         $this->assertTrue($this->disponible($jefe, '2026-09-21 10:00:00'));
     }
 
-    /**
-     * Organigrama: Gerencia (gerente) > Oficina (jefeOficina). El jefe de la
-     * Oficina envía SU PROPIA papeleta, así que sube al gerente. El
-     * gerente esté o no disponible ahora (de descanso, fuera de horario),
-     * la papeleta siempre espera en PendienteJefe: solo la papeleta del
-     * propio Jefe de Área (el tope, sin nadie más arriba) puede escalar a
-     * RRHH o autorizarse por sistema — nunca la de un jefe inmediato
-     * esperando a su Jefe de Área.
-     */
+    
     private function escenarioJefeQueEnviaSuPropiaPapeleta(bool $gerenteDescansa): string
     {
         $gerente = $this->usuarioDePrueba(['regimen' => '728']);

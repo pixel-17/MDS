@@ -8,11 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Los layouts ahora reciben su navegación de NavegacionComposer y arman el
- * <title> con TituloDePagina. Estas pruebas renderizan páginas reales para
- * cubrir composer + Blade + parciales de una sola vez.
- */
+
 class LayoutTest extends TestCase
 {
     use CreaEscenarioPapeletas;

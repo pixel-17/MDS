@@ -10,6 +10,7 @@ use App\States\Papeleta\ObservadaPorRrhh;
 use App\States\Papeleta\PendienteJefe;
 use Illuminate\Support\Facades\DB;
 
+
 class ReconocerObservacionRrhhAction
 {
     use ExigeDecisorAjeno;
@@ -17,7 +18,9 @@ class ReconocerObservacionRrhhAction
     public function ejecutar(Papeleta $papeleta, User $jefe, string $comentario, string $actorTipo = 'jefe_inmediato'): Papeleta
     {
         return DB::transaction(function () use ($papeleta, $jefe, $comentario, $actorTipo) {
-
+            
+            
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             $this->exigirDecisorAjeno($actual, $jefe);

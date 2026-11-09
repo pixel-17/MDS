@@ -7,9 +7,12 @@ use App\Models\User;
 use App\Notifications\AlertaOrganizacionalNotification;
 use Illuminate\Support\Facades\Notification;
 
+
 class AlertaJefaturaService
 {
-
+    /**
+     * @return int cantidad de avisos disparados
+     */
     public function avisarFaltantesEnTodoElOrganigrama(): int
     {
         $avisos = 0;

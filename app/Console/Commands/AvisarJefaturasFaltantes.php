@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Services\AlertaJefaturaService;
 use Illuminate\Console\Command;
 
+
 class AvisarJefaturasFaltantes extends Command
 {
     protected $signature = 'jefaturas:avisar-faltantes';

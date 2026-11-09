@@ -14,14 +14,7 @@ use Illuminate\Support\Carbon;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Regresión puntual: CrearPapeletaAction llegó a mandar
- * revision_posthoc_estado => null en las ramas que no autorizan por
- * sistema, y esa columna no admite null (enum, default('no_aplica'),
- * sin nullable()). Cubre las tres ramas de estadoInicial para que un
- * cambio futuro en esa lógica no vuelva a colar un null sin que algún
- * test lo note de inmediato.
- */
+
 class RevisionPosthocEstadoNuncaNuloTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -42,12 +35,7 @@ class RevisionPosthocEstadoNuncaNuloTest extends TestCase
         parent::tearDown();
     }
 
-    /**
-     * Un Jefe de Área (encabeza una unidad con sub-unidades, ver
-     * User::esJefeDeArea): su papeleta NO sube a nadie, va SIEMPRE directo
-     * a RRHH sin importar quién esté o no disponible arriba en el
-     * organigrama (ver CrearPapeletaAction::determinarEstadoInicial).
-     */
+    
     private function topeDePrueba(): User
     {
         $tope = $this->usuarioDePrueba();
@@ -55,8 +43,8 @@ class RevisionPosthocEstadoNuncaNuloTest extends TestCase
         $tope->update(['unidad_organica_id' => $unidad->id]);
         $this->turnoDePrueba($tope);
 
-        // Sin una sub-unidad, $tope no sería Jefe de Área (esJefeDeArea
-        // exige al menos una unidad con hijos); ver conUnidadHija().
+        
+        
         $this->conUnidadHija($unidad);
 
         return $tope->fresh();
@@ -66,7 +54,7 @@ class RevisionPosthocEstadoNuncaNuloTest extends TestCase
     {
         $trabajador = $this->usuarioDePrueba();
         $jefe = $this->conJefeDePrueba($trabajador);
-        $this->turnoDePrueba($trabajador); // vigente todo el día, jefe 728 siempre disponible
+        $this->turnoDePrueba($trabajador); 
         $this->turnoDePrueba($jefe);
 
         $papeleta = app(CrearPapeletaAction::class)->ejecutar($trabajador->fresh(), $this->motivoDe('PARTICULAR'), []);
@@ -78,7 +66,7 @@ class RevisionPosthocEstadoNuncaNuloTest extends TestCase
     public function test_pendiente_rrhh_nunca_guarda_null(): void
     {
         $this->usuarioDePrueba(['regimen' => '276'], ['rrhh']);
-        $this->travelTo(Carbon::parse('2026-09-21 10:00:00')); // lunes, dentro de horario RRHH
+        $this->travelTo(Carbon::parse('2026-09-21 10:00:00')); 
 
         $tope = $this->topeDePrueba();
 
@@ -91,7 +79,7 @@ class RevisionPosthocEstadoNuncaNuloTest extends TestCase
     public function test_autorizada_y_corriendo_guarda_pendiente_nunca_null(): void
     {
         $this->usuarioDePrueba(['regimen' => '276'], ['rrhh']);
-        $this->travelTo(Carbon::parse('2026-09-21 22:00:00')); // lunes, fuera de horario RRHH
+        $this->travelTo(Carbon::parse('2026-09-21 22:00:00')); 
 
         $tope = $this->topeDePrueba();
 

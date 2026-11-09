@@ -11,12 +11,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Drawer único de alta/edición de personas desde el organigrama (reemplaza al
- * Unifica alta y edición para admin y jefe de área en un solo flujo.
- * Escenario: Gerencia (raíz, jefe Gina) → Oficina A (jefe Omar, con Carla) y
- * Oficina B (otra rama, fuera del área de Gina).
- */
+
 class PersonaDrawerTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -56,14 +51,14 @@ class PersonaDrawerTest extends TestCase
 
         $this->gerencia = UnidadOrganica::create(['nombre' => 'Gerencia', 'jefe_id' => $this->gina->id]);
         $this->oficinaA = UnidadOrganica::create(['nombre' => 'Oficina A', 'parent_id' => $this->gerencia->id, 'jefe_id' => $this->omar->id]);
-        // Un destino sin jefe inmediato activo no admite movimientos (MoverTrabajadorAction::exigirJefeInmediato).
+        
         $this->oficinaB = UnidadOrganica::create(['nombre' => 'Oficina B', 'parent_id' => $this->gerencia->id, 'jefe_id' => $this->vero->id]);
         $this->oficinaC = UnidadOrganica::create(['nombre' => 'Oficina C', 'parent_id' => $this->gerencia->id]);
 
         $this->carla = $this->usuarioDePrueba(['name' => 'Carla', 'unidad_organica_id' => $this->oficinaA->id]);
     }
 
-    // ---- Alta ----
+    
 
     public function test_el_jefe_de_area_crea_un_trabajador_en_su_propia_area(): void
     {
@@ -105,7 +100,7 @@ class PersonaDrawerTest extends TestCase
         $this->assertDatabaseMissing('users', ['dni' => '87654321']);
     }
 
-    public function test_el_regimen_del_trabajador_debe_coincidir_con_el_de_su_jefe_inmediato(): void
+    public function test_el_regimen_del_trabajador_puede_ser_distinto_al_de_su_jefe_inmediato(): void
     {
         $this->omar->update(['regimen' => '276']);
 
@@ -119,9 +114,12 @@ class PersonaDrawerTest extends TestCase
             ->set('email', 'luz@example.com')
             ->set('regimen', '728')
             ->call('guardar')
-            ->assertHasErrors(['regimen']);
+            ->assertHasNoErrors(['regimen']);
 
-        $this->assertDatabaseMissing('users', ['dni' => '87654321']);
+        $this->assertDatabaseHas('users', [
+            'dni' => '87654321',
+            'regimen' => '728',
+        ]);
     }
 
     public function test_el_admin_crea_un_jefe_inmediato_para_una_unidad_sin_jefe(): void
@@ -161,7 +159,7 @@ class PersonaDrawerTest extends TestCase
         $this->assertDatabaseMissing('users', ['dni' => '11223344']);
     }
 
-    // ---- Edición ----
+    
 
     public function test_el_jefe_de_area_edita_a_un_trabajador_de_su_area(): void
     {

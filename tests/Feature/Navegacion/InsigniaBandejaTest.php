@@ -11,11 +11,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * El contador del sidebar. Antes eran dos COUNT dentro de layouts/app.blade.php
- * que comparaban `estado` contra el nombre de la clase y, desde que los estados
- * se guardan con $name, devolvían siempre 0.
- */
+
 class InsigniaBandejaTest extends TestCase
 {
     use CreaEscenarioPapeletas;

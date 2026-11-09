@@ -8,6 +8,7 @@ use App\Models\Retorno;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
+
 class BackfillRetornoAbandonosHistoricos extends Command
 {
     protected $signature = 'papeletas:backfill-retorno-abandonos {--dry-run : Solo cuenta y lista, no escribe nada}';

@@ -14,14 +14,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Organigrama: mover trabajadores (confirmación, reglas en el servidor)
- * e historial con deshacer.
- *
- * Escenario: Gerencia (jefa de área Gina) → Oficina A (Omar), Oficina B
- * (Beto) y Oficina 276 (jefe 276). Carla y Sergio están en A. Aparte, otra
- * área: Otra gerencia (Ajena) → Sub otra.
- */
+
 class MoverTrabajadorTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -87,7 +80,7 @@ class MoverTrabajadorTest extends TestCase
         return $this->mover()->ejecutar($actor, $trabajador->id, $destino->id, (int) $trabajador->fresh()->unidad_organica_id, true);
     }
 
-    // ---- Action: movimiento y vista previa -------------------------------
+    
 
     public function test_el_admin_mueve_y_los_jefes_se_recalculan_y_queda_historial(): void
     {
@@ -138,11 +131,11 @@ class MoverTrabajadorTest extends TestCase
         $this->expectException(UsuarioException::class);
         $this->expectExceptionMessage('ya no está en la unidad');
 
-        // La pantalla la vio en la Oficina B, pero está en la A.
+        
         $this->mover()->ejecutar($this->admin, $this->carla->id, $this->subOtra->id, $this->oficinaB->id, true);
     }
 
-    // ---- Action: permisos --------------------------------------------------
+    
 
     public function test_el_jefe_de_area_mueve_dentro_de_su_area(): void
     {
@@ -182,12 +175,12 @@ class MoverTrabajadorTest extends TestCase
         $this->moverYa($this->omar, $this->carla, $this->oficinaB);
     }
 
-    // ---- Action: reglas de negocio ----------------------------------------
+    
 
     public function test_se_puede_mover_a_una_unidad_de_otro_regimen(): void
     {
-        // El régimen de la persona y el de su jefe son independientes: un 728
-        // puede quedar bajo un jefe 276 sin bloqueo.
+        
+        
         $this->moverYa($this->admin, $this->carla, $this->oficina276);
 
         $carla = $this->carla->fresh();
@@ -222,7 +215,7 @@ class MoverTrabajadorTest extends TestCase
         $this->moverYa($this->admin, $this->carla, $this->oficinaB);
     }
 
-    // ---- Deshacer ----------------------------------------------------------
+    
 
     public function test_deshacer_devuelve_a_la_persona_y_deja_registro_sin_borrar_el_original(): void
     {
@@ -270,7 +263,7 @@ class MoverTrabajadorTest extends TestCase
     {
         $original = $this->moverYa($this->admin, $this->carla, $this->subOtra);
 
-        // Gina ve el movimiento terminar fuera de su área: no puede revertirlo.
+        
         $this->assertFalse($this->mover()->puedeDeshacer($this->gina, $original));
         $this->assertTrue($this->mover()->puedeDeshacer($this->admin, $original));
 
@@ -279,7 +272,7 @@ class MoverTrabajadorTest extends TestCase
         $this->mover()->deshacer($this->gina, $original);
     }
 
-    // ---- Livewire ----------------------------------------------------------
+    
 
     public function test_soltar_abre_la_confirmacion_y_solo_al_confirmar_se_mueve(): void
     {
@@ -293,15 +286,15 @@ class MoverTrabajadorTest extends TestCase
             ->assertSet('propuesta.cambiar_sede', false)
             ->assertSee('Confirmar movimiento');
 
-        // Solo con la propuesta abierta, todavía no se movió nadie.
+        
         $this->assertSame($this->oficinaA->id, $this->carla->fresh()->unidad_organica_id);
         $this->assertSame(0, MovimientoOrganigrama::count());
 
         $componente
             ->call('confirmarMovimiento')
             ->assertSet('propuesta', null)
-            // El aviso de éxito es un toast de Alpine que se pinta en el cliente:
-            // en el HTML del servidor no está, se comprueba el estado del componente.
+            
+            
             ->assertSet('mensajeOk', fn (?string $m) => str_contains((string) $m, 'pasó de Oficina A a Oficina B'))
             ->assertSee('Movimientos recientes');
 
@@ -346,7 +339,7 @@ class MoverTrabajadorTest extends TestCase
 
     public function test_una_propuesta_manipulada_desde_el_navegador_se_rechaza_al_confirmar(): void
     {
-        // Ajena solo manda en su área; manipula la propuesta para mover a Carla.
+        
         Livewire::actingAs($this->ajena)
             ->test(OrganigramaArbol::class)
             ->call('alternarEdicion')
@@ -388,7 +381,7 @@ class MoverTrabajadorTest extends TestCase
                 && $historial->first()['movimiento']->trabajador_id === $this->sergio->id);
     }
 
-    // ---- Sede propuesta -------------------------------
+    
 
     private function ponerBetoEnOtraSede(): Sede
     {
@@ -405,8 +398,8 @@ class MoverTrabajadorTest extends TestCase
 
         $norte = $this->ponerBetoEnOtraSede();
 
-        // fresh(): la relación ->jefe de la primera llamada quedó cacheada en
-        // esta instancia y mostraría la sede anterior de Beto.
+        
+        
         $vista = $this->mover()->previsualizar($this->admin, $this->carla, $this->oficinaB->fresh());
         $this->assertTrue($vista['sede']['propone_cambio']);
         $this->assertSame($norte->id, $vista['sede']['propuesta']->id);
@@ -443,7 +436,7 @@ class MoverTrabajadorTest extends TestCase
     {
         $sedeOriginal = $this->carla->fresh()->sede_id;
 
-        // Mismo sede entre los jefes: no hay nada que proponer, aunque llegue true.
+        
         $this->mover()->ejecutar($this->admin, $this->carla->id, $this->oficinaB->id, $this->oficinaA->id, true, cambiarSede: true);
 
         $this->assertSame($sedeOriginal, $this->carla->fresh()->sede_id);

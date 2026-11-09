@@ -1,4 +1,3 @@
-
 @php
     $archivosPapeleta = array_filter([
         'adjunto-inicial' => $papeleta->adjunto_inicial_path ? ['Adjunto inicial', 'paper-clip'] : null,

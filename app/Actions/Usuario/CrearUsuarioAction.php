@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
+
 class CrearUsuarioAction
 {
     public function __construct(
@@ -18,14 +19,19 @@ class CrearUsuarioAction
     ) {}
 
     /**
-     * @param  array{name:string,apellido:string,dni:string,email:string,regimen:string,sede_id:?int,unidad_organica_id:?int,tipo:string,turno:?string,fecha_ancla:?string,dias_trabajo:?int,dias_descanso:?int}  $datos
+     * @param  array{name:string,apellido:string,dni:string,email:string,regimen:string,sede_id:?int,unidad_organica_id:?int,tipo:string,turno?:?string,fecha_ancla?:?string,dias_trabajo?:?int,dias_descanso?:?int}  $datos
      */
     public function ejecutar(User $creador, array $datos, bool $esJefeDeArea): User
     {
-        $esJefeInmediatoNuevo = $esJefeDeArea && ($datos['tipo'] ?? 'trabajador') === 'jefe_inmediato';
+        $esJefeInmediatoNuevo = $esJefeDeArea && $datos['tipo'] === 'jefe_inmediato';
 
         $nuevo = DB::transaction(function () use ($creador, $datos, $esJefeDeArea, $esJefeInmediatoNuevo) {
-
+            
+            
+            
+            
+            
+            
             $existente = User::where('dni', $datos['dni'])->lockForUpdate()->first();
 
             if ($existente) {
@@ -46,7 +52,9 @@ class CrearUsuarioAction
             ];
 
             if ($existente) {
-
+                
+                
+                
                 $existente->forceFill([
                     'two_factor_secret' => null,
                     'two_factor_recovery_codes' => null,
@@ -67,23 +75,36 @@ class CrearUsuarioAction
                 $this->asignarComoJefeDeUnidad($nuevo, (int) $datos['unidad_organica_id']);
             }
 
+            
+            
+            
+            
+            
+            
             if ($datos['regimen'] === '728' && ! $esJefeInmediatoNuevo && ! empty($datos['turno'])) {
+                $fechaAncla = $datos['fecha_ancla'] ?? null;
+
+                if ($fechaAncla === null) {
+                    throw new UsuarioException('fecha_ancla es obligatoria para crear el turno del trabajador 728.');
+                }
+
                 $this->generadorTurno->cargarConfiguracion(
                     trabajador: $nuevo,
                     turno: $datos['turno'],
-                    fechaAncla: Carbon::parse($datos['fecha_ancla']),
+                    fechaAncla: Carbon::parse($fechaAncla),
                     actor: $creador,
                     diasTrabajo: (int) ($datos['dias_trabajo'] ?? 6),
                     diasDescanso: (int) ($datos['dias_descanso'] ?? 1),
                 );
             }
 
-            return $nuevo->fresh();
+            return $nuevo->fresh() ?? $nuevo;
         });
 
         return $nuevo;
     }
 
+    
     private function validarReingreso(User $existente): void
     {
         if ($existente->activo) {
@@ -113,6 +134,16 @@ class CrearUsuarioAction
         $unidad->update(['jefe_id' => $nuevo->id]);
     }
 
+    /**
+     * Sede del usuario nuevo (nunca null para un jefe inmediato):
+     * - Jefe inmediato creado por Jefe de Área: la elige el formulario
+     *   (puede ser otra sede); si por algún motivo no llega, cae a la
+     *   del creador en vez de quedar vacía.
+     * - Trabajador: por defecto la sede de su jefe inmediato (jefe_id de
+     *   la unidad) o, si no hay, la del creador. No se elige a mano.
+     *
+     * @param  array<string, mixed>  $datos
+     */
     private function resolverSede(User $creador, array $datos, bool $esJefeDeArea, bool $esJefeInmediatoNuevo): ?int
     {
         if ($esJefeInmediatoNuevo) {
@@ -123,7 +154,7 @@ class CrearUsuarioAction
             return $creador->sede_id;
         }
 
-        $sedeDelJefe = UnidadOrganica::with('jefe')->find($datos['unidad_organica_id'])?->jefe?->sede_id;
+        $sedeDelJefe = UnidadOrganica::with('jefe')->find((int) $datos['unidad_organica_id'])?->jefe?->sede_id;
 
         return $sedeDelJefe ?? $creador->sede_id;
     }

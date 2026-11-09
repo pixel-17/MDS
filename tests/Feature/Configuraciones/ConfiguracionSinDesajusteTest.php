@@ -7,12 +7,7 @@ use Database\Seeders\ConfiguracionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/**
- * Las claves que el código lee con Configuracion::valorDe('X') y las que el
- * seeder siembra (y por tanto el admin puede ver y editar) tienen que ser las
- * mismas. Un desajuste no da error: la pantalla de configuración deja de tener
- * efecto en silencio (ocurrió con RELOJ_JEFE_MINUTOS vs SLA_JEFE_MINUTOS).
- */
+
 class ConfiguracionSinDesajusteTest extends TestCase
 {
     use RefreshDatabase;

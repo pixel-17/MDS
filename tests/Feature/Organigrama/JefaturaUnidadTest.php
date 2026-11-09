@@ -11,12 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Cambiar el jefe de una unidad, moverla de padre y activar/desactivar.
- *
- * Escenario: Gerencia (Gina) → Oficina A (Omar, con Carla) y Oficina B
- * (Beto, con Nora). Rosa es del régimen 276.
- */
+
 class JefaturaUnidadTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -98,7 +93,7 @@ class JefaturaUnidadTest extends TestCase
         $this->assertSame($this->oficinaA->id, $nora->unidad_organica_id);
         $this->assertSame($this->gina->id, $nora->jefe_inmediato_id);
 
-        // Quienes quedan en la unidad pasan a depender de ella.
+        
         $this->assertSame($this->nora->id, $this->carla->fresh()->jefe_inmediato_id);
     }
 

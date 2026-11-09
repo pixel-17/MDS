@@ -8,6 +8,7 @@ use App\Models\Sustento;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
+
 class LimpiarArchivosHuerfanos extends Command
 {
     protected $signature = 'archivos:huerfanos
@@ -16,6 +17,7 @@ class LimpiarArchivosHuerfanos extends Command
 
     protected $description = 'Lista (o elimina) los archivos de papeletas que ninguna fila de la base de datos referencia.';
 
+    
     private const CARPETAS = [
         'papeletas/adjuntos-iniciales',
         'papeletas/retornos',

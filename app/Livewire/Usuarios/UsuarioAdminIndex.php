@@ -16,6 +16,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Spatie\Permission\Models\Role;
 
+
 #[Layout('layouts.app')]
 #[Title('Usuarios')]
 class UsuarioAdminIndex extends Component
@@ -45,11 +46,16 @@ class UsuarioAdminIndex extends Component
         $this->resetPage();
     }
 
+    
     public function desactivar(User $usuario, CambiarEstadoUsuarioAction $estado): void
     {
         $this->autorizarAdmin();
 
-        if ($usuario->activo && $estado->motivoParaNoDesactivar(auth()->user(), $usuario) === null
+        /** @var User $actor */
+        $actor = auth()->user();
+
+        
+        if ($usuario->activo && $estado->motivoParaNoDesactivar($actor, $usuario) === null
             && $estado->jefaturasPorResolver($usuario)->isNotEmpty()) {
             $this->dispatch('usuario-baja-abrir', id: $usuario->id);
 
@@ -63,7 +69,7 @@ class UsuarioAdminIndex extends Component
         }
 
         if (! $this->intentar(
-            fn () => $estado->desactivar(auth()->user(), $usuario),
+            fn () => $estado->desactivar($actor, $usuario),
             fn ($e) => session()->now('error', $e->getMessage()),
         )) {
             return;
@@ -79,8 +85,11 @@ class UsuarioAdminIndex extends Component
     {
         $this->autorizarAdmin();
 
+        /** @var User $actor */
+        $actor = auth()->user();
+
         if (! $this->intentar(
-            fn () => $estado->reactivar(auth()->user(), $usuario),
+            fn () => $estado->reactivar($actor, $usuario),
             fn ($e) => session()->now('error', $e->getMessage()),
         )) {
             return;

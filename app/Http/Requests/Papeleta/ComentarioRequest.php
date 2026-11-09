@@ -4,6 +4,7 @@ namespace App\Http\Requests\Papeleta;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+
 class ComentarioRequest extends FormRequest
 {
     public function authorize(): bool
@@ -11,6 +12,7 @@ class ComentarioRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [

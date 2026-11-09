@@ -6,6 +6,7 @@ use App\Actions\Organigrama\PapeletasAbiertasService;
 use App\Models\UnidadOrganica;
 use App\Models\User;
 
+
 class UnidadOrganicaObserver
 {
     public function saved(UnidadOrganica $unidad): void
@@ -21,6 +22,9 @@ class UnidadOrganicaObserver
     {
         $unidadIds = [$unidad->id, ...$unidad->descendantIds()];
 
+        
+        
+        
         $arbol = UnidadOrganica::arbolEnMemoria();
         $observer = app(UserObserver::class);
         $reasignar = app(PapeletasAbiertasService::class);
@@ -32,6 +36,7 @@ class UnidadOrganicaObserver
                     $cambioJefe = $usuario->isDirty('jefe_inmediato_id');
                     $usuario->saveQuietly();
 
+                    
                     if ($cambioJefe) {
                         $reasignar->reasignarDeTrabajador($usuario);
                     }

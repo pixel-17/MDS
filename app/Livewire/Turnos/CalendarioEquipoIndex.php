@@ -2,13 +2,14 @@
 
 namespace App\Livewire\Turnos;
 
+use App\Models\Configuracion;
 use App\Models\ConfiguracionTurno;
 use App\Models\Turno;
 use App\Models\User;
+use App\Services\CalculadorDiasHabiles;
 use App\Services\EquipoDelJefeService;
 use App\Services\GeneradorTurnoMensualService;
 use App\Services\ProgramacionTurnoService;
-use App\Support\PatronDescansoSemanal;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -16,6 +17,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+
 
 #[Layout('layouts.app')]
 #[Title('Calendario de turnos — mi equipo')]
@@ -25,9 +27,11 @@ class CalendarioEquipoIndex extends Component
 
     public int $mes;
 
+    
     #[Locked]
     public ?int $jefeId = null;
 
+    
     #[Locked]
     public int $version = 0;
 
@@ -38,12 +42,10 @@ class CalendarioEquipoIndex extends Component
     #[Locked]
     public ?string $mensaje = null;
 
-    public array $diasSemanaDescanso276 = [6, 7];
-
     public function mount(?int $jefeId = null): void
     {
         if ($jefeId !== null) {
-            abort_unless(auth()->user()?->hasRole('admin'), 403);
+            abort_unless((bool) auth()->user()?->hasRole('admin'), 403);
             $this->jefeId = $jefeId;
         }
 
@@ -51,25 +53,34 @@ class CalendarioEquipoIndex extends Component
         $this->mes = now()->month;
     }
 
+    
     private function jefeVista(): User
     {
         if ($this->jefeId === null) {
-            return auth()->user();
+            /** @var User $usuario */
+            $usuario = auth()->user();
+
+            return $usuario;
         }
 
-        abort_unless(auth()->user()?->hasRole('admin'), 403);
+        abort_unless((bool) auth()->user()?->hasRole('admin'), 403);
 
         return User::findOrFail($this->jefeId);
     }
 
     public function mesAnterior(): void
     {
-        $this->irA(Carbon::create($this->anio, $this->mes, 1)->subMonthNoOverflow());
+        $this->irA($this->primerDiaDelMes()->subMonthNoOverflow());
     }
 
     public function mesSiguiente(): void
     {
-        $this->irA(Carbon::create($this->anio, $this->mes, 1)->addMonthNoOverflow());
+        $this->irA($this->primerDiaDelMes()->addMonthNoOverflow());
+    }
+
+    private function primerDiaDelMes(): Carbon
+    {
+        return Carbon::create($this->anio, $this->mes, 1) ?? now();
     }
 
     public function irAHoy(): void
@@ -86,6 +97,12 @@ class CalendarioEquipoIndex extends Component
         $this->version++;
     }
 
+    /**
+     * Primer paso: valida, y si hay advertencias las muestra y espera
+     * confirmación (guardarIgualmente); si no, guarda directo.
+     *
+     * @param  array<int|string, array<string, string>>  $cambios  userId => dias (solo filas 728 modificadas)
+     */
     public function guardar(ProgramacionTurnoService $servicio, array $cambios): void
     {
         $this->mensaje = null;
@@ -127,13 +144,24 @@ class CalendarioEquipoIndex extends Component
      */
     private function persistir(ProgramacionTurnoService $servicio, Collection $equipo, array $cambios): void
     {
-        $servicio->guardarEquipo($equipo, $this->anio, $this->mes, $cambios, auth()->user());
+        /** @var User $actor */
+        $actor = auth()->user();
+
+        $servicio->guardarEquipo($equipo, $this->anio, $this->mes, $cambios, $actor);
 
         $this->advertencias = [];
         $this->mensaje = 'Turnos guardados para '.count($cambios).' '.(count($cambios) === 1 ? 'trabajador' : 'trabajadores').'.';
         $this->version++;
     }
 
+    /**
+     * Subconjunto 728 activo del equipo, con el id como clave (lo que
+     * esperan ProgramacionTurnoService::validarEquipo/guardarEquipo).
+     * Se resuelve de nuevo en cada acción: nunca se confía en la lista
+     * que vio el navegador.
+     *
+     * @return Collection<int, User>
+     */
     private function equipo728(): Collection
     {
         [$trabajadores, , $soloLectura] = app(EquipoDelJefeService::class)->para($this->jefeVista());
@@ -143,6 +171,12 @@ class CalendarioEquipoIndex extends Component
             ->keyBy('id');
     }
 
+    /**
+     * Trabajadores 276 del equipo que este usuario puede tocar (los de solo lectura
+     * no entran). Se resuelve en cada acción: nunca se confía en lo que vio el navegador.
+     *
+     * @return Collection<int, User>
+     */
     private function equipo276(): Collection
     {
         [$trabajadores, , $soloLectura] = app(EquipoDelJefeService::class)->para($this->jefeVista());
@@ -152,64 +186,33 @@ class CalendarioEquipoIndex extends Component
             ->keyBy('id');
     }
 
-    private function proximosDescansos276(Collection $configs276): array
+    
+    public function cargarHorario276(GeneradorTurnoMensualService $generador, int $userId): void
     {
-        $hoy = now()->startOfDay();
-
-        return $configs276->mapWithKeys(function (ConfiguracionTurno $config) use ($hoy) {
-            $ciclo = $config->dias_trabajo + $config->dias_descanso;
-            $dia = $hoy->copy();
-
-            for ($i = 0; $i <= $ciclo; $i++) {
-                if (GeneradorTurnoMensualService::esDescansoEnFecha($config->fecha_ancla, $dia, $config->dias_trabajo, $config->dias_descanso)) {
-                    return [$config->user_id => $dia->copy()];
-                }
-
-                $dia->addDay();
-            }
-
-            return [$config->user_id => null];
-        })->all();
-    }
-
-    public function aplicarDescansoSemana276(GeneradorTurnoMensualService $generador): void
-    {
-        $this->resetErrorBag('diasSemanaDescanso276');
-
         $equipo276 = $this->equipo276();
+        $trabajador = $equipo276->get($userId);
 
-        if ($equipo276->isEmpty()) {
-            return;
-        }
+        abort_if($trabajador === null, 403);
 
-        $resultado = PatronDescansoSemanal::anclaYCiclo($this->diasSemanaDescanso276, now());
+        
+        
+        
+        
+        $ciclo = GeneradorTurnoMensualService::cicloOrdinario276(now()->startOfWeek());
 
-        if ($resultado === null) {
-            $this->addError(
-                'diasSemanaDescanso276',
-                'Elige entre 1 y 6 días de descanso consecutivos dentro de la semana (ej. sábado y domingo).'
-            );
+        /** @var User $actor */
+        $actor = auth()->user();
 
-            return;
-        }
+        $generador->cargarConfiguracion(
+            trabajador: $trabajador,
+            turno: ConfiguracionTurno::TURNO_276,
+            fechaAncla: $ciclo['fecha_ancla'],
+            actor: $actor,
+            diasTrabajo: $ciclo['dias_trabajo'],
+            diasDescanso: $ciclo['dias_descanso'],
+        );
 
-        foreach ($equipo276 as $trabajador) {
-            if (! auth()->user()->puedeGestionarTurnoDe($trabajador)) {
-                continue;
-            }
-
-            $generador->cargarConfiguracion(
-                trabajador: $trabajador,
-                turno: ConfiguracionTurno::TURNO_276,
-                fechaAncla: $resultado['fecha_ancla'],
-                actor: auth()->user(),
-                diasTrabajo: $resultado['dias_trabajo'],
-                diasDescanso: $resultado['dias_descanso'],
-            );
-        }
-
-        $this->mensaje = 'Días de descanso aplicados a '.$equipo276->count().' '
-            .($equipo276->count() === 1 ? 'trabajador de régimen 276.' : 'trabajadores de régimen 276.');
+        $this->mensaje = 'Horario ordinario cargado para '.$trabajador->nombre_completo.'.';
         $this->version++;
     }
 
@@ -219,10 +222,17 @@ class CalendarioEquipoIndex extends Component
 
         [$trabajadores, $esJefeDeArea, $soloLectura] = app(EquipoDelJefeService::class)->para($jefe);
 
-        $inicioMes = Carbon::create($this->anio, $this->mes, 1)->startOfMonth();
+        $inicioMes = $this->primerDiaDelMes()->startOfMonth();
         $finMes = $inicioMes->copy()->endOfMonth();
         $dias = collect(range(1, $finMes->day));
         $fechas = collect(range(1, $finMes->day))->map(fn (int $d) => $inicioMes->copy()->day($d));
+
+        $diasHabiles = app(CalculadorDiasHabiles::class);
+        $noLaborables = $fechas
+            ->filter(fn (Carbon $f) => ! $diasHabiles->esDiaLaborable($f))
+            ->map(fn (Carbon $f) => $f->toDateString())
+            ->values()
+            ->all();
 
         $turnosPorUsuario = Turno::whereIn('user_id', $trabajadores->pluck('id'))
             ->whereBetween('fecha', [$inicioMes->toDateString(), $finMes->toDateString()])
@@ -231,6 +241,9 @@ class CalendarioEquipoIndex extends Component
             ->groupBy('user_id')
             ->map(fn ($turnos) => $turnos->keyBy(fn (Turno $turno) => $turno->fecha->day));
 
+        
+        
+        
         $equipo728 = $this->equipo728();
         $validos728 = [...ConfiguracionTurno::TURNOS_728, ProgramacionTurnoService::DESCANSO];
 
@@ -255,7 +268,6 @@ class CalendarioEquipoIndex extends Component
         $configs276 = ConfiguracionTurno::whereIn('user_id', $equipo276->keys())->get()->keyBy('user_id');
 
         return view('livewire.turnos.calendario-equipo-index', [
-            'proximosDescansos276' => $this->proximosDescansos276($configs276),
             'jefe' => $jefe,
             'vistaAdmin' => $this->jefeId !== null,
             'trabajadores' => $trabajadores,
@@ -273,6 +285,28 @@ class CalendarioEquipoIndex extends Component
             'horas' => $horas,
             'equipo276' => $equipo276,
             'configs276' => $configs276,
+            'diasLaborables276' => $this->diasLaborables276(),
+            'noLaborables' => $noLaborables,
         ]);
+    }
+
+    /**
+     * Días hábiles del horario ordinario (1=lunes .. 7=domingo), tal
+     * como los dejó el Admin en Configuraciones
+     * (HORARIO_ORDINARIO_DIAS_LABORABLES) — puramente informativo,
+     * para que el Jefe vea de un vistazo qué días se trabaja sin tener
+     * que ir a Configuraciones. El Jefe no puede editarlos desde aquí.
+     *
+     * @return array<int, int>
+     */
+    private function diasLaborables276(): array
+    {
+        return array_map(
+            'intval',
+            array_filter(array_map('trim', explode(
+                ',',
+                (string) Configuracion::valorDe('HORARIO_ORDINARIO_DIAS_LABORABLES', '1,2,3,4,5')
+            )))
+        );
     }
 }

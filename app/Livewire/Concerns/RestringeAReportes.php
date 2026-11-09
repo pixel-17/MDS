@@ -5,6 +5,7 @@ namespace App\Livewire\Concerns;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
+
 trait RestringeAReportes
 {
     protected function autorizarAccesoAReportes(): void

@@ -10,6 +10,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+
 #[Layout('layouts.app')]
 #[Title('Unidades orgánicas')]
 class UnidadOrganicaIndex extends Component
@@ -26,7 +27,7 @@ class UnidadOrganicaIndex extends Component
             $unidad->delete();
             session()->now('mensaje', 'Unidad orgánica eliminada.');
         } catch (QueryException $e) {
-
+            
             if (! str_starts_with((string) $e->getCode(), '23')) {
                 throw $e;
             }

@@ -7,24 +7,30 @@ use App\Actions\Papeleta\CrearPapeletaAction;
 use App\Actions\Papeleta\RrhhHorarioService;
 use App\Actions\Papeleta\SubsanarObservacionAction;
 use App\Exceptions\PapeletaException;
+use App\Http\Controllers\Concerns\ResuelveUsuarioAutenticado;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Papeleta\StorePapeletaRequest;
 use App\Http\Requests\Papeleta\SubsanarObservacionRequest;
 use App\Models\Motivo;
 use App\Models\Papeleta;
+use App\Services\ArchivoSubidaService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Throwable;
 
+
 class PapeletaController extends Controller
 {
+    use ResuelveUsuarioAutenticado;
+
     public function create(RrhhHorarioService $horarioRrhh): View|RedirectResponse
     {
         $this->authorize('crear', Papeleta::class);
 
-        if ($viva = Papeleta::vivaDe(Auth::user())) {
+        
+        
+        if ($viva = Papeleta::vivaDe($this->usuarioAutenticado())) {
             return redirect()
                 ->route('trabajador.papeletas.show', $viva)
                 ->with('error', $viva->mensajeDeBloqueoParaNueva());
@@ -32,22 +38,27 @@ class PapeletaController extends Controller
 
         $motivos = Motivo::where('activo', true)->orderBy('nombre')->get();
 
-        $usuario = Auth::user();
+        
+        
+        
+        $usuario = $this->usuarioAutenticado();
         $avisarAutorizacionAutomatica = $usuario->esJefeDeArea() && ! $horarioRrhh->estaEnHorarioAhora();
 
         return view('trabajador.papeletas.create', compact('motivos', 'avisarAutorizacionAutomatica'));
     }
 
-    public function store(StorePapeletaRequest $request, CrearPapeletaAction $action): RedirectResponse
+    public function store(StorePapeletaRequest $request, CrearPapeletaAction $action, ArchivoSubidaService $archivos): RedirectResponse
     {
         $motivo = Motivo::findOrFail($request->integer('motivo_id'));
 
+        
+        
         $adjuntoPath = $motivo->requiere_sustento_en_retorno && $request->hasFile('adjunto_inicial_path')
-            ? $request->file('adjunto_inicial_path')->store('papeletas/adjuntos-iniciales', 'local')
+            ? ($archivos->guardar($request->file('adjunto_inicial_path'), 'papeletas/adjuntos-iniciales') ?: null)
             : null;
 
         try {
-            $papeleta = $action->ejecutar(Auth::user(), $motivo, [
+            $papeleta = $action->ejecutar($this->usuarioAutenticado(), $motivo, [
                 'justificacion' => $request->input('justificacion'),
                 'adjunto_inicial_path' => $adjuntoPath,
                 'hora_retorno_estimado' => $request->input('hora_retorno_estimado'),
@@ -67,6 +78,7 @@ class PapeletaController extends Controller
             ->with('success', 'Papeleta creada correctamente.');
     }
 
+    
     private function descartarAdjunto(?string $path): void
     {
         if ($path) {
@@ -83,14 +95,15 @@ class PapeletaController extends Controller
         return view('trabajador.papeletas.show', compact('papeleta'));
     }
 
-    public function subsanar(SubsanarObservacionRequest $request, Papeleta $papeleta, SubsanarObservacionAction $action): RedirectResponse
+    
+    public function subsanar(SubsanarObservacionRequest $request, Papeleta $papeleta, SubsanarObservacionAction $action, ArchivoSubidaService $archivos): RedirectResponse
     {
         $archivoPath = $request->hasFile('archivo')
-            ? $request->file('archivo')->store('papeletas/subsanaciones', 'local')
+            ? ($archivos->guardar($request->file('archivo'), 'papeletas/subsanaciones') ?: null)
             : null;
 
         try {
-            $action->ejecutar($papeleta, Auth::user(), $request->input('respuesta'), $archivoPath);
+            $action->ejecutar($papeleta, $this->usuarioAutenticado(), $request->input('respuesta'), $archivoPath);
         } catch (PapeletaException $e) {
             $this->descartarAdjunto($archivoPath);
 
@@ -111,7 +124,7 @@ class PapeletaController extends Controller
         $this->authorize('cancelar', $papeleta);
 
         try {
-            $action->ejecutar($papeleta, Auth::user());
+            $action->ejecutar($papeleta, $this->usuarioAutenticado());
         } catch (PapeletaException $e) {
             return back()->with('error', $e->getMessage());
         }

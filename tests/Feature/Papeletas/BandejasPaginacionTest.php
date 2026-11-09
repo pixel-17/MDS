@@ -12,10 +12,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Las bandejas de Jefe y RRHH pagan cada lista por separado (10 filas
- * por página). Antes cargaban TODAS las papeletas con ->get().
- */
+
 class BandejasPaginacionTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -28,7 +25,7 @@ class BandejasPaginacionTest extends TestCase
         $this->prepararBase();
     }
 
-    /** Crea $cantidad papeletas pendientes de RRHH, cada una de un trabajador distinto. */
+    
     private function papeletasPendientesDeRrhh(int $cantidad, string $nombre = 'Lote'): void
     {
         for ($i = 1; $i <= $cantidad; $i++) {
@@ -92,9 +89,9 @@ class BandejasPaginacionTest extends TestCase
 
         $componente = Livewire::actingAs($jefe)->test(JefeIndex::class);
 
-        // Las 12 están en "Por decidir" (10 en la página 1, 2 en la página 2):
-        // ninguna debe colarse en "Papeletas del turno", ni siquiera las de
-        // la página que no se está viendo.
+        
+        
+        
         $componente->assertViewHas('porDecidir', fn ($lista) => $lista->total() === 12 && $lista->count() === 10)
             ->assertViewHas('delTurno', fn ($lista) => $lista->total() === 0);
 

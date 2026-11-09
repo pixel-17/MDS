@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Services\GeneradorTurnoMensualService;
 use Illuminate\Console\Command;
 
+
 class GenerarTurnosProximoMes extends Command
 {
     protected $signature = 'turnos:generar-proximo-mes';

@@ -5,6 +5,7 @@ namespace App\Livewire\Turnos;
 use App\Models\ConfiguracionTurno;
 use App\Models\Turno;
 use App\Models\User;
+use App\Services\CalculadorDiasHabiles;
 use App\Services\EquipoDelJefeService;
 use App\Services\GeneradorTurnoMensualService;
 use App\Services\ProgramacionTurnoService;
@@ -16,6 +17,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+
 #[Layout('layouts.app')]
 #[Title('Programar turnos — mi equipo (728)')]
 class ProgramacionEquipo extends Component
@@ -24,6 +26,7 @@ class ProgramacionEquipo extends Component
 
     public int $mes;
 
+    
     #[Locked]
     public int $version = 0;
 
@@ -42,12 +45,17 @@ class ProgramacionEquipo extends Component
 
     public function mesAnterior(): void
     {
-        $this->irA(Carbon::create($this->anio, $this->mes, 1)->subMonthNoOverflow());
+        $this->irA($this->primerDiaDelMes()->subMonthNoOverflow());
     }
 
     public function mesSiguiente(): void
     {
-        $this->irA(Carbon::create($this->anio, $this->mes, 1)->addMonthNoOverflow());
+        $this->irA($this->primerDiaDelMes()->addMonthNoOverflow());
+    }
+
+    private function primerDiaDelMes(): Carbon
+    {
+        return Carbon::create($this->anio, $this->mes, 1) ?? now();
     }
 
     public function irAHoy(): void
@@ -55,6 +63,12 @@ class ProgramacionEquipo extends Component
         $this->irA(now());
     }
 
+    /**
+     * Primer paso: valida, y si hay advertencias las muestra y espera
+     * confirmación (guardarIgualmente); si no, guarda directo.
+     *
+     * @param  array<int|string, array<string, string>>  $cambios  userId => dias (solo filas modificadas)
+     */
     public function guardar(ProgramacionTurnoService $servicio, array $cambios): void
     {
         $this->mensaje = null;
@@ -68,6 +82,7 @@ class ProgramacionEquipo extends Component
 
         $equipo = $this->equipo();
 
+        
         $servicio->validarEquipo($equipo, $this->anio, $this->mes, $cambios);
 
         $this->advertencias = $servicio->advertenciasEquipo($equipo, $cambios);
@@ -96,10 +111,13 @@ class ProgramacionEquipo extends Component
      */
     private function persistir(ProgramacionTurnoService $servicio, Collection $equipo, array $cambios): void
     {
-        $servicio->guardarEquipo($equipo, $this->anio, $this->mes, $cambios, auth()->user());
+        /** @var User $actor */
+        $actor = auth()->user();
+
+        $servicio->guardarEquipo($equipo, $this->anio, $this->mes, $cambios, $actor);
 
         $this->advertencias = [];
-        $this->mensaje = 'Programación de '.Carbon::create($this->anio, $this->mes, 1)->translatedFormat('F Y')
+        $this->mensaje = 'Programación de '.$this->primerDiaDelMes()->translatedFormat('F Y')
             .' guardada para '.count($cambios).' '.(count($cambios) === 1 ? 'trabajador' : 'trabajadores').'.';
         $this->version++;
     }
@@ -113,9 +131,19 @@ class ProgramacionEquipo extends Component
         $this->version++;
     }
 
+    /**
+     * Trabajadores 728 activos dentro del alcance del jefe, con el id
+     * como clave. Se resuelve de nuevo en cada acción: nunca se confía
+     * en la lista que vio el navegador.
+     *
+     * @return Collection<int, User>
+     */
     private function equipo(): Collection
     {
-        [$trabajadores, , $soloLectura] = app(EquipoDelJefeService::class)->para(auth()->user());
+        /** @var User $actor */
+        $actor = auth()->user();
+
+        [$trabajadores, , $soloLectura] = app(EquipoDelJefeService::class)->para($actor);
 
         return $trabajadores
             ->filter(fn (User $t) => $t->regimen === '728' && $t->activo && ! in_array($t->id, $soloLectura, true))
@@ -124,13 +152,17 @@ class ProgramacionEquipo extends Component
 
     public function render(): View
     {
-        [$todos, $esJefeDeArea, $soloLectura] = app(EquipoDelJefeService::class)->para(auth()->user());
+        /** @var User $actor */
+        $actor = auth()->user();
 
+        [$todos, $esJefeDeArea, $soloLectura] = app(EquipoDelJefeService::class)->para($actor);
+
+        
         $todos = $todos->reject(fn (User $t) => in_array($t->id, $soloLectura, true))->values();
 
         $equipo = $todos->filter(fn (User $t) => $t->regimen === '728' && $t->activo)->values();
 
-        $inicioMes = Carbon::create($this->anio, $this->mes, 1)->startOfMonth();
+        $inicioMes = $this->primerDiaDelMes()->startOfMonth();
         $finMes = $inicioMes->copy()->endOfMonth();
         $validos = [...ConfiguracionTurno::TURNOS_728, ProgramacionTurnoService::DESCANSO];
 
@@ -139,6 +171,8 @@ class ProgramacionEquipo extends Component
             ->get()
             ->groupBy('user_id');
 
+        
+        
         $diasIniciales = [];
         foreach ($equipo as $trabajador) {
             $mapa = ($turnosPorUsuario->get($trabajador->id) ?? collect())
@@ -150,6 +184,13 @@ class ProgramacionEquipo extends Component
         }
 
         $fechas = collect(range(1, $finMes->day))->map(fn (int $d) => $inicioMes->copy()->day($d));
+
+        $diasHabiles = app(CalculadorDiasHabiles::class);
+        $noLaborables = $fechas
+            ->filter(fn (Carbon $f) => ! $diasHabiles->esDiaLaborable($f))
+            ->map(fn (Carbon $f) => $f->toDateString())
+            ->values()
+            ->all();
 
         $generador = app(GeneradorTurnoMensualService::class);
         $horas = [];
@@ -169,6 +210,7 @@ class ProgramacionEquipo extends Component
             'diasIniciales' => (object) $diasIniciales,
             'horas' => $horas,
             'hoy' => now()->toDateString(),
+            'noLaborables' => $noLaborables,
         ]);
     }
 }

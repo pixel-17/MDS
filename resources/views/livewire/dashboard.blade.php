@@ -9,7 +9,6 @@
                 <p class="text-sm text-gray-500 dark:text-tinta-100/60 mt-1">Hola, {{ $nombre }}.</p>
             </div>
 
-            {{-- ============================= ADMIN ============================= --}}
             @if ($esAdmin)
                 <section class="space-y-4 animate-fade-in-up">
                     <div class="flex items-center justify-between flex-wrap gap-2">
@@ -47,7 +46,7 @@
 
                         <x-stat-card label="Papeletas nuevas (30 días)" :value="$admin['papeletas_periodo']" />
                         <x-stat-card label="Sedes activas" :value="$admin['sedes_activas']" href="{{ route('sedes.index') }}" />
-                        <x-stat-card label="Unidades orgánicas activas" :value="$admin['unidades_organicas']" href="{{ route('unidades-organicas.index') }}" />
+                        <x-stat-card label="Unidades orgánicas activas" :value="$admin['unidades_organicas']" href="{{ route('organigrama.index') }}" />
                     </div>
 
                     <div class="glass-card p-5">
@@ -57,7 +56,6 @@
                 </section>
             @endif
 
-            {{-- ============================= RRHH ============================= --}}
             @if ($esRrhh)
                 <section class="space-y-4 animate-fade-in-up">
                     <div class="flex items-center justify-between flex-wrap gap-2">
@@ -106,7 +104,6 @@
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
                         <div class="glass-card p-5">
                             <div class="flex items-center justify-between mb-4">
                                 <h4 class="text-sm font-semibold text-gray-700 dark:text-tinta-50/80">Afuera ahora mismo</h4>
@@ -143,7 +140,6 @@
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
                         <div class="glass-card p-5">
                             <div class="flex items-center justify-between mb-4">
                                 <h4 class="text-sm font-semibold text-gray-700 dark:text-tinta-50/80 capitalize">Horas acumuladas — {{ \Illuminate\Support\Carbon::createFromFormat('Y-m', $rrhh['horas_acumuladas_mes'])->translatedFormat('F Y') }}</h4>

@@ -15,16 +15,7 @@ use Illuminate\Support\Facades\Gate;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Nadie decide su propia papeleta.
- *
- * Organigrama (cada jefe es además miembro de la unidad que encabeza):
- *
- *   Concejo (alcalde)
- *   └── Gerencia (gerente)
- *       └── Oficina (jefeOficina)
- *           └── trabajador
- */
+
 class AutoDecisionTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -69,16 +60,16 @@ class AutoDecisionTest extends TestCase
         $this->assertSame($this->alcalde->id, $this->jefeOficina->jefe_area_id);
 
         $this->assertSame($this->alcalde->id, $this->gerente->jefe_inmediato_id);
-        // Concejo no tiene padre: no hay un tercer nivel que resolver como
-        // Jefe de Área, así que se autocompleta con el mismo jefe inmediato
-        // (el alcalde) en vez de quedar en blanco.
+        
+        
+        
         $this->assertSame($this->alcalde->id, $this->gerente->jefe_area_id);
 
-        // La unidad raíz no tiene superior: no queda apuntando a sí mismo.
+        
         $this->assertNull($this->alcalde->jefe_inmediato_id);
         $this->assertNull($this->alcalde->jefe_area_id);
 
-        // Un miembro común sigue igual que siempre.
+        
         $this->assertSame($this->jefeOficina->id, $this->trabajador->jefe_inmediato_id);
         $this->assertSame($this->gerente->id, $this->trabajador->jefe_area_id);
     }
@@ -86,11 +77,11 @@ class AutoDecisionTest extends TestCase
     public function test_la_papeleta_del_jefe_fotografia_a_su_superior_y_no_a_si_mismo(): void
     {
         $this->turnoDePrueba($this->jefeOficina);
-        $this->turnoDePrueba($this->gerente); // recibe la papeleta: 728, necesita turno cargado
+        $this->turnoDePrueba($this->gerente); 
 
         $papeleta = app(CrearPapeletaAction::class)->ejecutar(
             $this->jefeOficina,
-            $this->motivoDe(), // 728 con turno cargado: no depende del horario
+            $this->motivoDe(), 
             ['justificacion' => 'Urgencia familiar'],
         );
 
@@ -100,7 +91,7 @@ class AutoDecisionTest extends TestCase
 
     public function test_un_jefe_no_puede_aprobar_su_propia_papeleta_ni_con_datos_viejos(): void
     {
-        // Datos anteriores al arreglo: el jefe figuraba como su propio jefe inmediato.
+        
         $papeleta = $this->papeletaDePrueba($this->jefeOficina, PendienteJefe::class, [
             'jefe_inmediato_id' => $this->jefeOficina->id,
         ]);

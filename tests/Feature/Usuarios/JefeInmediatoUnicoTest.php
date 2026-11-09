@@ -9,11 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Hay UN solo jefe inmediato por trabajador: el jefe de su unidad
- * (users.jefe_inmediato_id, derivado de unidades_organicas.jefe_id). Ese
- * jefe tiene las mismas capacidades sobre él sin importar su régimen.
- */
+
 class JefeInmediatoUnicoTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -75,8 +71,8 @@ class JefeInmediatoUnicoTest extends TestCase
 
     public function test_quien_no_encabeza_unidad_no_es_jefe_de_nadie_por_tener_turno(): void
     {
-        // Antes un "jefe de turno" podía ser jefe de un trabajador sin ser
-        // el jefe de la unidad. Ahora solo cuenta jefe_inmediato_id.
+        
+        
         $otro = $this->usuarioDePrueba();
         $unidad = UnidadOrganica::find($this->trabajador->unidad_organica_id);
         $unidad->update(['jefe_id' => null]);

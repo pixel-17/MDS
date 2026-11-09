@@ -24,7 +24,7 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        
     }
 
     /**
@@ -37,9 +37,17 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
 
+        
+        
+        
+        
+        
         Fortify::authenticateUsing(function (Request $request) {
             $user = User::where('email', $request->email)->first();
 
+            
+            
+            
             if ($user && Hash::check($request->password, $user->password) && ! $user->activo) {
                 $user->notify(new CuentaDesactivadaNotification);
 
@@ -48,11 +56,12 @@ class FortifyServiceProvider extends ServiceProvider
                 ]);
             }
 
-            // Credenciales correctas + activo: entra.
+            
             if ($user && Hash::check($request->password, $user->password)) {
                 return $user;
             }
 
+            
             return null;
         });
 

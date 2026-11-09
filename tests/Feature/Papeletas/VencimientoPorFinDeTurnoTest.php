@@ -15,11 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Una papeleta sin decidir vence al fin REAL de su turno (fin_turno_at,
- * fijado al crearla), no a medianoche. Fechas de referencia: lunes
- * 2026-09-21 (día laborable para 276) y martes 2026-09-22.
- */
+
 class VencimientoPorFinDeTurnoTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -45,11 +41,7 @@ class VencimientoPorFinDeTurnoTest extends TestCase
         $this->travelTo(Carbon::parse($momento));
     }
 
-    /**
-     * Inserta la fila cruda con `fecha` como Y-m-d (igual que una columna DATE
-     * en MySQL): Turno::create la guardaría como "Y-m-d 00:00:00" en SQLite y
-     * la búsqueda por fecha de Turno::vigenteParaUsuario no la encontraría.
-     */
+    
     private function turno(User $trabajador, string $fecha, string $codigo, string $inicio, string $fin): void
     {
         DB::table('turnos')->insert([
@@ -158,7 +150,7 @@ class VencimientoPorFinDeTurnoTest extends TestCase
     public function test_276_vence_al_terminar_el_horario_ordinario(): void
     {
         $trabajador = $this->usuarioDePrueba(['regimen' => '276']);
-        $jefe = $this->conJefeDePrueba($trabajador); // jefe 728
+        $jefe = $this->conJefeDePrueba($trabajador); 
         $this->turnoDePrueba($jefe);
 
         $this->ir('2026-09-21 15:00:00');

@@ -7,9 +7,23 @@ use App\Models\UnidadOrganica;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
+
 class MoverJefeInmediatoAction
 {
-
+    /**
+     * Qué cambiaría, sin guardar nada. Lanza UsuarioException si el
+     * movimiento no está permitido.
+     *
+     * @return array{
+     *     jefe: User,
+     *     unidad: UnidadOrganica,
+     *     origen: ?UnidadOrganica,
+     *     destino: UnidadOrganica,
+     *     jefe_area: array{antes: ?User, despues: ?User},
+     *     personas: int,
+     *     avisos: list<string>
+     * }
+     */
     public function previsualizar(User $actor, User $jefe, UnidadOrganica $destino): array
     {
         $unidad = $this->validar($actor, $jefe, $destino);
@@ -38,6 +52,15 @@ class MoverJefeInmediatoAction
         ];
     }
 
+    /**
+     * Ejecuta el movimiento. $confirmado es obligatorio y sin default: no se
+     * mueve a nadie sin pasar por la confirmación.
+     *
+     * $origenEsperadoId es el área en la que la pantalla vio a la unidad
+     * (0 = unidad raíz); si entretanto cambió, se aborta.
+     *
+     * @throws UsuarioException
+     */
     public function ejecutar(User $actor, int $jefeId, int $destinoId, int $origenEsperadoId, bool $confirmado): UnidadOrganica
     {
         if (! $confirmado) {
@@ -56,15 +79,23 @@ class MoverJefeInmediatoAction
                 throw new UsuarioException('La unidad ya no está donde la arrastraste. Actualiza la pantalla e inténtalo de nuevo.');
             }
 
+            
             $unidad->parent_id = $destino->id;
             $unidad->save();
 
-            app(JefaturaUnidadService::class)->ubicarJefe($unidad->fresh());
+            app(JefaturaUnidadService::class)->ubicarJefe($unidad->fresh() ?? $unidad);
 
-            return $unidad->fresh();
+            return $unidad->fresh() ?? $unidad;
         });
     }
 
+    /**
+     * Única puerta de reglas: previsualizar() y ejecutar() pasan por aquí.
+     *
+     * @return UnidadOrganica la unidad que encabeza $jefe (la que se mueve)
+     *
+     * @throws UsuarioException
+     */
     private function validar(User $actor, User $jefe, UnidadOrganica $destino): UnidadOrganica
     {
         if (! $actor->hasRole('admin')) {
@@ -81,6 +112,7 @@ class MoverJefeInmediatoAction
             throw new UsuarioException($jefe->nombre_completo.' encabeza más de una unidad: mueve cada unidad desde «Depende de» en su ficha.');
         }
 
+        /** @var UnidadOrganica $unidad */
         $unidad = $unidades->first();
 
         if ($unidad->hijos()->exists()) {

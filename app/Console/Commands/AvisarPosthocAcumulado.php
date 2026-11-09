@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Services\AlertaPosthocService;
 use Illuminate\Console\Command;
 
+
 class AvisarPosthocAcumulado extends Command
 {
     protected $signature = 'papeletas:avisar-posthoc-acumulado';

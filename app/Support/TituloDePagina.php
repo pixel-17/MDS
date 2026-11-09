@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+
 class TituloDePagina
 {
     public static function resolver(?string $title = null, ?string $titulo = null, mixed $header = null): ?string
@@ -16,13 +17,17 @@ class TituloDePagina
             return null;
         }
 
+        if (! is_scalar($header) && ! $header instanceof \Stringable) {
+            return null;
+        }
+
         $html = (string) $header;
 
         if (preg_match('/<h[12]\b[^>]*>(.*?)<\/h[12]>/s', $html, $coincidencia)) {
             $html = $coincidencia[1];
         }
 
-        $texto = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($html))));
+        $texto = trim((string) preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($html))));
 
         return $texto !== '' ? $texto : null;
     }

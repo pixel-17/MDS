@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\NotificarPapeletaService;
 use Illuminate\Support\Facades\DB;
 
+
 class ResponderPosthocAction
 {
     public function __construct(private NotificarPapeletaService $notificar) {}
@@ -22,7 +23,7 @@ class ResponderPosthocAction
         }
 
         $papeleta = DB::transaction(function () use ($papeleta, $jefe, $respuesta, $adjuntoPath) {
-
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             if ($actual->revision_posthoc_estado !== 'observada') {
@@ -45,7 +46,7 @@ class ResponderPosthocAction
                 'actor_id' => $jefe->id,
                 'actor_tipo' => 'jefe_inmediato',
                 'estado_anterior' => class_basename($actual->estado),
-                'estado_nuevo' => class_basename($actual->estado),
+                'estado_nuevo' => class_basename($actual->estado), 
                 'justificacion' => 'Respuesta a la observación post-hoc de RRHH: '.$respuesta,
             ]);
 

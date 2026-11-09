@@ -18,17 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Estas Actions releen la papeleta bajo lockForUpdate() dentro de la
- * transacción. Aquí se simula lo que ese lock protege: el objeto que
- * llega a la Action quedó DESACTUALIZADO porque otra petición ya cambió
- * la fila. Con el estado viejo en memoria la Action antes lo pisaba; ahora
- * debe rechazar y dejar la fila como la dejó la otra petición.
- *
- * Ojo: en SQLite (y en estos tests) lockForUpdate() no bloquea nada; lo
- * que se prueba es la RELECTURA. La exclusión mutua real solo se ejerce
- * en MySQL con dos conexiones concurrentes.
- */
+
 class LockRelecturaTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -48,7 +38,7 @@ class LockRelecturaTest extends TestCase
         $this->trabajador = $this->usuarioDePrueba(['jefe_inmediato_id' => $this->jefe->id]);
     }
 
-    /** Cambia la fila por debajo, sin pasar por el modelo (como lo haría otra petición). */
+    
     private function cambiarEnBd(Papeleta $papeleta, array $columnas): void
     {
         DB::table('papeletas')->where('id', $papeleta->id)->update($columnas);
@@ -93,7 +83,7 @@ class LockRelecturaTest extends TestCase
             'fecha_limite' => now()->addDay(),
             'estado' => 'presentado',
         ]);
-        $sustento->load('papeleta'); // relación precargada = dato viejo en memoria
+        $sustento->load('papeleta'); 
 
         $this->cambiarEnBd($papeleta, ['estado' => 'cerrada']);
 

@@ -12,15 +12,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * El visto bueno de la justificación (Salud) lo da SOLO RRHH
- * (revisarSustento): ni el jefe inmediato, ni el jefe de área ni el
- * admin lo dan. Pero abrir el archivo (verSustento) sí lo puede hacer
- * cualquiera con visibilidad de esta papeleta en el reporte de
- * Sustentos — dueño, RRHH, admin, jefe inmediato y jefe de área,
- * misma frontera que ReporteSustentosService::query() — para que lo
- * que ya ven listado no les devuelva 403 al abrirlo.
- */
+
 class SustentoSoloRrhhTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -54,12 +46,12 @@ class SustentoSoloRrhhTest extends TestCase
 
         $this->assertTrue($papeleta->tieneComoJefeInmediatoA($jefe), 'el jefe sí es el jefe inmediato');
 
-        // El visto bueno (aprobar/observar el sustento) sigue siendo exclusivo de RRHH.
+        
         $this->assertFalse($jefe->can('revisarSustento', $sustento));
         $this->assertFalse($admin->can('revisarSustento', $sustento));
         $this->assertTrue($rrhh->can('revisarSustento', $sustento));
 
-        // Abrir el archivo: dueño, RRHH, admin y jefe inmediato sí; un jefe ajeno no.
+        
         $this->assertTrue($trabajador->can('verSustento', $sustento), 'el dueño ve su propio archivo');
         $this->assertTrue($rrhh->can('verSustento', $sustento));
         $this->assertTrue($admin->can('verSustento', $sustento), 'el admin ve el archivo, igual que en el reporte de Sustentos');
@@ -69,9 +61,9 @@ class SustentoSoloRrhhTest extends TestCase
 
     public function test_el_jefe_de_area_tambien_puede_abrir_el_archivo_de_su_rama(): void
     {
-        // Gerencia (jefe de área: $gerente)
-        //  └── Oficina (jefe inmediato: $jefeOficina)
-        //       └── trabajador -> jefe_inmediato = $jefeOficina, jefe_area = $gerente
+        
+        
+        
         $gerente = User::factory()->create();
         $jefeOficina = User::factory()->create();
 

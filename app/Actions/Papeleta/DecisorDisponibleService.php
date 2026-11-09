@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\HorarioOrdinarioService;
 use Illuminate\Support\Carbon;
 
+
 class DecisorDisponibleService
 {
     public function __construct(
@@ -28,14 +29,17 @@ class DecisorDisponibleService
             return false;
         }
 
+        
+        
         return match ($decisor->regimen) {
             '728' => ! $this->estaDeDescanso($decisor, $momento),
-
+            
             '276' => $this->horarioOrdinario->estaDentroDeVentana($momento),
             default => false,
         };
     }
 
+    
     private function estaDeDescanso(User $decisor, Carbon $momento): bool
     {
         if (Turno::vigenteParaUsuario($decisor->id, $momento) !== null) {

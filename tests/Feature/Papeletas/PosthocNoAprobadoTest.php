@@ -16,11 +16,7 @@ use Illuminate\Support\Facades\Notification;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Post-hoc sin decisión a favor no queda en el aire: si RRHH NO aprueba (o
- * el reparo queda definitivo) la papeleta pasa a Particular, con descuento.
- * Lo que ya era Particular termina Particular.
- */
+
 class PosthocNoAprobadoTest extends TestCase
 {
     use CreaEscenarioPapeletas;

@@ -11,13 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Regresión: transicionarConHistorial() tenía 5 parámetros y
- * ReclasificarAParticularAction le pasaba un 6to argumento (el array con
- * motivo_anterior_id/motivo_nuevo_id) que PHP descartaba en silencio sin
- * lanzar error. El historial de auditoría quedaba sin esos dos datos
- * pese a que la tabla historial_papeletas los tiene justo para este caso.
- */
+
 class ReclasificarAParticularTest extends TestCase
 {
     use CreaEscenarioPapeletas;

@@ -1,4 +1,3 @@
-
 <button
     type="button"
     x-data="msscThemeToggle()"

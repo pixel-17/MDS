@@ -13,6 +13,7 @@ use App\States\Papeleta\PendienteJefe;
 use App\States\Papeleta\Rechazada;
 use Illuminate\Support\Facades\DB;
 
+
 class ObservarJefeAction
 {
     use ExigeDecisorAjeno;
@@ -22,7 +23,7 @@ class ObservarJefeAction
     public function ejecutar(Papeleta $papeleta, User $jefe, string $comentario, string $actorTipo = 'jefe_inmediato', bool $requiereAdjunto = false): Papeleta
     {
         $papeleta = DB::transaction(function () use ($papeleta, $jefe, $comentario, $actorTipo, $requiereAdjunto) {
-
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             $this->exigirDecisorAjeno($actual, $jefe);
@@ -52,7 +53,9 @@ class ObservarJefeAction
 
                     $p->observacion_requiere_adjunto = $requiereAdjunto;
                     $p->observacion_respuesta = null;
-
+                    
+                    
+                    
                     $p->observacion_adjunto_path = null;
                     $p->observacion_subsanada_at = null;
                 },

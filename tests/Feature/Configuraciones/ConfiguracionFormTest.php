@@ -73,7 +73,7 @@ class ConfiguracionFormTest extends TestCase
 
     public function test_los_valores_numericos_deben_ser_enteros_positivos(): void
     {
-        $this->editar('SUSTENTO_HORAS_HABILES', '48', '72')->assertHasNoErrors();
+        $this->editar('TOPE_OBSERVACIONES', '3', '5')->assertHasNoErrors();
 
         foreach (['abc', '0', '-3', '2.5'] as $malo) {
             Configuracion::where('clave', 'TOPE_OBSERVACIONES')->delete();
@@ -84,7 +84,7 @@ class ConfiguracionFormTest extends TestCase
 
     public function test_las_horas_de_turno_no_se_editan_desde_configuraciones(): void
     {
-        // Incluye el horario ordinario: es la hora del turno Día (276).
+        
         foreach (['TURNO_NOCHE_HORA_FIN' => '06:00', 'HORARIO_ORDINARIO_HORA_INICIO' => '07:45'] as $clave => $valor) {
             $configuracion = Configuracion::create(['clave' => $clave, 'valor' => $valor, 'descripcion' => 'x']);
 

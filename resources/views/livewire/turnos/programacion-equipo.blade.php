@@ -84,7 +84,6 @@
             }"
             class="space-y-6"
         >
-
             <div class="flex items-center justify-between flex-wrap gap-3">
                 <div class="flex items-center gap-2">
                     <button type="button" @click="navegar('mesAnterior')" class="px-3 py-1.5 rounded-md border text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" aria-label="Mes anterior">&larr; Anterior</button>
@@ -102,7 +101,6 @@
                     No tienes trabajadores 728 activos a cargo en este momento.
                 </div>
             @else
-
                 <div class="glass-card p-4 space-y-3">
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="text-sm font-medium mr-1">Turno a pintar:</span>
@@ -152,7 +150,6 @@
                     <p x-show="errorPatron" x-text="errorPatron" x-cloak class="text-sm text-red-600"></p>
                 </div>
 
-                {{-- Matriz --}}
                 <div class="glass-card overflow-x-auto">
                     <table class="min-w-full border-separate border-spacing-1 text-sm">
                         <thead>
@@ -204,7 +201,6 @@
                             @endforeach
                         </tbody>
                         <tfoot>
-
                             @foreach (['MANANA' => 'M', 'TARDE' => 'T', 'NOCHE' => 'N'] as $codigo => $sigla)
                                 <tr wire:key="programacion-equipo-tr-{{ $codigo }}" class="text-center text-xs">
                                     <td class="px-3 py-1 sticky left-0 z-10 bg-white dark:bg-gray-900 text-left text-gray-500 whitespace-nowrap">Cubren {{ $sigla }}</td>

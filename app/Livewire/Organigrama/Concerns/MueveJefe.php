@@ -10,19 +10,40 @@ use App\Exceptions\UsuarioException;
 use App\Models\UnidadOrganica;
 use App\Models\User;
 
+
 trait MueveJefe
 {
-
+    /**
+     * Movimiento de un JEFE INMEDIATO a otra área, pendiente de confirmar, o
+     * null. Solo ids (vienen del navegador): MoverJefeInmediatoAction lo
+     * revalida entero. `origen` = padre actual de su unidad (0 = raíz).
+     *
+     * @var array{jefe: int, origen: int, destino: int}|null
+     */
     public ?array $propuestaJefe = null;
 
+    
     public string $modoJefe = '';
 
+    
     public string|int|null $reemplazaDestino = null;
 
+    /**
+     * Reemplazo elegido por unidad que deja el jefe: unidad_id => user_id.
+     * Lo revalida MoverJefeComoTrabajadorAction.
+     *
+     * @var array<int|string, int|string|null>
+     */
     public array $reemplazos = [];
 
+    /**
+     * Turno del jefe 728 al pasar a trabajador (los jefes no tienen turno).
+     *
+     * @var array{turno: ?string, fecha_ancla: ?string, dias_trabajo: int|string, dias_descanso: int|string}
+     */
     public array $turnoJefe = ['turno' => null, 'fecha_ancla' => null, 'dias_trabajo' => 6, 'dias_descanso' => 1];
 
+    
     private function proponerMovimientoJefe(User $usuario, User $jefe, UnidadOrganica $destino): void
     {
         $errores = [];
@@ -51,6 +72,7 @@ trait MueveJefe
             return;
         }
 
+        
         $this->modoJefe = count($posibles) === 1 ? $posibles[0] : '';
         $this->reemplazos = [];
         $this->reemplazaDestino = null;
@@ -73,12 +95,19 @@ trait MueveJefe
         $reemplazos = $this->reemplazos;
         $reemplazaDestino = ($this->reemplazaDestino !== null && $this->reemplazaDestino !== '') ? (int) $this->reemplazaDestino : null;
         $turno = $this->turnoJefe;
+        // $turnoJefe es int|string (nunca null: ver su @var), igual que
+        
+        
+        
+        
+        $turno['dias_trabajo'] = $turno['dias_trabajo'] !== '' ? (int) $turno['dias_trabajo'] : null;
+        $turno['dias_descanso'] = $turno['dias_descanso'] !== '' ? (int) $turno['dias_descanso'] : null;
 
         if (! $this->modoEdicion || ! is_array($propuesta)) {
             return;
         }
 
-        $persona = User::find((int) ($propuesta['jefe'] ?? 0));
+        $persona = User::find((int) $propuesta['jefe']);
         $eraJefe = $persona && ($persona->unidadesQueEncabeza()->exists());
 
         $this->mensajeOk = $this->mensajeError = null;
@@ -96,9 +125,9 @@ trait MueveJefe
             try {
                 $unidad = app(MoverJefeInmediatoAction::class)->ejecutar(
                     $usuario,
-                    (int) ($propuesta['jefe'] ?? 0),
-                    (int) ($propuesta['destino'] ?? 0),
-                    (int) ($propuesta['origen'] ?? 0),
+                    (int) $propuesta['jefe'],
+                    (int) $propuesta['destino'],
+                    (int) $propuesta['origen'],
                     true,
                 );
             } catch (UsuarioException $e) {
@@ -108,8 +137,8 @@ trait MueveJefe
             }
 
             $unidad->load(['jefe', 'padre']);
-            $this->mensajeOk = '«'.$unidad->nombre.'» ('.($unidad->jefe?->nombre_completo ?? 'sin jefe').') ahora depende de '
-                .($unidad->padre?->nombre ?? '—').'.';
+            $this->mensajeOk = '«'.$unidad->nombre.'» ('.($unidad->jefe->nombre_completo ?? 'sin jefe').') ahora depende de '
+                .($unidad->padre->nombre ?? '—').'.';
 
             return;
         }
@@ -117,8 +146,8 @@ trait MueveJefe
         try {
             $movimiento = app(MoverJefeComoTrabajadorAction::class)->ejecutar(
                 $usuario,
-                (int) ($propuesta['jefe'] ?? 0),
-                (int) ($propuesta['destino'] ?? 0),
+                (int) $propuesta['jefe'],
+                (int) $propuesta['destino'],
                 $reemplazos,
                 $turno,
                 true,
@@ -126,7 +155,7 @@ trait MueveJefe
                 $reemplazaDestino,
             );
         } catch (UsuarioException $e) {
-
+            
             $this->propuestaJefe = $propuesta;
             $this->mensajeError = $e->getMessage();
 
@@ -138,18 +167,25 @@ trait MueveJefe
         $movimiento->load(['trabajador', 'unidadAnterior', 'unidadNueva']);
         $this->mensajeOk = $movimiento->trabajador?->nombre_completo
             .($modo === 'jefe' ? ' pasó a ser jefe inmediato de ' : ' pasó a ser trabajador de ')
-            .($movimiento->unidadNueva?->nombre ?? '—')
+            .($movimiento->unidadNueva->nombre ?? '—')
             .($eraJefe ? '; su unidad anterior conserva a su gente.' : '.');
     }
 
+    /**
+     * Datos de la ventana de confirmación del movimiento de un jefe
+     * inmediato, o null (se recalcula en cada render; si dejó de ser
+     * válido, no se muestra).
+     *
+     * @return array<string, mixed>|null
+     */
     private function vistaPreviaMovimientoJefe(User $usuario): ?array
     {
         if ($this->propuestaJefe === null) {
             return null;
         }
 
-        $jefe = User::find((int) ($this->propuestaJefe['jefe'] ?? 0));
-        $destino = UnidadOrganica::find((int) ($this->propuestaJefe['destino'] ?? 0));
+        $jefe = User::find((int) $this->propuestaJefe['jefe']);
+        $destino = UnidadOrganica::find((int) $this->propuestaJefe['destino']);
 
         if (! $jefe || ! $destino) {
             return null;

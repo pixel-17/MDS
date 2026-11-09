@@ -14,16 +14,26 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
+
 class ProgramacionTurnoService
 {
     public const DESCANSO = 'DESCANSO';
 
+    
     public const MIN_DESCANSO_HORAS = 12;
 
+    
     public const MAX_DIAS_SEGUIDOS = 6;
 
     public function __construct(private GeneradorTurnoMensualService $generador) {}
 
+    /**
+     * Reemplaza por completo la programación del mes de $trabajador.
+     * Los días que no vienen en $dias quedan sin turno (se borra la
+     * fila si existía).
+     *
+     * @param  array<string, string>  $dias
+     */
     public function guardarMes(User $trabajador, int $anio, int $mes, array $dias, User $actor): void
     {
         if (! $actor->puedeGestionarTurnoDe($trabajador)) {
@@ -34,7 +44,7 @@ class ProgramacionTurnoService
 
         $this->validar($trabajador, $anio, $mes, $dias);
 
-        $inicioMes = Carbon::create($anio, $mes, 1)->startOfMonth();
+        $inicioMes = (Carbon::create($anio, $mes, 1) ?? throw new \RuntimeException('Fecha de mes inválida.'))->startOfMonth();
         $finMes = $inicioMes->copy()->endOfMonth();
         $ahora = now();
 
@@ -58,7 +68,7 @@ class ProgramacionTurnoService
         }
 
         DB::transaction(function () use ($trabajador, $inicioMes, $finMes, $filas, $dias, $anio, $mes, $actor) {
-
+            
             Turno::where('user_id', $trabajador->id)
                 ->whereBetween('fecha', [$inicioMes->toDateString(), $finMes->toDateString()])
                 ->when($dias !== [], fn ($q) => $q->whereNotIn('fecha', array_keys($dias)))
@@ -85,9 +95,25 @@ class ProgramacionTurnoService
         HorarioActualizado::notificar($trabajador->id);
     }
 
+    /**
+     * Calcula (sin guardar) qué quedaría al repetir un patrón durante
+     * $meses meses seguidos, empezando en $desde.
+     *
+     * - Del mes de $desde se conservan los días anteriores a $desde que
+     *   ya vienen pintados en $diasActuales (lo que el usuario ve en la
+     *   grilla, aunque no lo haya guardado).
+     * - Los meses siguientes se generan completos (reemplazan lo que
+     *   hubiera en ellos al guardar).
+     * - Con $continuar, el patrón sigue donde terminó lo anterior a
+     *   $desde (grilla + lo guardado en la base) en vez de empezar de cero.
+     *
+     * @param  array<int, string>  $pasos  ver PatronTurnos::parsear()
+     * @param  array<string, string>  $diasActuales  días del mes de $desde tal como están en pantalla
+     * @return array<string, array<string, string>> 'Y-m' => dias, un elemento por mes
+     */
     public function planPatron(User $trabajador, array $pasos, string $desde, int $meses, bool $continuar, array $diasActuales = []): array
     {
-        $inicio = Carbon::createFromFormat('Y-m-d', $desde)->startOfDay();
+        $inicio = (Carbon::createFromFormat('Y-m-d', $desde) ?: throw new \RuntimeException('Fecha inicial inválida.'))->startOfDay();
         $meses = max(1, min(PatronTurnos::MAX_MESES, $meses));
         $largo = count($pasos);
 
@@ -117,10 +143,11 @@ class ProgramacionTurnoService
             $plan[substr($fecha, 0, 7)][$fecha] = $codigo;
         }
 
+        
         $claveInicial = $inicio->format('Y-m');
         $anteriores = array_filter(
             $diasActuales,
-            fn ($codigo, $fecha) => is_string($fecha) && str_starts_with($fecha, $claveInicial) && $fecha < $desde,
+            fn ($codigo, $fecha) => str_starts_with($fecha, $claveInicial) && $fecha < $desde,
             ARRAY_FILTER_USE_BOTH
         );
         $plan[$claveInicial] = array_merge($anteriores, $plan[$claveInicial]);
@@ -129,15 +156,29 @@ class ProgramacionTurnoService
         return $plan;
     }
 
+    /**
+     * Advertencias del plan completo, con las rachas contadas de corrido
+     * entre un mes y el siguiente.
+     *
+     * @param  array<string, array<string, string>>  $plan
+     * @return array<int, string>
+     */
     public function advertenciasPlan(array $plan): array
     {
         return $this->advertencias($plan === [] ? [] : array_merge(...array_values($plan)));
     }
 
+    /**
+     * Guarda todos los meses de un plan en una sola transacción: si uno
+     * falla la validación, no se escribe ninguno. Cada mes reemplaza por
+     * completo el anterior (ver guardarMes).
+     *
+     * @param  array<string, array<string, string>>  $plan  'Y-m' => dias
+     */
     public function guardarPlan(User $trabajador, array $plan, User $actor): void
     {
         foreach ($plan as $clave => $dias) {
-            if (preg_match('/^(\d{4})-(\d{2})$/', (string) $clave, $m) !== 1 || ! is_array($dias)) {
+            if (preg_match('/^(\d{4})-(\d{2})$/', (string) $clave, $m) !== 1) {
                 throw ValidationException::withMessages(['dias' => 'La programación contiene un mes inválido.']);
             }
 
@@ -152,13 +193,28 @@ class ProgramacionTurnoService
         });
     }
 
+    /**
+     * Guarda varios trabajadores del mismo mes en una sola transacción:
+     * si uno falla la validación, no se escribe ninguno.
+     *
+     * @param  Collection<int, User>  $equipo  trabajadores que el actor puede ver, con el id como clave
+     * @param  array<int|string, array<string, string>>  $porUsuario  userId => dias (solo los que cambiaron)
+     */
     public function guardarEquipo(Collection $equipo, int $anio, int $mes, array $porUsuario, User $actor): void
     {
         $this->validarEquipo($equipo, $anio, $mes, $porUsuario);
 
         DB::transaction(function () use ($equipo, $anio, $mes, $porUsuario, $actor) {
             foreach ($porUsuario as $userId => $dias) {
-                $this->guardarMes($equipo->get((int) $userId), $anio, $mes, $dias, $actor);
+                $trabajador = $equipo->get((int) $userId);
+
+                if (! $trabajador) {
+                    throw ValidationException::withMessages([
+                        'dias' => 'La programación incluye a un trabajador que no está en tu equipo.',
+                    ]);
+                }
+
+                $this->guardarMes($trabajador, $anio, $mes, $dias, $actor);
             }
         });
     }
@@ -172,7 +228,7 @@ class ProgramacionTurnoService
         foreach ($porUsuario as $userId => $dias) {
             $trabajador = $equipo->get((int) $userId);
 
-            if (! $trabajador || ! is_array($dias)) {
+            if (! $trabajador) {
                 throw ValidationException::withMessages([
                     'dias' => 'La programación incluye a un trabajador que no está en tu equipo.',
                 ]);
@@ -188,13 +244,20 @@ class ProgramacionTurnoService
         }
     }
 
+    /**
+     * Advertencias de todo el equipo, cada una prefijada con el nombre.
+     *
+     * @param  Collection<int, User>  $equipo
+     * @param  array<int|string, array<string, string>>  $porUsuario
+     * @return array<int, string>
+     */
     public function advertenciasEquipo(Collection $equipo, array $porUsuario): array
     {
         $horas = $this->horas();
         $salida = [];
 
         foreach ($porUsuario as $userId => $dias) {
-            $nombre = $equipo->get((int) $userId)?->nombre_completo ?? '#'.$userId;
+            $nombre = $equipo->get((int) $userId)->nombre_completo ?? '#'.$userId;
 
             foreach (self::calcularAdvertencias($dias, $horas) as $advertencia) {
                 $salida[] = $nombre.': '.$advertencia;
@@ -215,6 +278,13 @@ class ProgramacionTurnoService
         return $horas;
     }
 
+    /**
+     * Advertencias (no bloqueantes) de la programación: descanso corto
+     * entre turnos y rachas largas sin descanso.
+     *
+     * @param  array<string, string>  $dias
+     * @return array<int, string>
+     */
     public function advertencias(array $dias): array
     {
         $horas = $this->horas();
@@ -222,6 +292,14 @@ class ProgramacionTurnoService
         return self::calcularAdvertencias($dias, $horas);
     }
 
+    /**
+     * Lógica pura (sin base de datos ni configuración) para poder
+     * probarla de forma aislada.
+     *
+     * @param  array<string, string>  $dias
+     * @param  array<string, array{0: string, 1: string}>  $horas  código => [inicio, fin] en H:i
+     * @return array<int, string>
+     */
     public static function calcularAdvertencias(array $dias, array $horas): array
     {
         ksort($dias);
@@ -234,7 +312,7 @@ class ProgramacionTurnoService
         $racha = 0;
         $inicioRacha = null;
         $rachaAvisada = false;
-        $previa = null; // [DateTimeImmutable $fecha, string $codigo]
+        $previa = null; 
 
         foreach ($dias as $fechaStr => $codigo) {
             $fecha = new DateTimeImmutable($fechaStr);
@@ -260,7 +338,7 @@ class ProgramacionTurnoService
             }
             $racha++;
 
-            if ($racha > self::MAX_DIAS_SEGUIDOS && ! $rachaAvisada) {
+            if ($racha > self::MAX_DIAS_SEGUIDOS && ! $rachaAvisada && $inicioRacha !== null) {
                 $advertencias[] = 'Más de '.self::MAX_DIAS_SEGUIDOS.' días seguidos trabajando desde el '.$etiqueta($inicioRacha).'.';
                 $rachaAvisada = true;
             }
@@ -271,7 +349,7 @@ class ProgramacionTurnoService
                 $finPrevio = new DateTimeImmutable($fechaPrevia->format('Y-m-d').' '.$horas[$codigoPrevio][1]);
                 $inicioPrevio = new DateTimeImmutable($fechaPrevia->format('Y-m-d').' '.$horas[$codigoPrevio][0]);
                 if ($finPrevio <= $inicioPrevio) {
-                    $finPrevio = $finPrevio->modify('+1 day');
+                    $finPrevio = $finPrevio->modify('+1 day'); 
                 }
 
                 $inicioActual = new DateTimeImmutable($fecha->format('Y-m-d').' '.$horas[$codigo][0]);
@@ -316,8 +394,7 @@ class ProgramacionTurnoService
         $prefijo = sprintf('%04d-%02d-', $anio, $mes);
 
         foreach ($dias as $fecha => $codigo) {
-            $fechaOk = is_string($fecha)
-                && str_starts_with($fecha, $prefijo)
+            $fechaOk = str_starts_with($fecha, $prefijo)
                 && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha) === 1
                 && checkdate($mes, (int) substr($fecha, 8, 2), $anio);
 

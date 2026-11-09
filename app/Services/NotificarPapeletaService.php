@@ -8,6 +8,7 @@ use App\Notifications\PapeletaNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 
+
 class NotificarPapeletaService
 {
     public function creada(Papeleta $papeleta): void
@@ -58,6 +59,7 @@ class NotificarPapeletaService
         );
     }
 
+    
     public function posthocObservada(Papeleta $papeleta): void
     {
         $jefe = $papeleta->resueltoPorJefe;
@@ -81,6 +83,7 @@ class NotificarPapeletaService
         );
     }
 
+    
     public function posthocRespondida(Papeleta $papeleta): void
     {
         $this->enviar(
@@ -119,6 +122,7 @@ class NotificarPapeletaService
         );
     }
 
+    
     public function observacionRespondida(Papeleta $papeleta): void
     {
         $this->enviar(
@@ -131,6 +135,7 @@ class NotificarPapeletaService
         );
     }
 
+    
     public function observadaPorRrhh(Papeleta $papeleta): void
     {
         $this->enviar(
@@ -181,6 +186,7 @@ class NotificarPapeletaService
         );
     }
 
+    
     public function posthocAParticular(Papeleta $papeleta): void
     {
         $this->enviarUno(
@@ -227,6 +233,12 @@ class NotificarPapeletaService
         return User::role('rrhh')->get();
     }
 
+    /**
+     * El jefe que decide/atiende esta papeleta: el jefe_inmediato_id de la
+     * papeleta (si se reasignó por un cambio de jefatura, ya es el nuevo).
+     *
+     * @return Collection<int, User>
+     */
     private function destinatariosJefe(Papeleta $papeleta): Collection
     {
         return $papeleta->jefeInmediato ? collect([$papeleta->jefeInmediato]) : collect();
@@ -248,7 +260,7 @@ class NotificarPapeletaService
         }
     }
 
-    private function urlSegunRol(Papeleta $papeleta, User $usuario): ?string
+    private function urlSegunRol(Papeleta $papeleta, User $usuario): string
     {
         if ($usuario->hasRole('rrhh')) {
             return $this->urlRrhh($papeleta);
@@ -257,17 +269,17 @@ class NotificarPapeletaService
         return $this->urlJefe($papeleta);
     }
 
-    private function urlTrabajador(Papeleta $papeleta): ?string
+    private function urlTrabajador(Papeleta $papeleta): string
     {
         return route('trabajador.papeletas.show', $papeleta);
     }
 
-    private function urlJefe(Papeleta $papeleta): ?string
+    private function urlJefe(Papeleta $papeleta): string
     {
         return route('jefe.papeletas.show', $papeleta);
     }
 
-    private function urlRrhh(Papeleta $papeleta): ?string
+    private function urlRrhh(Papeleta $papeleta): string
     {
         return route('rrhh.papeletas.show', $papeleta);
     }

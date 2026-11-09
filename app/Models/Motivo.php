@@ -2,9 +2,28 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Particular, Salud o Comisión de Servicio. Las reglas de
+ * negocio de cada uno (adjuntos, suma a descuento, sustento, cierre
+ * sin retorno) viven como banderas en la fila, no
+ * hardcodeadas por código -> nunca comparar $motivo->codigo === 'SALUD'
+ * para decidir lógica, siempre usar las banderas.
+ *
+ * @property int $id
+ * @property string $codigo
+ * @property string $nombre
+ * @property 'no'|'opcional'|'flexible'|'obligatorio' $adjunto
+ * @property bool $suma_descuento
+ * @property bool $requiere_sustento_en_retorno
+ * @property int|null $plazo_justificacion_horas_habiles
+ * @property bool $es_destino_reclasificacion
+ * @property bool $activo
+ * @property-read Collection<int, Papeleta> $papeletas
+ */
 class Motivo extends Model
 {
     protected $fillable = [
@@ -29,6 +48,13 @@ class Motivo extends Model
         ];
     }
 
+    /**
+     * Qué pasa cuando termina la salida (con retorno o por abandono), en el
+     * mismo orden de prioridad que aplican MarcarRetornoAction y
+     * ProcesarAbandonoNoMarcado: justificar > descuenta > libre.
+     *
+     * @return 'justificar'|'descuenta'|'libre'
+     */
     public function consecuenciaAlTerminar(): string
     {
         return match (true) {
@@ -38,12 +64,15 @@ class Motivo extends Model
         };
     }
 
+    
     public function plazoJustificacionHorasHabiles(): int
     {
-        return $this->plazo_justificacion_horas_habiles
-            ?? (int) Configuracion::valorDe('SUSTENTO_HORAS_HABILES', 48);
+        return (int) $this->plazo_justificacion_horas_habiles;
     }
 
+    /**
+     * @return HasMany<Papeleta, $this>
+     */
     public function papeletas(): HasMany
     {
         return $this->hasMany(Papeleta::class);

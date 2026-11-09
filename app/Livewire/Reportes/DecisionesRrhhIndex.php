@@ -11,6 +11,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
+
 #[Layout('layouts.app')]
 #[Title('Decisiones de RR. HH.')]
 class DecisionesRrhhIndex extends Component

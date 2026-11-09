@@ -19,31 +19,39 @@ use App\States\Papeleta\Rechazada;
 use App\States\Papeleta\Vencida;
 use Illuminate\Support\Facades\Cache;
 
+
 class DashboardMetricsService
 {
-
+    
     protected int $diasVentana = 30;
 
     public function __construct(
         private readonly ReporteHorasAcumuladasService $reporteHorasAcumuladas,
     ) {}
 
+    /** @return array<string, mixed> */
     public function paraAdmin(): array
     {
         return $this->recordar('admin', fn () => $this->calcularAdmin());
     }
 
+    /** @return array<string, mixed> */
     public function paraRrhh(User $rrhh): array
     {
-
+        
+        
+        
+        
         return $this->recordar('rrhh', fn () => $this->calcularRrhh($rrhh));
     }
 
+    /** @return array<string, mixed> */
     public function paraJefe(User $jefe): array
     {
         return $this->recordar('jefe:'.$jefe->id, fn () => $this->calcularJefe($jefe));
     }
 
+    
     public static function invalidar(): void
     {
         Cache::add(self::CLAVE_VERSION, 1);
@@ -52,8 +60,13 @@ class DashboardMetricsService
 
     private const CLAVE_VERSION = 'dashboard-metricas:version';
 
+    
     private const TTL_SEGUNDOS = 30;
 
+    /**
+     * @param  \Closure(): array<string, mixed>  $calcular
+     * @return array<string, mixed>
+     */
     private function recordar(string $clave, \Closure $calcular): array
     {
         $version = (int) Cache::get(self::CLAVE_VERSION, 1);
@@ -61,6 +74,7 @@ class DashboardMetricsService
         return Cache::remember("dashboard-metricas:{$version}:{$clave}", self::TTL_SEGUNDOS, $calcular);
     }
 
+    /** @return array<string, mixed> */
     private function calcularAdmin(): array
     {
         $desde = now()->subDays($this->diasVentana);
@@ -97,6 +111,7 @@ class DashboardMetricsService
         ];
     }
 
+    /** @return array<string, mixed> */
     private function calcularRrhh(User $rrhh): array
     {
         $desde = now()->subDays($this->diasVentana);
@@ -108,9 +123,14 @@ class DashboardMetricsService
         $promedioMinutos = $resueltasPeriodo->isEmpty()
             ? null
             : (int) round($resueltasPeriodo->avg(
-                fn (Papeleta $p) => $p->created_at->diffInMinutes($p->rrhh_resuelto_at)
-            ));
+                fn (Papeleta $p) => $p->created_at?->diffInMinutes($p->rrhh_resuelto_at) ?? 0
+            ) ?? 0);
 
+        
+        
+        
+        
+        
         $afueraQuery = Papeleta::whereState('estado', AutorizadaYCorriendo::class);
         $trabajadoresAfueraTotal = (clone $afueraQuery)->count();
         $trabajadoresAfuera = $afueraQuery
@@ -142,7 +162,7 @@ class DashboardMetricsService
                 ->get(),
             'trabajadores_afuera' => $trabajadoresAfuera,
             'trabajadores_afuera_total' => $trabajadoresAfueraTotal,
-
+            
             'papeletas_por_trabajador' => Papeleta::where('papeletas.created_at', '>=', $desde)
                 ->join('users as trabajadores', 'trabajadores.id', '=', 'papeletas.trabajador_id')
                 ->selectRaw("CONCAT(trabajadores.name, ' ', trabajadores.apellido) as etiqueta, count(*) as total")
@@ -152,7 +172,10 @@ class DashboardMetricsService
                 ->get(),
             'horas_acumuladas_mes' => $mesActual,
             'horas_acumuladas_top' => $horasAcumuladasTop,
-
+            
+            
+            
+            
             'seguimiento_por_trabajador' => Papeleta::where('papeletas.created_at', '>=', $desde)
                 ->where(function ($q) {
                     $q->whereState('estado', Rechazada::class)
@@ -167,6 +190,7 @@ class DashboardMetricsService
         ];
     }
 
+    /** @return array<string, mixed> */
     private function calcularJefe(User $jefe): array
     {
         $desde = now()->subDays($this->diasVentana);
@@ -202,6 +226,14 @@ class DashboardMetricsService
         ];
     }
 
+    /**
+     * Estados terminales de Papeleta (ver PapeletaState::esTerminal() en
+     * cada clase de app/States/Papeleta) — se repiten aquí como lista
+     * porque esTerminal() es un método de instancia, no estático, y no
+     * vale la pena instanciar cada estado solo para preguntarle esto.
+     *
+     * @return array<class-string>
+     */
     protected function estadosTerminales(): array
     {
         return [

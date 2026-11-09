@@ -8,20 +8,7 @@ use App\Services\HistorialTrabajadorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/**
- * Qué trabajadores puede elegir/buscar un jefe en los reportes.
- *
- * Organigrama de prueba:
- *
- *   Gerencia (jefe: $gerente)
- *   ├── trabajador directo de la Gerencia      -> jefe inmediato = $gerente
- *   └── Oficina (jefe: $jefeOficina)
- *       └── trabajador de la Oficina           -> jefe inmediato = $jefeOficina,
- *                                                  jefe de área   = $gerente
- *
- * jefe_inmediato_id / jefe_area_id los calcula UserObserver al guardar
- * unidad_organica_id.
- */
+
 class AlcanceReportesTest extends TestCase
 {
     use RefreshDatabase;

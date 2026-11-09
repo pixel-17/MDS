@@ -58,7 +58,6 @@
                         <p class="text-gray-500 text-xs mt-1">{{ $notificacion->created_at->diffForHumans() }}</p>
                     </a>
                 @else
-
                     <button
                         type="button"
                         wire:click="marcarComoLeida('{{ $notificacion->id }}')"

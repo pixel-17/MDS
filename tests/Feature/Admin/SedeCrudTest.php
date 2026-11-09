@@ -11,12 +11,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * CRUD de Sedes (Blade + Livewire). Ojo: los modelos que se pasan a los
- * componentes van con ->fresh() porque create() no trae los defaults de la
- * BD (radio_metros, activo) y las propiedades tipadas del formulario no
- * aceptan null.
- */
+
 class SedeCrudTest extends TestCase
 {
     use CreaEscenarioPapeletas;

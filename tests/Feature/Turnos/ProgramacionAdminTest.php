@@ -5,17 +5,14 @@ namespace Tests\Feature\Turnos;
 use App\Livewire\Turnos\CalendarioEquipoIndex;
 use App\Livewire\Turnos\ProgramacionAdmin;
 use App\Models\UnidadOrganica;
+use Carbon\Carbon;
 use Database\Seeders\ConfiguracionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Programación para Admin: se busca a la persona, se ve si es
- * trabajador o jefe y, si es jefe, el admin programa a su equipo desde
- * la misma grilla que usa el jefe (CalendarioEquipoIndex con $jefeId).
- */
+
 class ProgramacionAdminTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -27,6 +24,11 @@ class ProgramacionAdminTest extends TestCase
 
         $this->prepararBase();
         $this->seed(ConfiguracionSeeder::class);
+
+        
+        
+        
+        $this->travelTo(Carbon::parse('2026-10-15'));
     }
 
     public function test_solo_el_admin_puede_entrar_al_buscador(): void

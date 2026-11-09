@@ -1,5 +1,3 @@
-
-
 @props(['mensaje', 'accion'])
 
 <button

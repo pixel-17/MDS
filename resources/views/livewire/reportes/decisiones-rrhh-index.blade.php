@@ -12,7 +12,7 @@
             </div>
             <div>
                 <label for="decisiones-actor" class="block text-sm font-medium mb-1">Quién decidió</label>
-                <select id="decisiones-actor" wire:model.live="actorId" class="rounded-md border-gray-300 dark:bg-gray-800">
+                <select id="decisiones-actor" wire:model.live="actorId" class="rounded-md border-gray-300 dark:bg-gray-800 dark:[color-scheme:dark]">
                     <option value="">Todos</option>
                     @foreach ($actores as $actor)
                         <option value="{{ $actor->id }}">{{ trim($actor->name.' '.$actor->apellido) }}</option>
@@ -44,7 +44,7 @@
                                     <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $evento->actor?->nombre_completo }}</td>
                                     <td class="px-4 py-3 text-sm">
                                         <a href="{{ route('rrhh.papeletas.show', $evento->papeleta_id) }}" class="text-tinta-600 dark:text-tinta-300 underline">
-
+                                            #{{ $evento->papeleta_id }} · {{ $evento->papeleta?->trabajador?->nombre_completo }}
                                         </a>
                                     </td>
                                     <td class="px-4 py-3 text-sm text-gray-500 dark:text-tinta-100/60">

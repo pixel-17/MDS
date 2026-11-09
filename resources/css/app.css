@@ -27,7 +27,7 @@
     --surface-muted: #f2f3f1;
     --border-soft: #e2e5e2;
     --ink-900: #101c22;
-    --sidebar-bg: linear-gradient(180deg, #293f43 0%, #1b2b34 100%);
+    --sidebar-bg: linear-gradient(180deg, #2a2a2a 0%, #171717 100%);
     --sidebar-bg-active: rgba(255, 255, 255, 0.14);
     accent-color: #b8792f;
 }
@@ -189,6 +189,19 @@ body.app-bg {
 
 .dark {
     color-scheme: dark;
+}
+
+/* `color-scheme: dark` de arriba no basta para el listado que se abre al
+   hacer clic en un <select>: @tailwindcss/forms le pone `appearance: none`
+   a todo <select> (para poder pintar su propia flecha) y, en cuanto un
+   <select> tiene appearance personalizado, Chrome deja de respetar
+   color-scheme para ESE listado en particular y lo pinta siempre claro,
+   aunque el control ya cerrado sí se vea oscuro. Lo único que funciona
+   es colorear las <option> de forma explícita. */
+.dark select option,
+.dark select optgroup {
+    background-color: var(--surface);
+    color: #e4e4e7;
 }
 
 .dark .text-gray-800,
@@ -481,6 +494,13 @@ body.app-bg {
 .dark .input-glass {
     color: #e4e4e7;
     border-color: #34343b;
+}
+
+/* Mismo caso que .dark select option en la sección de arriba: un <select>
+   con la clase .input-glass (ej. el de Motivo al crear una papeleta) no
+   hereda color-scheme de forma confiable en todos los navegadores. */
+.dark select.input-glass {
+    color-scheme: dark;
 }
 
 .dark .input-glass::placeholder {

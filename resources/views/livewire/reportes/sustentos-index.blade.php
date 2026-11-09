@@ -10,7 +10,6 @@
             </p>
         </div>
 
-        {{-- ============================= FILTROS ============================= --}}
         <div class="glass-card p-4 print:hidden">
             <div class="flex flex-wrap gap-4 items-end">
                 <div class="max-w-xs">
@@ -25,7 +24,7 @@
 
                 <div class="max-w-xs">
                     <label for="sustentos-index-estado" class="block text-sm font-medium mb-1">Estado</label>
-                    <select id="sustentos-index-estado" wire:model.live="estado" class="w-full rounded-md border-gray-300 dark:bg-gray-800">
+                    <select id="sustentos-index-estado" wire:model.live="estado" class="w-full rounded-md border-gray-300 dark:bg-gray-800 dark:[color-scheme:dark]">
                         <option value="">Todos</option>
                         <option value="pendiente">Pendiente de subir</option>
                         <option value="presentado">Presentado (por revisar)</option>
@@ -50,7 +49,6 @@
             </div>
         </div>
 
-        {{-- ============================= TABLA ============================= --}}
         <div class="glass-card overflow-x-auto">
             @if ($sustentos->isEmpty())
                 <p class="p-4 text-sm text-gray-500">No hay sustentos con estos filtros.</p>

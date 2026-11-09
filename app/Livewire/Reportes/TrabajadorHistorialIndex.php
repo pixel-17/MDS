@@ -14,6 +14,8 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
 
 #[Layout('layouts.app')]
 #[Title('Historial por trabajador')]
@@ -23,6 +25,8 @@ class TrabajadorHistorialIndex extends Component
 
     public string $buscar = '';
 
+    
+    
     #[Url]
     public ?int $trabajadorId = null;
 
@@ -42,6 +46,8 @@ class TrabajadorHistorialIndex extends Component
         $this->trabajadorId = null;
     }
 
+    
+    /** @return BinaryFileResponse */
     public function exportar(HistorialTrabajadorService $service)
     {
         /** @var User $user */

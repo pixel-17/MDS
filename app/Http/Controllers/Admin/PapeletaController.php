@@ -7,6 +7,7 @@ use App\Models\Motivo;
 use App\Models\Papeleta;
 use Illuminate\Contracts\View\View;
 
+
 class PapeletaController extends Controller
 {
     public function show(Papeleta $papeleta): View

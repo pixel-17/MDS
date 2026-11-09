@@ -18,12 +18,15 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
+
 class HorasAcumuladasResumenSheet implements FromCollection, ShouldAutoSize, WithColumnWidths, WithEvents, WithHeadings, WithMapping, WithStyles, WithTitle
 {
     private int $contador = 0;
 
+    /** @param  Collection<int, array{trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, papeletas: int, minutos_totales: int, minutos_con_descuento: int, papeletas_con_descuento: int}>  $resumen */
     public function __construct(protected Collection $resumen) {}
 
+    /** @return Collection<int, array{trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, papeletas: int, minutos_totales: int, minutos_con_descuento: int, papeletas_con_descuento: int}> */
     public function collection(): Collection
     {
         return $this->resumen;
@@ -50,7 +53,7 @@ class HorasAcumuladasResumenSheet implements FromCollection, ShouldAutoSize, Wit
     }
 
     /**
-     * @param  array<string, mixed>  $fila
+     * @param  array{trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, papeletas: int, minutos_totales: int, minutos_con_descuento: int, papeletas_con_descuento: int}  $fila
      */
     public function map($fila): array
     {
@@ -89,6 +92,8 @@ class HorasAcumuladasResumenSheet implements FromCollection, ShouldAutoSize, Wit
         $filas = $this->resumen->count();
         $ultimaFila = $filas + 1;
 
+        
+        
         $sheet->getStyle('A1:I1')->applyFromArray([
             'font' => [
                 'bold' => true,
@@ -108,10 +113,12 @@ class HorasAcumuladasResumenSheet implements FromCollection, ShouldAutoSize, Wit
         $sheet->getRowDimension(1)->setRowHeight(22);
 
         if ($filas > 0) {
-
+            
             $sheet->getStyle("A2:A{$ultimaFila}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("F2:I{$ultimaFila}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
+            
+            
             $sheet->getStyle("A1:I{$ultimaFila}")->applyFromArray([
                 'borders' => [
                     'allBorders' => [
@@ -131,11 +138,14 @@ class HorasAcumuladasResumenSheet implements FromCollection, ShouldAutoSize, Wit
             AfterSheet::class => function (AfterSheet $event): void {
                 $sheet = $event->sheet->getDelegate();
 
+                
                 $sheet->freezePane('A2');
 
-                // tabla en pantalla.
+                
+                
+                
                 foreach ($this->resumen->values() as $indice => $fila) {
-                    if (($fila['minutos_con_descuento'] ?? 0) > 0) {
+                    if ($fila['minutos_con_descuento'] > 0) {
                         $filaExcel = $indice + 2;
                         $sheet->getStyle("H{$filaExcel}")->getFont()
                             ->setBold(true)

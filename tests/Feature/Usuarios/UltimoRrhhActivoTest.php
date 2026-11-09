@@ -11,11 +11,7 @@ use Spatie\Permission\Models\Role;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Sin ningún RRHH activo, RrhhHorarioService da a RRHH por "fuera de
- * horario" y toda papeleta aprobada por el jefe se autoriza sola: no se
- * permite desactivar ni quitar el rol al último RRHH activo.
- */
+
 class UltimoRrhhActivoTest extends TestCase
 {
     use CreaEscenarioPapeletas;

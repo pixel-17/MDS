@@ -9,9 +9,25 @@ use App\Models\UnidadOrganica;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
+
 class MoverTrabajadorAction
 {
-
+    /**
+     * Qué cambiaría al mover a $trabajador a $destino, sin guardar
+     * nada. Lanza UsuarioException si el movimiento no está permitido,
+     * por lo que sirve también como validación previa a pedir
+     * confirmación.
+     *
+     * @return array{
+     *     trabajador: User,
+     *     origen: UnidadOrganica,
+     *     destino: UnidadOrganica,
+     *     jefe_inmediato: array{antes: ?User, despues: ?User, cambia: bool},
+     *     jefe_area: array{antes: ?User, despues: ?User, cambia: bool},
+     *     sede: array{actual: ?Sede, propuesta: ?Sede, propone_cambio: bool},
+     *     avisos: list<string>
+     * }
+     */
     public function previsualizar(User $actor, User $trabajador, UnidadOrganica $destino): array
     {
         $origen = $this->origenDe($trabajador);
@@ -53,6 +69,7 @@ class MoverTrabajadorAction
         ];
     }
 
+    
     private function sedePropuestaId(User $trabajador, UnidadOrganica $destino): ?int
     {
         $sedeDelJefe = $destino->jefe?->sede_id;
@@ -64,6 +81,18 @@ class MoverTrabajadorAction
         return (int) $sedeDelJefe;
     }
 
+    /**
+     * Ejecuta el movimiento. $confirmado es obligatorio y sin default:
+     * no se puede mover a nadie sin haber pasado por la confirmación.
+     *
+     * $origenEsperadoId es la unidad en la que la pantalla vio a la
+     * persona; si entretanto cambió (otro admin la movió), se aborta.
+     *
+     * $cambiarSede: aceptar la sede propuesta (la del jefe del destino).
+     * Se ignora si no hay propuesta.
+     *
+     * @throws UsuarioException
+     */
     public function ejecutar(
         User $actor,
         int $trabajadorId,
@@ -94,6 +123,24 @@ class MoverTrabajadorAction
         });
     }
 
+    /**
+     * Deshace un movimiento: devuelve a la persona a la unidad anterior
+     * y registra una fila nueva (revierte_id) sin borrar la original.
+     *
+     * Solo se puede si el movimiento no se deshizo ya, no es una
+     * reversión, la persona sigue en la unidad a la que se movió, no
+     * tiene movimientos más recientes, y quien deshace pasa las mismas
+     * reglas de permisos y régimen que un movimiento normal (la unidad
+     * anterior pudo cambiar de jefe desde entonces).
+     *
+     * Los jefes inmediato y de área se recalculan con el organigrama
+     * VIGENTE, no se restauran los que tenía: si la jefatura cambió
+     * mientras tanto, la persona queda con los jefes actuales de su
+     * unidad de antes. Sí se restaura la sede anterior si el
+     * movimiento la había cambiado.
+     *
+     * @throws UsuarioException
+     */
     public function deshacer(User $actor, MovimientoOrganigrama $movimiento): MovimientoOrganigrama
     {
         return DB::transaction(function () use ($actor, $movimiento) {
@@ -104,6 +151,10 @@ class MoverTrabajadorAction
                 : null;
 
             [, $destino] = $this->validarDeshacer($actor, $original, $trabajador);
+
+            if ($trabajador === null) {
+                throw new UsuarioException('La persona ya no existe.');
+            }
 
             $reversion = $this->aplicar($actor, $trabajador, $destino, [
                 'sede_id' => $original->cambioSede() ? $original->sede_anterior_id : null,
@@ -119,6 +170,7 @@ class MoverTrabajadorAction
         });
     }
 
+    
     public function puedeDeshacer(User $actor, MovimientoOrganigrama $movimiento): bool
     {
         try {
@@ -130,6 +182,9 @@ class MoverTrabajadorAction
         }
     }
 
+    /**
+     * @return array{0: UnidadOrganica, 1: UnidadOrganica} [unidad actual, unidad a la que vuelve]
+     */
     private function validarDeshacer(User $actor, MovimientoOrganigrama $movimiento, ?User $trabajador): array
     {
         if ($movimiento->deshecho_at !== null) {
@@ -165,6 +220,12 @@ class MoverTrabajadorAction
         return [$actual, $anterior];
     }
 
+    /**
+     * Nadie entra a una unidad sin jefe activo: sus papeletas no tendrían a
+     * quién llegar. Vale también para el admin.
+     *
+     * @throws UsuarioException
+     */
     public function exigirJefeInmediato(UnidadOrganica $destino): void
     {
         if (! $destino->jefe?->activo) {
@@ -181,6 +242,12 @@ class MoverTrabajadorAction
             ?? throw new UsuarioException('Esa persona no pertenece a ninguna unidad orgánica.');
     }
 
+    /**
+     * Reglas de negocio y de permisos. Única puerta: previsualizar(),
+     * ejecutar() y deshacer() pasan por aquí.
+     *
+     * @throws UsuarioException
+     */
     private function validar(User $actor, User $trabajador, UnidadOrganica $origen, UnidadOrganica $destino): void
     {
         $esAdmin = $actor->hasRole('admin');
@@ -238,8 +305,8 @@ class MoverTrabajadorAction
             'jefe_area' => $trabajador->jefe_area_id,
         ];
 
-        // UserObserver::saving() recalcula jefe_inmediato_id / jefe_area_id;
-
+        
+        
         $trabajador->unidad_organica_id = $destino->id;
         if (! empty($opciones['sede_id'])) {
             $trabajador->sede_id = $opciones['sede_id'];

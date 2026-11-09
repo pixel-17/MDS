@@ -10,8 +10,9 @@ use App\Models\Papeleta;
 use App\Models\User;
 use App\States\Papeleta\Cerrada;
 use App\States\Papeleta\Finalizada;
-use Carbon\Carbon;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+
 
 class CorregirPapeletaRrhhAction
 {
@@ -34,7 +35,7 @@ class CorregirPapeletaRrhhAction
         }
 
         return DB::transaction(function () use ($papeleta, $quienCorrige, $nuevaHoraRetorno, $nuevoMotivoId, $justificacion) {
-
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             $this->exigirDecisorAjeno($actual, $quienCorrige);

@@ -15,13 +15,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * El trabajador cancela hasta antes de AUTORIZADA_Y_CORRIENDO. Mientras la
- * papeleta espera a RRHH, solo si RRHH está en horario.
- *
- * Horario ordinario sembrado: 07:45-16:15, lunes a viernes. Lunes de
- * referencia: 2026-09-21.
- */
+
 class CancelarPapeletaTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -36,7 +30,7 @@ class CancelarPapeletaTest extends TestCase
         $this->prepararBase();
         $this->seed(ConfiguracionSeeder::class);
 
-        // Sin personal RRHH designado, RRHH nunca está "en horario".
+        
         $this->usuarioDePrueba(['regimen' => '276'], ['rrhh']);
         $this->trabajador = $this->usuarioDePrueba();
     }
@@ -84,7 +78,7 @@ class CancelarPapeletaTest extends TestCase
 
     public function test_puede_cancelar_con_el_jefe_aunque_rrhh_no_trabaje(): void
     {
-        $this->travelTo(Carbon::parse('2026-09-26 11:00')); // sábado
+        $this->travelTo(Carbon::parse('2026-09-26 11:00')); 
 
         $this->assertTrue($this->cancelar(PendienteJefe::class)->estado->equals(Cancelada::class));
     }

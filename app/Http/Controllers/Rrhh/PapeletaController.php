@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Rrhh;
 
+use App\Http\Controllers\Concerns\ResuelveUsuarioAutenticado;
 use App\Http\Controllers\Controller;
 use App\Models\Motivo;
 use App\Models\Papeleta;
@@ -11,15 +12,20 @@ use App\States\Papeleta\Rechazada;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+
 class PapeletaController extends Controller
 {
+    use ResuelveUsuarioAutenticado;
+
     public function show(Request $request, Papeleta $papeleta, ReporteHorasAcumuladasService $reporte, BloqueoRevisionService $bloqueo): View
     {
         $this->authorize('view', $papeleta);
 
         $papeleta->load(['motivo', 'sede', 'trabajador', 'retorno', 'sustentos', 'historial.actor', 'jefeInmediato', 'jefeArea', 'enRevisionPor']);
 
-        $tomado = $bloqueo->marcar($papeleta, $request->user());
+        
+        
+        $tomado = $bloqueo->marcar($papeleta, $this->usuarioAutenticado());
         $enRevisionPor = $tomado ? null : $bloqueo->nombreRevisor($papeleta);
 
         $historialMes = $this->historialDelMes($request, $papeleta, $reporte);
@@ -29,6 +35,14 @@ class PapeletaController extends Controller
         return view('rrhh.papeletas.show', compact('papeleta', 'historialMes', 'enRevisionPor', 'motivosActivos'));
     }
 
+    /**
+     * Resumen del mes de la papeleta para el trabajador, para que RRHH
+     * decida sin salir a otro reporte. Excluye la papeleta que se está
+     * mirando. Los minutos salen del mismo servicio que el reporte de
+     * horas acumuladas, así que los totales cuadran con él.
+     *
+     * @return array{mes: string, papeletas: int, rechazadas: int, observaciones: int, minutos: int, minutos_con_descuento: int}
+     */
     private function historialDelMes(Request $request, Papeleta $papeleta, ReporteHorasAcumuladasService $reporte): array
     {
         $mes = $papeleta->dia_operativo->format('Y-m');
@@ -39,7 +53,7 @@ class PapeletaController extends Controller
             ->whereKeyNot($papeleta->getKey())
             ->whereBetween('dia_operativo', [$inicio->toDateString(), $fin->toDateString()]);
 
-        $detalle = $reporte->detalle($request->user(), $mes, ['trabajador_id' => $papeleta->trabajador_id])
+        $detalle = $reporte->detalle($this->usuarioAutenticado(), $mes, ['trabajador_id' => $papeleta->trabajador_id])
             ->reject(fn (array $fila) => $fila['papeleta_id'] === $papeleta->getKey());
 
         return [

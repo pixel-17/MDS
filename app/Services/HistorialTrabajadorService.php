@@ -8,9 +8,16 @@ use App\Support\Minutos;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
+
 class HistorialTrabajadorService
 {
-
+    /**
+     * Trabajadores que $usuario puede buscar: admin/RRHH a cualquiera,
+     * jefe solo a quienes ya ve en su propio equipo (ver
+     * User::equipoDe()).
+     *
+     * @return Collection<int, User>
+     */
     public function trabajadoresVisibles(User $usuario, string $buscar = ''): Collection
     {
         if ($usuario->hasRole('admin') || $usuario->hasRole('rrhh')) {
@@ -40,6 +47,7 @@ class HistorialTrabajadorService
             ->values();
     }
 
+    
     public function puedeVer(User $usuario, User $trabajador): bool
     {
         if ($usuario->hasRole('admin') || $usuario->hasRole('rrhh')) {
@@ -49,9 +57,15 @@ class HistorialTrabajadorService
         return User::equipoDe($usuario)->whereKey($trabajador->id)->exists();
     }
 
+    /**
+     * Todo el historial de papeletas del trabajador (cualquier estado,
+     * cualquier fecha), más reciente primero.
+     *
+     * @return Collection<int, array{id: int, dia: \Illuminate\Support\Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<\App\States\Papeleta\PapeletaState>, abandono: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}>
+     */
     public function historial(User $trabajador): Collection
     {
-        return Papeleta::where('trabajador_id', $trabajador->id)
+        $resultado = Papeleta::where('trabajador_id', $trabajador->id)
             ->with(['motivo', 'sede', 'retorno', 'sustentos'])
             ->orderByDesc('dia_operativo')
             ->get()
@@ -59,21 +73,34 @@ class HistorialTrabajadorService
                 'id' => $p->id,
                 'dia' => $p->dia_operativo,
                 'motivo' => $p->motivo->nombre,
-                'sede' => $p->sede?->nombre,
+                'sede' => $p->sede->nombre,
                 'estado' => class_basename($p->estado),
-
+                
+                
+                
                 'estado_fqcn' => get_class($p->estado),
                 'abandono' => $p->esAbandono(),
                 'salida' => $p->hora_salida_real,
                 'retorno' => $p->retorno?->hora_servidor,
-                'minutos' => ($p->hora_salida_real && $p->retorno)
+                'minutos' => ($p->hora_salida_real && $p->retorno?->hora_servidor)
                     ? Minutos::entre($p->hora_salida_real, $p->retorno->hora_servidor)
                     : null,
                 'suma_descuento' => (bool) $p->motivo->suma_descuento,
                 'sustento_estado' => $p->sustentos->last()?->estado,
             ]);
+
+        /** @var Collection<int, array{id: int, dia: \Illuminate\Support\Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<\App\States\Papeleta\PapeletaState>, abandono: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}> $resultado */
+        return $resultado;
     }
 
+    /**
+     * Totales de siempre a partir del historial ya cargado: papeletas
+     * por condición, horas acumuladas (solo las ya cerradas con
+     * retorno) y horas que sí cuentan para descuento.
+     *
+     * @param  Collection<int, array{id: int, dia: \Illuminate\Support\Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<\App\States\Papeleta\PapeletaState>, abandono: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}>  $historial
+     * @return array<string, int>
+     */
     public function resumen(Collection $historial): array
     {
         $conHoras = $historial->filter(fn (array $f) => $f['minutos'] !== null);

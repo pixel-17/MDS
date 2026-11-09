@@ -11,10 +11,7 @@ use Spatie\Permission\Models\Role;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * El admin administra cuentas. No tiene trabajadores, jefes inmediatos,
- * bandeja de jefe ni papeletas propias.
- */
+
 class AdminSinRolOperativoTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -70,26 +67,27 @@ class AdminSinRolOperativoTest extends TestCase
         $this->assertDatabaseMissing('users', ['dni' => '40555666']);
     }
 
-    public function test_nuevo_usuario_no_ofrece_ni_acepta_el_rol_admin(): void
+    
+    public function test_nuevo_usuario_ofrece_y_acepta_el_rol_admin(): void
     {
         $admin = $this->usuarioDePrueba([], ['admin']);
         $adminId = (int) Role::where('name', 'admin')->value('id');
 
         $componente = Livewire::actingAs($admin)->test(UsuarioAdminForm::class);
 
-        $this->assertFalse($componente->viewData('roles')->contains('name', 'admin'));
+        $this->assertTrue($componente->viewData('roles')->contains('name', 'admin'));
 
         $componente
-            ->set('name', 'Colado')
+            ->set('name', 'Nueva')
             ->set('apellido', 'Admin')
             ->set('dni', '40777888')
-            ->set('email', 'colado.admin@example.com')
-            ->set('regimen', '276')
+            ->set('email', 'nueva.admin@example.com')
+            ->set('regimen', '')
             ->set('rolesSeleccionados', [$adminId])
             ->call('guardar')
-            ->assertHasErrors(['rolesSeleccionados']);
+            ->assertHasNoErrors();
 
-        $this->assertDatabaseMissing('users', ['dni' => '40777888']);
+        $this->assertDatabaseHas('users', ['dni' => '40777888']);
     }
 
     public function test_el_admin_no_tiene_la_via_de_alta_de_jefes_pero_si_la_de_cuentas(): void
@@ -98,15 +96,15 @@ class AdminSinRolOperativoTest extends TestCase
 
         $this->assertFalse($admin->can('puedeCrearAlgo', User::class));
 
-        // El 403 de abajo va al final a propósito: ocurre dentro del mount()
-        // del Livewire de usuarios.crear y, al abortar ahí, Livewire no llega
-        // a restaurar su binding temporal de redirect() en el contenedor.
-        // Si una petición a una ruta normal (como usuarios.index, que sí usa
-        // redirect()->route() en un controller plano) corre después en el
-        // mismo proceso de PHPUnit, hereda ese binding corrompido y rompe el
-        // tipo de retorno declarado en UsuarioController::index(). No es un
-        // bug de la app (en producción cada request es un proceso nuevo),
-        // así que esta aserción queda última para no contaminar las otras.
+        
+        
+        
+        
+        
+        
+        
+        
+        
         $this->actingAs($admin)->get(route('usuarios.index'))->assertRedirect(route('usuarios-admin.index'));
         $this->actingAs($admin)->get(route('usuarios-admin.crear'))->assertOk();
         $this->actingAs($admin)->get(route('usuarios.crear'))->assertForbidden();

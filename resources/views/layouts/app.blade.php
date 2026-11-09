@@ -11,7 +11,6 @@
     @endphp
     <title>{{ $tituloPagina ? $tituloPagina.' — ' : '' }}{{ config('app.name', 'MSSC') }}</title>
 
-    {{-- PWA --}}
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="/icons/icon-192.png">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -19,13 +18,21 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Papeletas">
 
+
     @include('layouts.partials.tema')
 
     <script>
         window.VAPID_PUBLIC_KEY = "{{ config('webpush.vapid.public_key') }}";
 
+        // Volumen del sonido de notificación in-app (0-100), elegido por
+        // el usuario en Ajustes > Preferencias del dispositivo. Única
+        // fuente de verdad para resources/js/notification-sound.js —
+        // ver users.volumen_notificacion / DeviceSettingsForm.
         window.MSSC_VOLUMEN_NOTIFICACION = {{ auth()->check() ? (int) auth()->user()->volumen_notificacion : 80 }};
 
+        // Se registra siempre (no solo al activar notificaciones): es lo que
+        // hace que el navegador ofrezca "Instalar app". sw.js sigue manejando
+        // el push por separado una vez que el usuario lo active.
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
         }
@@ -37,7 +44,6 @@
     <a href="#contenido" class="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-tinta-900 focus:shadow-glass-lg">Saltar al contenido</a>
 
     <x-banner />
-
     @if ($usuario && $conSidebar)
         <div class="app-shell" x-data="{ sidebarAbierto: false }" @keydown.escape.window="sidebarAbierto = false">
             <div

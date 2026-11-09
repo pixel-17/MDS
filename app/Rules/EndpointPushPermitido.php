@@ -5,6 +5,7 @@ namespace App\Rules;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
+
 class EndpointPushPermitido implements ValidationRule
 {
     private const HOSTS = [
@@ -14,6 +15,7 @@ class EndpointPushPermitido implements ValidationRule
         'web.push.apple.com',
     ];
 
+    
     private const SUFIJOS = [
         '.push.services.mozilla.com',
         '.push.apple.com',

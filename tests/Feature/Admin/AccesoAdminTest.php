@@ -6,12 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Las pantallas del catálogo de administración (Sedes, Motivos, Turnos,
- * Unidades orgánicas, Configuraciones, Usuarios) cuelgan todas
- * del middleware `role:admin`: invitado -> login, cualquier otro rol -> 403,
- * admin -> 200. Se recorren de una sola vez porque comparten la misma regla.
- */
+
 class AccesoAdminTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -66,17 +61,19 @@ class AccesoAdminTest extends TestCase
         }
     }
 
-    public function test_el_indice_de_catalogos_enlaza_a_los_seis_catalogos(): void
+    public function test_el_indice_de_catalogos_enlaza_a_los_catalogos(): void
     {
         $admin = $this->usuarioDePrueba([], ['admin']);
 
+        
+        
         $this->actingAs($admin)->get(route('catalogos.index'))
             ->assertOk()
             ->assertSee('Sedes')
             ->assertSee('Motivos')
             ->assertSee('Turnos')
-            ->assertSee('Unidades orgánicas')
             ->assertSee('Configuraciones')
-            ->assertSee('Usuarios');
+            ->assertSee('Usuarios')
+            ->assertDontSee('Unidades orgánicas');
     }
 }

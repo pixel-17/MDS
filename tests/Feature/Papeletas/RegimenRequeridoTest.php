@@ -12,11 +12,7 @@ use Illuminate\Support\Carbon;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Un usuario sin régimen 276/728 (users.regimen es nullable: p. ej. un
- * admin) no entra al flujo de papeletas: se rechaza con un mensaje claro
- * en vez de tratarlo como 276 por descarte y fallar en el INSERT.
- */
+
 class RegimenRequeridoTest extends TestCase
 {
     use CreaEscenarioPapeletas;

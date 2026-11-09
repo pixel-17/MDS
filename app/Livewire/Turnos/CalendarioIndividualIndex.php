@@ -11,6 +11,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+
 #[Layout('layouts.app')]
 #[Title('Calendario de turnos')]
 class CalendarioIndividualIndex extends Component
@@ -24,6 +25,7 @@ class CalendarioIndividualIndex extends Component
 
     public function mount(?User $trabajador = null): void
     {
+        /** @var User $actor */
         $actor = auth()->user();
 
         if ($trabajador === null) {
@@ -40,6 +42,16 @@ class CalendarioIndividualIndex extends Component
         $this->mes = now()->month;
     }
 
+    /**
+     * Tiempo real: cuando alguien guarda el horario de este trabajador,
+     * HorarioActualizado llega por Reverb a su canal privado y Livewire
+     * vuelve a renderizar el calendario. Solo se suscribe el propio
+     * trabajador: el canal App.Models.User.{id} solo lo autoriza a él
+     * (routes/channels.php). Admin viendo el calendario de otro se
+     * apoya en el refresco periódico de la vista (wire:poll).
+     *
+     * @return array<string, string>
+     */
     public function getListeners(): array
     {
         if (auth()->id() !== $this->trabajador->id) {
@@ -51,20 +63,26 @@ class CalendarioIndividualIndex extends Component
         ];
     }
 
+    
     public function refrescar(): void {}
 
     public function mesAnterior(): void
     {
-        $fecha = Carbon::create($this->anio, $this->mes, 1)->subMonthNoOverflow();
+        $fecha = $this->primerDiaDelMes()->subMonthNoOverflow();
         $this->anio = $fecha->year;
         $this->mes = $fecha->month;
     }
 
     public function mesSiguiente(): void
     {
-        $fecha = Carbon::create($this->anio, $this->mes, 1)->addMonthNoOverflow();
+        $fecha = $this->primerDiaDelMes()->addMonthNoOverflow();
         $this->anio = $fecha->year;
         $this->mes = $fecha->month;
+    }
+
+    private function primerDiaDelMes(): Carbon
+    {
+        return Carbon::create($this->anio, $this->mes, 1) ?? now();
     }
 
     public function irAHoy(): void
@@ -75,7 +93,7 @@ class CalendarioIndividualIndex extends Component
 
     public function render(): View
     {
-        $inicioMes = Carbon::create($this->anio, $this->mes, 1)->startOfMonth();
+        $inicioMes = $this->primerDiaDelMes()->startOfMonth();
         $finMes = $inicioMes->copy()->endOfMonth();
 
         $turnosPorDia = Turno::where('user_id', $this->trabajador->id)
@@ -84,7 +102,10 @@ class CalendarioIndividualIndex extends Component
             ->get()
             ->keyBy(fn (Turno $turno) => $turno->fecha->day);
 
-        $primerDiaSemana = $inicioMes->dayOfWeekIso; // 1 = lunes
+        
+        
+        
+        $primerDiaSemana = $inicioMes->dayOfWeekIso; 
         $celdas = array_fill(0, $primerDiaSemana - 1, null);
 
         for ($dia = 1; $dia <= $finMes->day; $dia++) {
@@ -97,6 +118,12 @@ class CalendarioIndividualIndex extends Component
 
         $semanas = array_chunk($celdas, 7);
 
+        
+        
+        
+        
+        
+        
         $detalleDias = $turnosPorDia->mapWithKeys(fn (Turno $turno, int $dia) => [
             $dia => [
                 'titulo' => $turno->nombreTurno(),

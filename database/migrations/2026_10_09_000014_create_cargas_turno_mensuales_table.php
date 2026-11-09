@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-
+    
     public function up(): void
     {
         Schema::create('cargas_turno_mensuales', function (Blueprint $table) {

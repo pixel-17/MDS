@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-
+    
     public function up(): void
     {
         Schema::create('sedes', function (Blueprint $table) {
@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('direccion')->nullable();
             $table->decimal('latitud', 10, 7);
             $table->decimal('longitud', 10, 7);
-            $table->unsignedInteger('radio_metros')->default(150);
+            $table->unsignedInteger('radio_metros')->default(150); 
             $table->boolean('activo')->default(true);
             $table->timestamps();
         });

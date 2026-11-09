@@ -14,10 +14,7 @@ use Illuminate\Support\Facades\Notification;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Alerta cuando la cola de revisión post-hoc se acumula (cantidad) o
- * envejece (horas), como máximo una vez por día.
- */
+
 class AlertaPosthocTest extends TestCase
 {
     use CreaEscenarioPapeletas;

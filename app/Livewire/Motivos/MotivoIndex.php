@@ -10,6 +10,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+
 #[Layout('layouts.app')]
 #[Title('Motivos')]
 class MotivoIndex extends Component
@@ -26,7 +27,7 @@ class MotivoIndex extends Component
             $motivo->delete();
             session()->now('mensaje', 'Motivo eliminado.');
         } catch (QueryException $e) {
-
+            
             if (! str_starts_with((string) $e->getCode(), '23')) {
                 throw $e;
             }

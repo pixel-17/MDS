@@ -7,12 +7,14 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
+
 class NotificationBell extends Component
 {
     use EscuchaNotificacionesEnVivo;
 
     public int $porMostrar = 8;
 
+    
     protected function escuchaCambiosDeEstado(): bool
     {
         return false;
@@ -20,18 +22,25 @@ class NotificationBell extends Component
 
     public function marcarComoLeida(string $id): void
     {
-        $notificacion = Auth::user()->notifications()->whereKey($id)->first();
+        /** @var \App\Models\User $usuario */
+        $usuario = Auth::user();
+
+        $notificacion = $usuario->notifications()->whereKey($id)->first();
 
         $notificacion?->markAsRead();
     }
 
     public function marcarTodasComoLeidas(): void
     {
-        Auth::user()->unreadNotifications->markAsRead();
+        /** @var \App\Models\User $usuario */
+        $usuario = Auth::user();
+
+        $usuario->unreadNotifications->markAsRead();
     }
 
     public function render(): View
     {
+        /** @var \App\Models\User $usuario */
         $usuario = Auth::user();
 
         return view('livewire.notification-bell', [

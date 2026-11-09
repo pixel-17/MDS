@@ -19,7 +19,6 @@
                 <x-label for="photo" value="{{ __('Photo') }}" />
 
                 <div class="mt-2 flex flex-wrap items-center gap-4">
-
                     <img x-show="! photoPreview" src="{{ $this->user->profile_photo_url }}" alt="{{ $this->user->name }}"
                          width="80" height="80" style="width: 80px; height: 80px; max-width: none;"
                          class="size-20 rounded-full object-cover ring-4 ring-tinta-50 dark:ring-white/10">

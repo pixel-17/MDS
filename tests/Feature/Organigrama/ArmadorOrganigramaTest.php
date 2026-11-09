@@ -11,10 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Lado de lectura del organigrama (ArmadorOrganigrama) y reglas compartidas
- * (ReglasOrganigrama).
- */
+
 class ArmadorOrganigramaTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -41,9 +38,9 @@ class ArmadorOrganigramaTest extends TestCase
 
     private function consultasAlArmar(User $admin): int
     {
-        // Spatie carga los roles del usuario una sola vez y los deja en el
-        // modelo: sin precargarlos, la PRIMERA medición cuenta una consulta
-        // que la segunda ya no hace y parece un N+1 que no es.
+        
+        
+        
         $admin->loadMissing('roles');
 
         DB::flushQueryLog();

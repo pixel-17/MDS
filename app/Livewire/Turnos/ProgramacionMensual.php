@@ -16,6 +16,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+
 #[Layout('layouts.app')]
 #[Title('Programar turnos')]
 class ProgramacionMensual extends Component
@@ -27,6 +28,7 @@ class ProgramacionMensual extends Component
 
     public int $mes;
 
+    
     #[Locked]
     public int $version = 0;
 
@@ -37,6 +39,13 @@ class ProgramacionMensual extends Component
     #[Locked]
     public ?string $mensaje = null;
 
+    /**
+     * Meses generados con un patrón que esperan confirmación por tener
+     * advertencias ('Y-m' => dias). Locked: el navegador no puede
+     * cambiarlo, solo se llena desde generarMeses().
+     *
+     * @var array<string, array<string, string>>
+     */
     #[Locked]
     public array $planPendiente = [];
 
@@ -51,12 +60,17 @@ class ProgramacionMensual extends Component
 
     public function mesAnterior(): void
     {
-        $this->irA(Carbon::create($this->anio, $this->mes, 1)->subMonthNoOverflow());
+        $this->irA($this->primerDiaDelMes()->subMonthNoOverflow());
     }
 
     public function mesSiguiente(): void
     {
-        $this->irA(Carbon::create($this->anio, $this->mes, 1)->addMonthNoOverflow());
+        $this->irA($this->primerDiaDelMes()->addMonthNoOverflow());
+    }
+
+    private function primerDiaDelMes(): Carbon
+    {
+        return Carbon::create($this->anio, $this->mes, 1) ?? now();
     }
 
     public function irAHoy(): void
@@ -64,10 +78,17 @@ class ProgramacionMensual extends Component
         $this->irA(now());
     }
 
+    /**
+     * Primer paso: si hay advertencias las muestra y espera
+     * confirmación (guardarIgualmente); si no, guarda directo.
+     *
+     * @param  array<string, string>  $dias
+     */
     public function guardar(ProgramacionTurnoService $servicio, array $dias): void
     {
         $this->autorizar($this->trabajador);
 
+        
         $servicio->validar($this->trabajador, $this->anio, $this->mes, $dias);
 
         $this->advertencias = $servicio->advertencias($dias);
@@ -88,6 +109,16 @@ class ProgramacionMensual extends Component
         $this->persistir($servicio, $dias);
     }
 
+    /**
+     * Repite un patrón durante varios meses (a partir de $desde, dentro
+     * del mes que se está viendo) y lo guarda. $dias es la grilla actual:
+     * lo pintado antes de $desde en este mes se conserva.
+     *
+     * Con advertencias no guarda: las muestra y espera confirmación
+     * (guardarPlanIgualmente), igual que guardar().
+     *
+     * @param  array<string, string>  $dias
+     */
     public function generarMeses(ProgramacionTurnoService $servicio, string $patron, string $desde, int $meses, bool $continuar, array $dias): void
     {
         $this->autorizar($this->trabajador);
@@ -105,6 +136,7 @@ class ProgramacionMensual extends Component
             throw ValidationException::withMessages(['dias' => 'Elige un día "desde" dentro del mes que estás viendo.']);
         }
 
+        
         $servicio->validar($this->trabajador, $this->anio, $this->mes, $dias);
 
         $plan = $servicio->planPatron($this->trabajador, $pasos, $desde, $meses, $continuar, $dias);
@@ -139,10 +171,13 @@ class ProgramacionMensual extends Component
      */
     private function persistir(ProgramacionTurnoService $servicio, array $dias): void
     {
-        $servicio->guardarMes($this->trabajador, $this->anio, $this->mes, $dias, auth()->user());
+        /** @var User $actor */
+        $actor = auth()->user();
+
+        $servicio->guardarMes($this->trabajador, $this->anio, $this->mes, $dias, $actor);
 
         $this->advertencias = [];
-        $this->mensaje = 'Programación de '.Carbon::create($this->anio, $this->mes, 1)->translatedFormat('F Y').' guardada.';
+        $this->mensaje = 'Programación de '.$this->primerDiaDelMes()->translatedFormat('F Y').' guardada.';
         $this->version++;
     }
 
@@ -151,11 +186,14 @@ class ProgramacionMensual extends Component
      */
     private function persistirPlan(ProgramacionTurnoService $servicio, array $plan): void
     {
-        $servicio->guardarPlan($this->trabajador, $plan, auth()->user());
+        /** @var User $actor */
+        $actor = auth()->user();
+
+        $servicio->guardarPlan($this->trabajador, $plan, $actor);
 
         $claves = array_keys($plan);
-        $primero = Carbon::createFromFormat('Y-m-d', $claves[0].'-01');
-        $ultimo = Carbon::createFromFormat('Y-m-d', end($claves).'-01');
+        $primero = Carbon::createFromFormat('Y-m-d', $claves[0].'-01') ?: now();
+        $ultimo = Carbon::createFromFormat('Y-m-d', end($claves).'-01') ?: now();
 
         $this->advertencias = [];
         $this->planPendiente = [];
@@ -177,17 +215,19 @@ class ProgramacionMensual extends Component
 
     private function autorizar(User $trabajador): void
     {
-        abort_unless(auth()->user()->puedeGestionarTurnoDe($trabajador), 403);
+        abort_unless((bool) auth()->user()?->puedeGestionarTurnoDe($trabajador), 403);
         abort_unless($trabajador->regimen === '728', 403, 'La programación día por día solo aplica al régimen 728.');
     }
 
     public function render(): View
     {
-        $inicioMes = Carbon::create($this->anio, $this->mes, 1)->startOfMonth();
+        $inicioMes = $this->primerDiaDelMes()->startOfMonth();
         $finMes = $inicioMes->copy()->endOfMonth();
 
         $validos = [...ConfiguracionTurno::TURNOS_728, ProgramacionTurnoService::DESCANSO];
 
+        
+        
         $dias = Turno::where('user_id', $this->trabajador->id)
             ->whereBetween('fecha', [$inicioMes->toDateString(), $finMes->toDateString()])
             ->get()
@@ -195,6 +235,7 @@ class ProgramacionMensual extends Component
             ->filter(fn (string $codigo) => in_array($codigo, $validos, true))
             ->all();
 
+        
         $celdas = array_fill(0, $inicioMes->dayOfWeekIso - 1, null);
         for ($dia = 1; $dia <= $finMes->day; $dia++) {
             $celdas[] = $inicioMes->copy()->day($dia)->toDateString();
@@ -203,6 +244,7 @@ class ProgramacionMensual extends Component
             $celdas[] = null;
         }
 
+        
         $previosMes = Turno::where('user_id', $this->trabajador->id)
             ->whereBetween('fecha', [
                 $inicioMes->copy()->subDays(14)->toDateString(),

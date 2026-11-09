@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-
+    
     public function up(): void
     {
         Schema::create('retornos', function (Blueprint $table) {
@@ -16,12 +16,18 @@ return new class extends Migration
             $table->string('foto_path')->nullable();
             $table->decimal('latitud', 10, 7)->nullable();
             $table->decimal('longitud', 10, 7)->nullable();
-            $table->boolean('dentro_de_radio')->nullable();
+            $table->boolean('dentro_de_radio')->nullable(); 
 
             $table->timestamp('hora_servidor')->nullable();
 
             $table->boolean('marcado_manual')->default(false);
 
+            
+            
+            
+            
+            
+            
             $table->boolean('generado_por_abandono')->default(false);
 
             $table->foreignId('marcado_manual_por_id')->nullable()->constrained('users')->nullOnDelete();

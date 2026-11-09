@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Livewire\Organigrama\Concerns;
 
+
 trait MuestraFicha
 {
     public ?int $personaId = null;
 
+    
     public ?int $destinoMover = null;
 
     public function verPersona(int $id): void
@@ -24,6 +26,7 @@ trait MuestraFicha
         $this->resetErrorBag('destinoMover');
     }
 
+    
     public function moverDesdeFicha(): void
     {
         $this->autorizar();

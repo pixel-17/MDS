@@ -9,11 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Con un solo jefe por unidad, el equipo de un jefe inmediato es su gente
- * directa (users.jefe_inmediato_id). El jefe de área, además, ve a los
- * jefes inmediatos de sus sub-unidades, pero no a su personal.
- */
+
 class EquipoDeJefeUnicoTest extends TestCase
 {
     use CreaEscenarioPapeletas;

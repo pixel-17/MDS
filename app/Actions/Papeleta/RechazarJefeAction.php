@@ -12,6 +12,7 @@ use App\States\Papeleta\PendienteJefe;
 use App\States\Papeleta\Rechazada;
 use Illuminate\Support\Facades\DB;
 
+
 class RechazarJefeAction
 {
     use ExigeDecisorAjeno;
@@ -21,7 +22,7 @@ class RechazarJefeAction
     public function ejecutar(Papeleta $papeleta, User $jefe, string $motivo, string $actorTipo = 'jefe_inmediato'): Papeleta
     {
         $papeleta = DB::transaction(function () use ($papeleta, $jefe, $motivo, $actorTipo) {
-
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             $this->exigirDecisorAjeno($actual, $jefe);

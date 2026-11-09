@@ -4,6 +4,16 @@
 
     <x-slot name="form">
         <div class="col-span-6 divide-y divide-tinta-100 dark:divide-white/10">
+            <x-fila-ajuste x-data="msscPushToggle()"
+                           :titulo="__('Notificaciones push')"
+                           :descripcion="__('Recibe avisos del navegador aunque esta pestaña esté cerrada.')">
+                <x-slot name="detalle">
+                    <button type="button" x-on:click="alternar()" x-bind:disabled="!soportado"
+                            class="text-sm font-medium text-tinta-700 underline underline-offset-2 hover:text-tinta-950 disabled:cursor-not-allowed disabled:text-tinta-400 disabled:no-underline dark:text-tinta-200 dark:hover:text-white dark:disabled:text-zinc-600"
+                            x-text="etiqueta">
+                    </button>
+                </x-slot>
+            </x-fila-ajuste>
 
             <x-fila-ajuste x-data="msscVolumenNotificacion({{ \Illuminate\Support\Js::from($volumen) }})"
                            :titulo="__('Volumen de sonido de notificación')"
@@ -53,7 +63,7 @@
 
             <x-fila-ajuste x-data="msscInstalarApp()" x-show="instalable"
                            :titulo="__('Instalar la app')"
-                           :descripcion="__('Agrega MSSC a la pantalla de inicio de este dispositivo.')">
+                           :descripcion="__('Agrega MDS a la pantalla de inicio de este dispositivo.')">
                 <x-secondary-button type="button" x-on:click="instalar()">{{ __('Instalar app') }}</x-secondary-button>
             </x-fila-ajuste>
         </div>

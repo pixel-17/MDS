@@ -5,9 +5,10 @@ namespace App\Actions\Organigrama;
 use App\Models\UnidadOrganica;
 use App\Models\User;
 
+
 class ReglasOrganigrama
 {
-
+    
     public function areaDe(User $jefe, UnidadOrganica $unidad): ?int
     {
         $area = null;
@@ -24,6 +25,7 @@ class ReglasOrganigrama
         return $area;
     }
 
+    
     public function puedeGestionarJefaturasEn(User $actor, UnidadOrganica $unidad): bool
     {
         if ($actor->hasRole('admin')) {
@@ -35,6 +37,7 @@ class ReglasOrganigrama
         return $area !== null && (int) $area !== (int) $unidad->id;
     }
 
+    
     public function esJefeDeAreaDe(User $user, int $unidadId): bool
     {
         $unidad = UnidadOrganica::find($unidadId);

@@ -8,6 +8,7 @@ use App\Models\Turno;
 use App\Models\UnidadOrganica;
 use App\Models\User;
 
+
 class UserObserver
 {
     public function saving(User $user): void
@@ -19,6 +20,12 @@ class UserObserver
         $this->resincronizar($user);
     }
 
+    /**
+     * @param  UnidadOrganica|null  $unidad  unidad del usuario ya cargada (con `jefe`
+     *                                       y `padre`, ver UnidadOrganica::arbolEnMemoria()).
+     *                                       Quien recalcula muchos usuarios la pasa para no
+     *                                       hacer queries por usuario; sin ella se busca.
+     */
     public function resincronizar(User $user, ?UnidadOrganica $unidad = null): void
     {
         if (! $user->unidad_organica_id) {
@@ -32,9 +39,10 @@ class UserObserver
             : [null, null];
     }
 
+    
     public function saved(User $user): void
     {
-
+        
         if ($user->wasChanged('jefe_inmediato_id')) {
             app(PapeletasAbiertasService::class)->reasignarDeTrabajador($user);
         }

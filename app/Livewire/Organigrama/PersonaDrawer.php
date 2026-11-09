@@ -12,6 +12,7 @@ use App\Livewire\Concerns\ManejaExcepcionesDeUsuario;
 use App\Models\Sede;
 use App\Models\UnidadOrganica;
 use App\Models\User;
+use App\Services\GeneradorTurnoMensualService;
 use App\Support\ReglasDatosUsuario;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -20,16 +21,18 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+
 class PersonaDrawer extends Component
 {
     use ManejaExcepcionesDeUsuario;
 
     public bool $abierto = false;
 
-    /** null = alta. */
+    
     #[Locked]
     public ?int $personaId = null;
 
+    
     public string $tipo = 'trabajador';
 
     public string $name = '';
@@ -100,11 +103,13 @@ class PersonaDrawer extends Component
         $this->resetValidation(['sedeId', 'regimen']);
     }
 
+    
     private function puedeCrearJefeInmediato(User $actor): bool
     {
         return $actor->hasRole('admin') || $actor->esJefeDeArea();
     }
 
+    
     public function updatedUnidadId(): void
     {
         if ($this->personaId === null) {
@@ -127,7 +132,9 @@ class PersonaDrawer extends Component
     private function crear(User $actor): void
     {
         $permitidas = $this->unidadesPermitidas($actor);
-        $existenteInactivo = User::where('dni', $this->dni)->where('activo', false)->first();
+        $existenteInactivo = User::where('dni', $this->dni)
+            ->where('activo', false)
+            ->first();
 
         $this->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -135,18 +142,23 @@ class PersonaDrawer extends Component
             'dni' => ReglasDatosUsuario::dni(soloActivos: true),
             'email' => ReglasDatosUsuario::email($existenteInactivo?->id),
             'regimen' => ['required', Rule::in(['276', '728'])],
-            'tipo' => ['required', Rule::in($this->puedeCrearJefeInmediato($actor) ? ['trabajador', 'jefe_inmediato'] : ['trabajador'])],
+            'tipo' => ['required', Rule::in(
+                $this->puedeCrearJefeInmediato($actor)
+                    ? ['trabajador', 'jefe_inmediato']
+                    : ['trabajador']
+            )],
             'unidadId' => ['required', Rule::in($permitidas->pluck('id')->all())],
-            'sedeId' => $this->tipo === 'jefe_inmediato' ? ['required', 'exists:sedes,id'] : ['nullable'],
+            'sedeId' => $this->tipo === 'jefe_inmediato'
+                ? ['required', 'exists:sedes,id']
+                : ['nullable'],
         ]);
 
         $this->authorize('crearEnUnidad', [User::class, (int) $this->unidadId]);
 
         $destino = UnidadOrganica::with('jefe')->find($this->unidadId);
-        $regimenDelJefe = $destino?->jefe?->regimen;
 
-        if ($this->tipo === 'trabajador' && $regimenDelJefe && $regimenDelJefe !== $this->regimen) {
-            $this->addError('regimen', "El régimen debe coincidir con el de su jefe inmediato (régimen {$regimenDelJefe}).");
+        if ($destino === null) {
+            $this->error = 'La unidad de destino ya no existe.';
 
             return;
         }
@@ -172,10 +184,15 @@ class PersonaDrawer extends Component
             return;
         }
 
+        if ($nuevo === null) {
+            return;
+        }
+
         $mensaje = $this->tipo === 'jefe_inmediato'
             ? "Se creó a {$nuevo->nombre_completo} como jefe inmediato de {$destino->nombre}."
             : "Se creó a {$nuevo->nombre_completo}.";
 
+        
         if ($this->tipo === 'trabajador' && $nuevo->regimen === '728') {
             $mensaje .= ' Es 728 y aún no tiene turno: cárgalo en la programación de turnos.';
         }
@@ -197,13 +214,16 @@ class PersonaDrawer extends Component
         $this->authorize('editar', $persona);
 
         $esAdmin = $actor->hasRole('admin');
+        
+        $puedeEditarRegimen = $esAdmin || $actor->esJefeDeArea();
         $encabeza = $persona->unidadesQueEncabeza()->exists();
         $cambiaUnidad = ! $encabeza
             && $this->unidadId !== null
             && (int) $this->unidadId !== (int) $persona->unidad_organica_id;
 
-        $this->validate($this->reglasDeEdicion($actor, $persona, $esAdmin, $cambiaUnidad));
+        $this->validate($this->reglasDeEdicion($actor, $persona, $esAdmin, $puedeEditarRegimen, $cambiaUnidad));
 
+        
         $activo = $esAdmin ? $this->activo : (bool) $persona->activo;
         $estado = app(CambiarEstadoUsuarioAction::class);
 
@@ -212,7 +232,7 @@ class PersonaDrawer extends Component
         }
 
         if (! $this->intentar(
-            fn () => $this->aplicarCambiosDePersona($actor, $persona, $estado, $cambiaUnidad, $esAdmin, $activo),
+            fn () => $this->aplicarCambiosDePersona($actor, $persona, $estado, $cambiaUnidad, $esAdmin, $puedeEditarRegimen, $activo),
             fn ($e) => $this->error = $e->getMessage(),
         )) {
             return;
@@ -223,17 +243,22 @@ class PersonaDrawer extends Component
     }
 
     /** @return array<string, array<int, mixed>|string> */
-    private function reglasDeEdicion(User $actor, User $persona, bool $esAdmin, bool $cambiaUnidad): array
+    private function reglasDeEdicion(User $actor, User $persona, bool $esAdmin, bool $puedeEditarRegimen, bool $cambiaUnidad): array
     {
         $reglas = [
             'name' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
             'email' => ReglasDatosUsuario::email($persona->id),
-
+            
             'sedeId' => $esAdmin ? ['nullable', 'exists:sedes,id'] : ['required', 'exists:sedes,id'],
             'unidadId' => ['nullable', 'exists:unidad_organicas,id'],
             'activo' => ['boolean'],
         ];
+
+        
+        if ($puedeEditarRegimen) {
+            $reglas['regimen'] = ['required', Rule::in(['276', '728'])];
+        }
 
         if ($cambiaUnidad) {
             $reglas['unidadId'][] = Rule::in($this->unidadesPermitidas($actor)->pluck('id')->all());
@@ -242,6 +267,7 @@ class PersonaDrawer extends Component
         return $reglas;
     }
 
+    
     private function puedeDesactivar(User $actor, User $persona, CambiarEstadoUsuarioAction $estado, bool $activo): bool
     {
         if (! ($persona->activo && ! $activo)) {
@@ -266,17 +292,19 @@ class PersonaDrawer extends Component
         return true;
     }
 
-    private function aplicarCambiosDePersona(User $actor, User $persona, CambiarEstadoUsuarioAction $estado, bool $cambiaUnidad, bool $esAdmin, bool $activo): void
+    
+    private function aplicarCambiosDePersona(User $actor, User $persona, CambiarEstadoUsuarioAction $estado, bool $cambiaUnidad, bool $esAdmin, bool $puedeEditarRegimen, bool $activo): void
     {
-
+        
         if ($cambiaUnidad) {
             $mover = app(MoverTrabajadorAction::class);
 
             if ($persona->unidad_organica_id === null) {
-
+                
+                
                 $mover->exigirJefeInmediato(UnidadOrganica::findOrFail($this->unidadId));
                 $persona->unidad_organica_id = $this->unidadId;
-                $persona->save();
+                $persona->save(); 
             } else {
                 $mover->ejecutar($actor, $persona->id, (int) $this->unidadId, (int) $persona->unidad_organica_id, true, false);
             }
@@ -292,8 +320,20 @@ class PersonaDrawer extends Component
             'unidad_organica_id' => $persona->unidad_organica_id,
         ], true);
 
+        
+        
+        
         if ($esAdmin) {
             $persona->forceFill(['sede_id' => $this->sedeId])->save();
+        }
+
+        
+        
+        
+        
+        if ($puedeEditarRegimen && $this->regimen !== '' && $this->regimen !== (string) $persona->regimen) {
+            app(GeneradorTurnoMensualService::class)->retirarTurno($persona);
+            $persona->forceFill(['regimen' => $this->regimen])->save();
         }
 
         if ($persona->activo && ! $activo) {
@@ -318,11 +358,12 @@ class PersonaDrawer extends Component
         $destino = $this->unidadId ? UnidadOrganica::with('jefe.sede')->find($this->unidadId) : null;
 
         $unidades = $permitidas
-            ->map(fn (UnidadOrganica $u) => ['id' => (int) $u->id, 'label' => $u->nombre, 'hint' => $u->jefe?->nombre_completo ?? 'sin jefe'])
+            ->map(fn (UnidadOrganica $u) => ['id' => (int) $u->id, 'label' => $u->nombre, 'hint' => $u->jefe->nombre_completo ?? 'sin jefe'])
             ->values();
 
+        
         if ($persona?->unidadOrganica && ! $unidades->contains('id', (int) $persona->unidad_organica_id)) {
-            $unidades->push(['id' => (int) $persona->unidad_organica_id, 'label' => $persona->unidadOrganica->nombre, 'hint' => null]);
+            $unidades->push(['id' => (int) $persona->unidad_organica_id, 'label' => $persona->unidadOrganica->nombre, 'hint' => $persona->unidadOrganica->jefe->nombre_completo ?? 'sin jefe']);
         }
 
         return view('livewire.organigrama.persona-drawer', [
@@ -330,14 +371,15 @@ class PersonaDrawer extends Component
             'creando' => $this->personaId === null,
             'persona' => $persona,
             'esAdmin' => $actor->hasRole('admin'),
+            'puedeEditarRegimen' => $actor->hasRole('admin') || $actor->esJefeDeArea(),
             'puedeCrearJefeInmediato' => $this->puedeCrearJefeInmediato($actor),
             'destino' => $destino,
             'unidades' => $unidades->all(),
             'sedes' => Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre'])
                 ->map(fn ($s) => ['id' => (int) $s->id, 'label' => $s->nombre, 'hint' => null])->all(),
             'encabeza' => $persona ? $persona->unidadesQueEncabeza()->orderBy('nombre')->pluck('nombre') : collect(),
-
-            'sedeHeredada' => $destino ? ($destino->jefe?->sede?->nombre ?? $actor->sede?->nombre ?? 'Sin sede') : null,
+            
+            'sedeHeredada' => $destino ? ($destino->jefe?->sede->nombre ?? $actor->sede->nombre ?? 'Sin sede') : null,
         ]);
     }
 
@@ -356,14 +398,23 @@ class PersonaDrawer extends Component
 
     private function actor(): User
     {
-
+        /** @var User|null $usuario */
         $usuario = auth()->user();
 
+        
         abort_unless($usuario && ($usuario->hasRole('admin') || $usuario->esJefeDeEquipo()), 403);
 
         return $usuario;
     }
 
+    /**
+     * Unidades activas donde $actor puede ubicar gente: todas (admin), su
+     * área (Jefe de Área: la que encabeza + sub-unidades) o su propia
+     * unidad (Jefe Inmediato "puro": solo la hoja que encabeza), igual que
+     * CrearUsuarioRequest::unidadesDisponibles().
+     *
+     * @return Collection<int, UnidadOrganica>
+     */
     private function unidadesPermitidas(User $actor): Collection
     {
         if ($this->permitidasMemo !== null) {
@@ -386,6 +437,7 @@ class PersonaDrawer extends Component
         return $this->permitidasMemo = $consulta->get();
     }
 
+    /** @return array<string, string> */
     protected function validationAttributes(): array
     {
         return [
@@ -399,6 +451,7 @@ class PersonaDrawer extends Component
         ];
     }
 
+    /** @return array<string, string> */
     protected function messages(): array
     {
         return [
@@ -408,6 +461,7 @@ class PersonaDrawer extends Component
             'unidadId.required' => 'Elige la unidad.',
             'unidadId.in' => 'Esa unidad no pertenece a tu área.',
             'sedeId.required' => 'Elige la sede: es necesaria para los cierres.',
+            'regimen.required' => 'Elige el régimen.',
         ];
     }
 }

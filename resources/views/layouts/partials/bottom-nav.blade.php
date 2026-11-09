@@ -1,4 +1,3 @@
-
 <nav class="bottom-nav" aria-label="Navegación principal">
     @foreach ($items as $item)
         <a

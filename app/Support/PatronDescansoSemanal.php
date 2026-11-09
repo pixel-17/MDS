@@ -4,9 +4,13 @@ namespace App\Support;
 
 use Illuminate\Support\Carbon;
 
+
 final class PatronDescansoSemanal
 {
-
+    /**
+     * @param  array<int, int>  $diasSemana  1..7, sin repetir
+     * @return array{fecha_ancla: Carbon, dias_trabajo: int, dias_descanso: int}|null null si la selección no es válida
+     */
     public static function anclaYCiclo(array $diasSemana, Carbon $referencia): ?array
     {
         $dias = array_values(array_unique(array_map('intval', $diasSemana)));
@@ -17,6 +21,8 @@ final class PatronDescansoSemanal
 
         sort($dias);
 
+        
+        
         $primerDiaTrabajo = collect(range(1, 7))
             ->first(fn (int $d) => ! in_array($d, $dias, true) && in_array($d === 1 ? 7 : $d - 1, $dias, true));
 
@@ -32,6 +38,7 @@ final class PatronDescansoSemanal
         ];
     }
 
+    /** @param  array<int, int>  $dias  1..7, sin repetir, ya sin duplicados */
     public static function esArcoContiguo(array $dias): bool
     {
         sort($dias);

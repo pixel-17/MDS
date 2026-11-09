@@ -10,6 +10,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+
 #[Layout('layouts.app')]
 #[Title('Sedes')]
 class SedeIndex extends Component
@@ -26,7 +27,7 @@ class SedeIndex extends Component
             $sede->delete();
             session()->now('mensaje', 'Sede eliminada.');
         } catch (QueryException $e) {
-
+            
             if (! str_starts_with((string) $e->getCode(), '23')) {
                 throw $e;
             }

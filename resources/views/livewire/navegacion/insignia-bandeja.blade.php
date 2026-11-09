@@ -1,4 +1,3 @@
-
 <span class="ms-auto">
     @if ($cantidad > 0)
         <span class="sidebar-badge">

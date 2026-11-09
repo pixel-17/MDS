@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+
 return new class extends Migration
 {
     public function up(): void
@@ -25,8 +26,10 @@ return new class extends Migration
             $table->foreignId('jefe_area_anterior_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('jefe_area_nuevo_id')->nullable()->constrained('users')->nullOnDelete();
 
+            
             $table->foreignId('revierte_id')->nullable()->constrained('movimientos_organigrama')->nullOnDelete();
 
+            
             $table->timestamp('deshecho_at')->nullable();
             $table->foreignId('deshecho_por_id')->nullable()->constrained('users')->nullOnDelete();
 

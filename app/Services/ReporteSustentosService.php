@@ -6,9 +6,13 @@ use App\Models\Sustento;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
+
 class ReporteSustentosService
 {
-
+    /**
+     * @param  array{trabajador_id?: int|null, buscar?: string|null, estado?: string|null, desde?: string|null, hasta?: string|null}  $filtros
+     * @return Builder<Sustento>
+     */
     public function query(User $usuario, array $filtros = []): Builder
     {
         $query = Sustento::query()
@@ -22,6 +26,7 @@ class ReporteSustentosService
             $query->whereHas('papeleta', fn (Builder $q) => $q->where('trabajador_id', $filtros['trabajador_id']));
         }
 
+        
         if (! empty($filtros['buscar'])) {
             $buscar = trim($filtros['buscar']);
 

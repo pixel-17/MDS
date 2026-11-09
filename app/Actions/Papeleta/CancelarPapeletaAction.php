@@ -12,6 +12,7 @@ use App\States\Papeleta\PendienteJefe;
 use App\States\Papeleta\PendienteRrhh;
 use Illuminate\Support\Facades\DB;
 
+
 class CancelarPapeletaAction
 {
     public function __construct(private RrhhHorarioService $horarioRrhh) {}
@@ -23,7 +24,7 @@ class CancelarPapeletaAction
         }
 
         return DB::transaction(function () use ($papeleta, $trabajador) {
-
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             $enFaseJefe = $actual->estado->equals(PendienteJefe::class, ObservadaPorJefe::class);
@@ -41,7 +42,9 @@ class CancelarPapeletaAction
                 Cancelada::class,
                 $trabajador->id,
                 'trabajador',
-                cambios: fn (Papeleta $p) => $p->cancelada_at = now(),
+                cambios: function (Papeleta $p): void {
+                    $p->cancelada_at = now();
+                },
             );
 
             return $actual;

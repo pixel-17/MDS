@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Motivo;
 use Illuminate\Database\Seeder;
 
+
 class MotivoSeeder extends Seeder
 {
     public function run(): void
@@ -25,6 +26,7 @@ class MotivoSeeder extends Seeder
                 'adjunto' => 'no',
                 'suma_descuento' => false,
                 'requiere_sustento_en_retorno' => true,
+                'plazo_justificacion_horas_habiles' => 48,
                 'es_destino_reclasificacion' => false,
                 'activo' => true,
             ],

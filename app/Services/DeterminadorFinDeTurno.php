@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Papeleta;
 
+
 class DeterminadorFinDeTurno
 {
     public function __construct(private HorarioOrdinarioService $horarioOrdinario) {}
@@ -17,13 +18,16 @@ class DeterminadorFinDeTurno
         return $this->yaTerminoLegado($papeleta);
     }
 
+    
     private function yaTerminoLegado(Papeleta $papeleta): bool
     {
         if ($papeleta->regimen === '728') {
-
+            
+            
             return now()->toDateString() > $papeleta->dia_operativo->toDateString();
         }
 
+        
         return $this->horarioOrdinario->yaTerminoElDia($papeleta->dia_operativo);
     }
 }

@@ -11,11 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * Propagación de cambios de jefe por el organigrama y comando de backfill.
- *
- *   Concejo (alcalde)  ->  Gerencia (gerente)  ->  Oficina (jefeOficina)
- */
+
 class JefaturasTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -52,7 +48,7 @@ class JefaturasTest extends TestCase
     {
         $nuevoAlcalde = $this->usuarioDePrueba();
 
-        // jefeOficina está DOS niveles debajo del Concejo: el observer debe llegar hasta él.
+        
         $this->concejo->update(['jefe_id' => $nuevoAlcalde->id]);
 
         $this->assertSame($nuevoAlcalde->id, $this->jefeOficina->fresh()->jefe_area_id);
@@ -65,7 +61,7 @@ class JefaturasTest extends TestCase
 
         $this->concejo->update(['jefe_id' => $nuevoAlcalde->id]);
 
-        // El ex-alcalde sigue siendo miembro del Concejo, ahora como miembro común.
+        
         $this->assertSame($nuevoAlcalde->id, $this->alcalde->fresh()->jefe_inmediato_id);
     }
 

@@ -7,6 +7,7 @@ namespace App\Livewire\Usuarios;
 use App\Actions\Usuario\CambiarEstadoUsuarioAction;
 use App\Events\PapeletaActualizada;
 use App\Livewire\Concerns\RequiereAdmin;
+use App\Livewire\Usuarios\Concerns\TieneRolesDeUsuario;
 use App\Models\ConfiguracionTurno;
 use App\Models\Sede;
 use App\Models\UnidadOrganica;
@@ -24,11 +25,12 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Spatie\Permission\Models\Role;
 
+
 #[Layout('layouts.app')]
 #[Title('Usuario')]
 class UsuarioAdminForm extends Component
 {
-    use RequiereAdmin;
+    use RequiereAdmin, TieneRolesDeUsuario;
 
     #[Locked]
     public ?User $usuario = null;
@@ -49,12 +51,13 @@ class UsuarioAdminForm extends Component
 
     public ?int $unidadOrganicaId = null;
 
+    /** @var array<int, int|string> */
     public array $rolesSeleccionados = [];
 
-    public bool $activo = true;
+    
+    public string $rolNuevo = '';
 
-    #[Locked]
-    public bool $nuevoAdmin = false;
+    public bool $activo = true;
 
     public string $turno = '';
 
@@ -66,9 +69,9 @@ class UsuarioAdminForm extends Component
 
     public function mount(?User $usuario = null): void
     {
-
+        
         if ($usuario?->exists) {
-
+            
             $this->fechaAncla = now()->toDateString();
             $this->usuario = $usuario;
             $this->name = $usuario->name;
@@ -89,13 +92,9 @@ class UsuarioAdminForm extends Component
                 $this->diasTrabajo = $config->dias_trabajo;
                 $this->diasDescanso = $config->dias_descanso;
             }
-        } elseif (request()->query('tipo') === 'admin') {
-            $this->nuevoAdmin = true;
-
-            $adminId = (int) Role::where('name', 'admin')->value('id');
-            $this->rolesSeleccionados = $adminId > 0 ? [(string) $adminId] : [];
         } else {
-
+            
+            
             $unidadId = request()->integer('unidad') ?: null;
             $unidad = $unidadId ? UnidadOrganica::with('jefe')->find($unidadId) : null;
 
@@ -106,21 +105,19 @@ class UsuarioAdminForm extends Component
         }
     }
 
-    protected function esSoloAdmin(): bool
+    
+    
+
+    
+    protected function esSoloRrhh(): bool
     {
-        $adminId = (int) Role::where('name', 'admin')->value('id');
+        $rrhhId = (int) Role::where('name', 'rrhh')->value('id');
         $roles = array_map('intval', $this->rolesSeleccionados);
 
-        return $adminId > 0 && $roles !== [] && array_diff($roles, [$adminId]) === [];
+        return $rrhhId > 0 && $roles !== [] && array_diff($roles, [$rrhhId]) === [];
     }
 
-    protected function incluyeAdmin(): bool
-    {
-        $adminId = (int) Role::where('name', 'admin')->value('id');
-
-        return $adminId > 0 && in_array($adminId, array_map('intval', $this->rolesSeleccionados), true);
-    }
-
+    
     protected function admiteConfiguracionTurno(): bool
     {
         if ($this->regimen !== '728') {
@@ -131,6 +128,8 @@ class UsuarioAdminForm extends Component
             return true;
         }
 
+        
+        
         if ($this->cambioDeRegimen()) {
             return true;
         }
@@ -138,20 +137,10 @@ class UsuarioAdminForm extends Component
         return ! ConfiguracionTurno::where('user_id', $this->usuario->id)->exists();
     }
 
-    protected function cambioDeRegimen(): bool
-    {
-        return $this->usuario !== null
-            && ($this->usuario->regimen ?? '') !== ''
-            && $this->regimen !== (string) $this->usuario->regimen;
-    }
+    
+    
 
-    public function updatedRegimen(): void
-    {
-        if ($this->cambioDeRegimen()) {
-            $this->turno = '';
-        }
-    }
-
+    /** @return array<string, mixed> */
     protected function rules(): array
     {
         $reglas = [
@@ -160,7 +149,7 @@ class UsuarioAdminForm extends Component
             'dni' => ReglasDatosUsuario::dni($this->usuario?->id, soloActivos: false),
             'email' => ReglasDatosUsuario::email($this->usuario?->id),
             'password' => ['nullable', 'string', 'min:8'],
-            'regimen' => [$this->esSoloAdmin() ? 'nullable' : 'required', 'in:276,728'],
+            'regimen' => [($this->esSoloAdmin() || $this->esSoloRrhh()) ? 'nullable' : 'required', 'in:276,728'],
             'sedeId' => ['nullable', 'exists:sedes,id'],
             'unidadOrganicaId' => ['nullable', 'exists:unidad_organicas,id'],
             'rolesSeleccionados' => ['required', 'array', 'min:1'],
@@ -178,6 +167,7 @@ class UsuarioAdminForm extends Component
         return $reglas;
     }
 
+    /** @var array<string, string> */
     protected $messages = [
         'rolesSeleccionados.required' => 'Selecciona al menos un rol: un usuario sin rol no puede usar el sistema.',
         'rolesSeleccionados.min' => 'Selecciona al menos un rol: un usuario sin rol no puede usar el sistema.',
@@ -189,10 +179,23 @@ class UsuarioAdminForm extends Component
     {
         $this->autorizarAdmin();
 
-        if ($this->nuevoAdmin) {
+        
+        if ($this->usuario === null && $this->rolNuevo !== '') {
+            $this->rolesSeleccionados = [$this->rolNuevo];
+        }
 
-            $adminId = (int) Role::where('name', 'admin')->value('id');
-            $this->rolesSeleccionados = $adminId > 0 ? [(string) $adminId] : [];
+        if ($this->esSoloAdmin()) {
+            
+            
+            
+            $this->regimen = '';
+            $this->sedeId = null;
+            $this->unidadOrganicaId = null;
+        } elseif ($this->esSoloRrhh()) {
+            
+            
+            
+            
             $this->regimen = '';
             $this->sedeId = null;
             $this->unidadOrganicaId = null;
@@ -204,7 +207,7 @@ class UsuarioAdminForm extends Component
 
         $adminId = (int) Role::where('name', 'admin')->value('id');
         $trabajadorId = (int) Role::where('name', 'trabajador')->value('id');
-        $roles = array_map('intval', $datos['rolesSeleccionados']);
+        $roles = array_values(array_map('intval', $datos['rolesSeleccionados']));
 
         if (! $this->validarRoles($roles, $adminId, $trabajadorId)) {
             return;
@@ -228,19 +231,30 @@ class UsuarioAdminForm extends Component
 
         $atributos = $this->construirAtributos($datos, $roles, $adminId);
 
+        
         $debeRetirarTurno = $this->usuario !== null
             && ($this->cambioDeRegimen() || ($this->usuario->activo && ! $datos['activo']));
 
         DB::transaction(fn () => $this->guardarUsuario($atributos, $datos, $requiereTurno, $generador, $debeRetirarTurno));
+
+        if ($this->usuario === null) {
+            return;
+        }
 
         session()->flash('mensaje', $this->usuario->wasRecentlyCreated ? 'Usuario creado.' : 'Usuario actualizado.');
 
         $this->redirectRoute('usuarios-admin.index', navigate: false);
     }
 
+    /**
+     * Un administrador no lleva régimen, no puede ser también trabajador, y
+     * no puede dárselo a quien encabeza una unidad sin antes reasignarla.
+     *
+     * @param  list<int>  $roles
+     */
     private function validarRoles(array $roles, int $adminId, int $trabajadorId): bool
     {
-
+        
         if ($this->esSoloAdmin() && $this->regimen !== '') {
             $this->addError('rolesSeleccionados', 'Un administrador no lleva régimen: deja el régimen vacío.');
 
@@ -259,9 +273,50 @@ class UsuarioAdminForm extends Component
             return false;
         }
 
+        
+        
+        
+        
+        if ($this->usuario === null) {
+            $rrhhId = (int) Role::where('name', 'rrhh')->value('id');
+            $trabajadorId = (int) Role::where('name', 'trabajador')->value('id');
+
+            if (! in_array($adminId, $roles, true) && ! in_array($rrhhId, $roles, true)) {
+                $this->addError('rolesSeleccionados', 'Desde Cuentas de usuario solo se crean administradores o RR. HH. puros. Para dar de alta trabajadores, hazlo desde el organigrama.');
+
+                return false;
+            }
+
+            
+            if (in_array($adminId, $roles, true) && in_array($rrhhId, $roles, true)) {
+                $this->addError('rolesSeleccionados', 'Elige un solo rol: administrador o RR. HH.');
+
+                return false;
+            }
+
+            
+            
+            if (in_array($rrhhId, $roles, true) && in_array($trabajadorId, $roles, true)) {
+                $this->addError('rolesSeleccionados', 'Desde Cuentas de usuario solo se crea RR. HH. puro. Si la persona también es trabajador, dála de alta desde el organigrama y asígnale el rol RR. HH. desde allí.');
+
+                return false;
+            }
+        }
+
         return true;
     }
 
+    /**
+     * Igual que MoverTrabajadorAction::validar(): quien encabeza una unidad
+     * (jefe_id) no se mueve de unidad_organica_id por este formulario sin
+     * reasignar antes esa jefatura, o queda «duplicado» en el organigrama:
+     * sigue de jefe en la unidad vieja (jefe_id no se tocó) y aparece
+     * también como miembro en la nueva. El caso «se le da el rol admin»
+     * ya lo bloquea validarRoles() antes de llegar aquí.
+     *
+     * @param  array<string, mixed>  $datos
+     * @param  list<int>  $roles
+     */
     private function validarUnidad(array $datos, int $adminId, array $roles): bool
     {
         if (in_array($adminId, $roles, true)) {
@@ -281,6 +336,11 @@ class UsuarioAdminForm extends Component
         return true;
     }
 
+    /**
+     * Si es el único RR. HH. activo, no se lo puede desactivar ni quitarle el rol.
+     *
+     * @param  array<string, mixed>  $datos
+     */
     private function validarUnicoRrhhActivo(array $datos): bool
     {
         if (! $this->usuario?->esUnicoRrhhActivo()) {
@@ -305,6 +365,11 @@ class UsuarioAdminForm extends Component
         return true;
     }
 
+    /**
+     * Si es el único administrador activo, no se lo puede desactivar ni quitarle el rol.
+     *
+     * @param  array<string, mixed>  $datos
+     */
     private function validarUnicoAdminActivo(array $datos): bool
     {
         if (! $this->usuario?->esUnicoAdminActivo()) {
@@ -329,13 +394,22 @@ class UsuarioAdminForm extends Component
         return true;
     }
 
+    /**
+     * Mismas reglas que desactivar desde la lista o el organigrama (jefe
+     * con personas a cargo, etc.).
+     *
+     * @param  array<string, mixed>  $datos
+     */
     private function validarDesactivacion(array $datos): bool
     {
         if (! ($this->usuario?->activo && ! $datos['activo'])) {
             return true;
         }
 
-        $motivo = app(CambiarEstadoUsuarioAction::class)->motivoParaNoDesactivar(Auth::user(), $this->usuario);
+        /** @var User $actor */
+        $actor = Auth::user();
+
+        $motivo = app(CambiarEstadoUsuarioAction::class)->motivoParaNoDesactivar($actor, $this->usuario);
 
         if ($motivo !== null) {
             $this->addError('activo', $motivo);
@@ -343,6 +417,8 @@ class UsuarioAdminForm extends Component
             return false;
         }
 
+        
+        
         $cargo = app(CambiarEstadoUsuarioAction::class)->jefaturasPorResolver($this->usuario);
 
         if ($cargo->isNotEmpty()) {
@@ -355,6 +431,7 @@ class UsuarioAdminForm extends Component
     }
 
     /**
+     * @param  array<string, mixed>  $datos
      * @param  list<int>  $roles
      * @return array<string, mixed>
      */
@@ -366,17 +443,25 @@ class UsuarioAdminForm extends Component
             'dni' => $datos['dni'],
             'email' => $datos['email'],
             'regimen' => $datos['regimen'] ?: null,
-
+            
             'sede_id' => in_array($adminId, $roles, true) ? null : $datos['sedeId'],
             'unidad_organica_id' => in_array($adminId, $roles, true) ? null : $datos['unidadOrganicaId'],
             'activo' => $datos['activo'],
         ];
     }
 
+    /**
+     * Crea o actualiza al usuario, sincroniza roles y carga el turno si
+     * corresponde. Debe correr dentro de DB::transaction (ver guardar()).
+     *
+     * @param  array<string, mixed>  $atributos
+     * @param  array<string, mixed>  $datos
+     */
     private function guardarUsuario(array $atributos, array $datos, bool $requiereTurno, GeneradorTurnoMensualService $generador, bool $debeRetirarTurno): void
     {
         if ($this->usuario) {
-
+            
+            
             if (filled($datos['password'])) {
                 $atributos['password'] = Hash::make($datos['password']);
                 $atributos['debe_actualizar_password'] = true;
@@ -388,32 +473,41 @@ class UsuarioAdminForm extends Component
                 $this->usuario->tokens()->delete();
             }
 
+            
             if ($debeRetirarTurno) {
                 $generador->retirarTurno($this->usuario);
             }
         } else {
-
+            
+            
+            
             $atributos['password'] = Hash::make($datos['dni']);
             $atributos['debe_actualizar_password'] = true;
 
             $this->usuario = User::create($atributos);
         }
 
+        
+        
         $this->usuario->syncRoles(array_map('intval', $datos['rolesSeleccionados']));
         PapeletaActualizada::olvidarDestinatariosFijos();
 
         if ($requiereTurno && $datos['activo']) {
+            /** @var User $actor */
+            $actor = Auth::user();
+
             $generador->cargarConfiguracion(
                 trabajador: $this->usuario,
                 turno: $datos['turno'],
                 fechaAncla: Carbon::parse($datos['fechaAncla']),
-                actor: Auth::user(),
+                actor: $actor,
                 diasTrabajo: $datos['diasTrabajo'],
                 diasDescanso: $datos['diasDescanso'],
             );
         }
     }
 
+    
     protected function buscarCuentaExistente(): ?User
     {
         if ($this->usuario !== null || strlen($this->dni) !== 8) {
@@ -427,18 +521,24 @@ class UsuarioAdminForm extends Component
     {
         return view('livewire.usuarios.usuario-admin-form', [
             'cuentaExistente' => $this->buscarCuentaExistente(),
-            'sedes' => Sede::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id'),
-            'unidades' => UnidadOrganica::orderBy('nombre')->pluck('nombre', 'id'),
-
+            
+            
+            
+            
+            'sedes' => Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre'])
+                ->map(fn ($s) => ['id' => $s->id, 'label' => $s->nombre])->all(),
+            'unidades' => UnidadOrganica::orderBy('nombre')->get(['id', 'nombre'])
+                ->map(fn ($u) => ['id' => $u->id, 'label' => $u->nombre])->all(),
+            
+            
+            
+            
             'roles' => Role::orderBy('name')
-                ->when($this->nuevoAdmin, fn ($q) => $q->where('name', 'admin'))
-                ->when($this->usuario === null && ! $this->nuevoAdmin, fn ($q) => $q->where('name', '!=', 'admin'))
+                ->when($this->usuario === null, fn ($q) => $q->whereIn('name', ['admin', 'rrhh']))
+                ->when($this->usuario !== null, fn ($q) => $q->where('name', '!=', 'admin'))
                 ->get(),
             'esAdminRol' => $this->incluyeAdmin(),
-            'requiereTurno' => $this->usuario !== null && $this->admiteConfiguracionTurno(),
-            'opcionesTurno' => $this->regimen
-                ? ConfiguracionTurno::turnosValidosPara(new User(['regimen' => $this->regimen]))
-                : [],
+            'esSoloRrhhRol' => $this->esSoloRrhh(),
         ]);
     }
 }

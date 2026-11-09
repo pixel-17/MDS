@@ -11,6 +11,7 @@ use App\States\Papeleta\PendienteRrhh;
 use App\States\Papeleta\Rechazada;
 use Illuminate\Support\Facades\DB;
 
+
 class RechazarRrhhAction
 {
     use ExigeDecisorAjeno;
@@ -20,7 +21,7 @@ class RechazarRrhhAction
     public function ejecutar(Papeleta $papeleta, User $rrhh, string $motivo): Papeleta
     {
         $papeleta = DB::transaction(function () use ($papeleta, $rrhh, $motivo) {
-
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             $this->exigirDecisorAjeno($actual, $rrhh);

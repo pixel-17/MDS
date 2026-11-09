@@ -4,6 +4,7 @@ namespace App\Livewire\Concerns;
 
 use Illuminate\Support\Facades\Auth;
 
+
 trait EscuchaNotificacionesEnVivo
 {
     /**
@@ -13,6 +14,11 @@ trait EscuchaNotificacionesEnVivo
     {
         $id = Auth::id();
 
+        
+        
+        
+        
+        
         if ($this->escuchaCambiosDeEstado()) {
             return [
                 "echo-private:App.Models.User.{$id},PapeletaActualizada" => 'refrescarPorCambioDeEstado',
@@ -24,16 +30,21 @@ trait EscuchaNotificacionesEnVivo
         ];
     }
 
+    
     protected function escuchaCambiosDeEstado(): bool
     {
         return true;
     }
 
+    
     public function refrescarPorCambioDeEstado(): void {}
 
     public function refrescarPorNotificacionEnVivo(): void
     {
-
+        
+        
+        
+        
         $this->dispatch('notificacion-sonido');
     }
 }

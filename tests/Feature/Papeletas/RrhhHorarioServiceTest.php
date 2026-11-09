@@ -11,11 +11,7 @@ use Illuminate\Support\Carbon;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * RRHH está "en horario" si: hay personal RRHH activo, el día es laborable
- * y la hora cae en el horario ordinario (07:45-16:15 sembrado,
- * minuto final incluido). Lunes de referencia: 2026-09-21.
- */
+
 class RrhhHorarioServiceTest extends TestCase
 {
     use CreaEscenarioPapeletas;

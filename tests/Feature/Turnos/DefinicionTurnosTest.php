@@ -11,10 +11,7 @@ use Livewire\Livewire;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * El catálogo "Turnos" del admin solo define las horas de cada turno
- * (claves TURNO_*_HORA_* de `configuraciones`); no programa trabajadores.
- */
+
 class DefinicionTurnosTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -45,7 +42,7 @@ class DefinicionTurnosTest extends TestCase
     {
         $admin = $this->usuarioDePrueba([], ['admin']);
 
-        // Calienta la caché de valorDe() para comprobar que se invalida al guardar.
+        
         $this->assertSame('06:00', Configuracion::valorDe('TURNO_MANANA_HORA_INICIO'));
 
         Livewire::actingAs($admin)

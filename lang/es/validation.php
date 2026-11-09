@@ -145,7 +145,7 @@ return [
     'uuid' => 'El campo :attribute debe ser un UUID válido.',
 
     'custom' => [
-        // 'attribute-name' => ['rule-name' => 'custom-message'],
+        
     ],
 
     'attributes' => [

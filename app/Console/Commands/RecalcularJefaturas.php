@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Observers\UserObserver;
 use Illuminate\Console\Command;
 
+
 class RecalcularJefaturas extends Command
 {
     protected $signature = 'jefaturas:recalcular

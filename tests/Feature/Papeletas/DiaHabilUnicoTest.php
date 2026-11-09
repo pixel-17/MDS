@@ -11,12 +11,7 @@ use Illuminate\Support\Carbon;
 use Tests\Concerns\CreaEscenarioPapeletas;
 use Tests\TestCase;
 
-/**
- * "Día hábil" tiene UNA sola definición (CalculadorDiasHabiles): día
- * laborable configurado. La ventana de 276, la disponibilidad
- * de decisores 276 y los plazos en horas hábiles deben coincidir siempre.
- * Fechas de referencia: lunes 2026-09-21, sábado 2026-09-26.
- */
+
 class DiaHabilUnicoTest extends TestCase
 {
     use CreaEscenarioPapeletas;
@@ -51,7 +46,7 @@ class DiaHabilUnicoTest extends TestCase
     {
         $sabado = Carbon::parse('2026-09-26 10:00:00');
 
-        // Por defecto (lunes a viernes): sábado no es hábil en ningún lado.
+        
         $this->assertFalse($this->dentroDeVentana('2026-09-26 10:00:00'));
         $this->assertFalse(app(CalculadorDiasHabiles::class)->esHabil($sabado));
 
@@ -66,11 +61,11 @@ class DiaHabilUnicoTest extends TestCase
         $calculador = app(CalculadorDiasHabiles::class);
         $viernes = Carbon::parse('2026-09-25 12:00:00');
 
-        // Lunes a viernes: desde el viernes 12:00, las 24 h hábiles saltan
-        // sábado y domingo y terminan el lunes 12:00.
+        
+        
         $this->assertSame('2026-09-28 12:00:00', $calculador->agregarHorasHabiles($viernes, 24)->format('Y-m-d H:i:s'));
 
-        // Con sábado laborable, el sábado sí cuenta.
+        
         $this->cargarDiasLaborables('1,2,3,4,5,6');
 
         $this->assertSame('2026-09-26 12:00:00', $calculador->agregarHorasHabiles($viernes, 24)->format('Y-m-d H:i:s'));

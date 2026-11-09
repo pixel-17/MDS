@@ -1,7 +1,8 @@
 <div>
     <div class="max-w-6xl mx-auto py-12 sm:px-6 lg:px-8 space-y-8">
         @php
-
+            // Mismo tope configurable que usa ObservarJefeAction (Configuraciones >
+            // TOPE_OBSERVACIONES). Se calcula una vez para toda la bandeja.
             $topeObservaciones = (int) \App\Models\Configuracion::valorDe('TOPE_OBSERVACIONES', 3);
         @endphp
         <h2 class="font-bold text-2xl text-tinta-950 dark:text-white leading-tight tracking-tight">
@@ -37,7 +38,11 @@
                         <tbody class="bg-white dark:bg-transparent">
                             @foreach ($porDecidir as $papeleta)
                                 @php
-
+                                    // Se calcula aparte (en vez de un ternario con comillas
+                                    // escapadas dentro del atributo :aviso) porque esas
+                                    // comillas anidadas rompían el parseo del atributo del
+                                    // componente: el texto se colaba como contenido crudo
+                                    // de la fila en vez de ir al tooltip del modal.
                                     $avisoObservar = $papeleta->contador_observaciones_jefe >= $topeObservaciones - 1
                                         ? "Esta papeleta ya tiene {$papeleta->contador_observaciones_jefe}/{$topeObservaciones} observaciones. Si la observas, alcanzará el tope y el sistema la rechazará automáticamente en vez de esperar respuesta del trabajador."
                                         : null;
@@ -195,7 +200,6 @@
             </div>
         @endif
 
-        {{-- En curso --}}
         @if ($enCurso->isNotEmpty())
             <div class="glass-card overflow-hidden border-l-4 border-tinta-400 dark:border-tinta-400/40">
                 <div class="px-4 py-3 border-b border-gray-100 dark:border-white/10">

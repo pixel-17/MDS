@@ -13,6 +13,7 @@ use App\States\Papeleta\Cerrada;
 use App\States\Papeleta\EnJustificacion;
 use Illuminate\Support\Facades\DB;
 
+
 class RevisarSustentoAction
 {
     use ExigeDecisorAjeno;
@@ -32,10 +33,11 @@ class RevisarSustentoAction
         return $this->resolver($sustento, $revisor, 'observado', $comentario);
     }
 
+    
     public function rechazar(Sustento $sustento, User $revisor, string $comentario): Papeleta
     {
         $papeleta = DB::transaction(function () use ($sustento, $revisor, $comentario) {
-
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($sustento->papeleta_id)->lockForUpdate()->firstOrFail();
             /** @var Sustento $sustentoActual */
             $sustentoActual = Sustento::whereKey($sustento->id)->lockForUpdate()->firstOrFail();
@@ -68,10 +70,15 @@ class RevisarSustentoAction
         return $papeleta;
     }
 
+    /**
+     * @param  'aprobado'|'observado'|'rechazado'  $resultado
+     */
     private function resolver(Sustento $sustento, User $revisor, string $resultado, ?string $comentario = null): Papeleta
     {
         $papeleta = DB::transaction(function () use ($sustento, $revisor, $resultado, $comentario) {
-
+            
+            
+            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($sustento->papeleta_id)->lockForUpdate()->firstOrFail();
             /** @var Sustento $sustentoActual */
             $sustentoActual = Sustento::whereKey($sustento->id)->lockForUpdate()->firstOrFail();
@@ -93,11 +100,16 @@ class RevisarSustentoAction
 
             $estadoAnterior = class_basename($actual->estado);
 
+            
+            
+            
+            
+            
             if ($resultado === 'aprobado') {
                 $actual->transicionarA(Cerrada::class);
                 $actual->save();
             } else {
-                $sustentoActual->estado = 'pendiente';
+                $sustentoActual->estado = 'pendiente'; 
                 $sustentoActual->save();
             }
 

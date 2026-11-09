@@ -17,6 +17,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
+
 class ProcesarAbandonoNoMarcado extends Command
 {
     protected $signature = 'papeletas:procesar-abandono-no-marcado';
@@ -36,7 +37,9 @@ class ProcesarAbandonoNoMarcado extends Command
 
                     try {
                         $papeleta = DB::transaction(function () use ($candidata, $finDeTurno, $marcarRetorno) {
-
+                            
+                            
+                            
                             $actual = Papeleta::whereKey($candidata->id)->lockForUpdate()->first();
 
                             if (! $actual
@@ -48,6 +51,10 @@ class ProcesarAbandonoNoMarcado extends Command
 
                             $estadoAnterior = class_basename($actual->estado);
 
+                            
+                            
+                            
+                            
                             if (! $actual->retorno) {
                                 $horaFin = $actual->fin_turno_at ?? now();
 
@@ -57,7 +64,10 @@ class ProcesarAbandonoNoMarcado extends Command
                                     'generado_por_abandono' => true,
                                 ]);
 
-                                // almuerzo.
+                                
+                                
+                                
+                                
                                 $actual->descuento_refrigerio_minutos = $marcarRetorno->calcularDescuentoRefrigerio($actual, $horaFin);
                             }
 
@@ -91,6 +101,8 @@ class ProcesarAbandonoNoMarcado extends Command
                             return $actual;
                         });
 
+                        
+                        
                         if ($papeleta) {
                             $notificar->abandonoNoMarcado($papeleta);
                         }

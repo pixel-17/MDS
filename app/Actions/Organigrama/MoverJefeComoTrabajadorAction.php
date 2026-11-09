@@ -15,11 +15,13 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
+
 class MoverJefeComoTrabajadorAction
 {
-
+    
     public const COMO_TRABAJADOR = 'trabajador';
 
+    
     public const COMO_JEFE = 'jefe';
 
     public function __construct(
@@ -27,6 +29,22 @@ class MoverJefeComoTrabajadorAction
         private ReemplazoDeJefeService $reemplazoDeJefe,
     ) {}
 
+    /**
+     * Qué pasaría, sin guardar nada. Lanza UsuarioException si no se puede.
+     *
+     * @return array{
+     *     modo: string,
+     *     jefe: User,
+     *     destino: UnidadOrganica,
+     *     unidades: Collection<int, array{unidad: UnidadOrganica, es_area: bool, personas: int, subunidades: int, requiere_reemplazo: bool, candidatos: Collection<int, User>}>,
+     *     jefes_destino: Collection<int, User>,
+     *     requiere_reemplazar_destino: bool,
+     *     sede: array{actual: ?Sede, propuesta: ?Sede},
+     *     necesita_turno: bool,
+     *     turnos_validos: list<string>,
+     *     avisos: list<string>
+     * }
+     */
     public function previsualizar(User $actor, User $jefe, UnidadOrganica $destino, string $modo = self::COMO_TRABAJADOR): array
     {
         $unidades = $this->validar($actor, $jefe, $destino, $modo);
@@ -37,7 +55,11 @@ class MoverJefeComoTrabajadorAction
             $subunidades = $unidad->hijos()->count();
             $personas = $this->reemplazoDeJefe->miembrosActivos($unidad, $jefe)->count();
 
-            // (JefaturaUnidadService::validar()).
+            
+            
+            
+            
+            
             $candidatos = $this->reemplazoDeJefe->candidatos($unidad, $jefe);
 
             if ($candidatos->isEmpty()) {
@@ -83,11 +105,17 @@ class MoverJefeComoTrabajadorAction
                 'propuesta' => ! $comoJefe && $sedePropuesta && (int) $sedePropuesta->id !== (int) $jefe->sede_id ? $sedePropuesta : null,
             ],
             'necesita_turno' => $necesitaTurno,
-            'turnos_validos' => ConfiguracionTurno::turnosValidosPara($jefe),
+            'turnos_validos' => array_values(ConfiguracionTurno::turnosValidosPara($jefe)),
             'avisos' => $avisos,
         ];
     }
 
+    /**
+     * @param  array<int|string, int|string|null>  $reemplazos  unidad_id => user_id del reemplazo
+     * @param  array{turno?: ?string, fecha_ancla?: ?string, dias_trabajo?: ?int, dias_descanso?: ?int}|null  $turno  solo para 728 sin turno propio
+     *
+     * @throws UsuarioException
+     */
     public function ejecutar(
         User $actor,
         int $jefeId,
@@ -112,6 +140,7 @@ class MoverJefeComoTrabajadorAction
 
             $unidades = $this->validar($actor, $jefe, $destino, $modo);
 
+            
             $plan = $unidades->mapWithKeys(fn (UnidadOrganica $unidad) => [
                 $unidad->id => $this->reemplazoDeJefe->reemplazoPara($unidad, $jefe, $reemplazos),
             ]);
@@ -131,6 +160,8 @@ class MoverJefeComoTrabajadorAction
 
             $jefe->refresh();
 
+            
+            
             $movimiento = app(MoverTrabajadorAction::class)->ejecutar(
                 $actor,
                 (int) $jefe->id,
@@ -142,7 +173,7 @@ class MoverJefeComoTrabajadorAction
 
             if ($datosTurno !== null) {
                 $this->generadorTurno->cargarConfiguracion(
-                    trabajador: $jefe->fresh(),
+                    trabajador: $jefe->fresh() ?? $jefe,
                     turno: $datosTurno['turno'],
                     fechaAncla: Carbon::parse($datosTurno['fecha_ancla']),
                     actor: $actor,
@@ -155,6 +186,14 @@ class MoverJefeComoTrabajadorAction
         });
     }
 
+    /**
+     * Única puerta de reglas de quién y adónde. Devuelve las unidades que
+     * encabeza (jefe_id) y que hay que relevar.
+     *
+     * @return Collection<int, UnidadOrganica>
+     *
+     * @throws UsuarioException
+     */
     private function validar(User $actor, User $jefe, UnidadOrganica $destino, string $modo = self::COMO_TRABAJADOR): Collection
     {
         if (! in_array($modo, [self::COMO_TRABAJADOR, self::COMO_JEFE], true)) {
@@ -180,6 +219,7 @@ class MoverJefeComoTrabajadorAction
 
         $unidades = $jefe->unidadesQueEncabeza()->get();
 
+        
         if ($modo === self::COMO_TRABAJADOR && $unidades->isEmpty()) {
             throw new UsuarioException($jefe->nombre_completo.' no encabeza ninguna unidad: se mueve como trabajador.');
         }
@@ -192,10 +232,12 @@ class MoverJefeComoTrabajadorAction
             throw new UsuarioException($jefe->nombre_completo.' ya es jefe inmediato de «'.$destino->nombre.'».');
         }
 
+        
         if ($modo === self::COMO_TRABAJADOR && (int) $jefe->unidad_organica_id === (int) $destino->id) {
             throw new UsuarioException($jefe->nombre_completo.' ya está en «'.$destino->nombre.'».');
         }
 
+        
         if ($modo === self::COMO_JEFE && $jefe->sede_id === null && $destino->jefe?->sede_id === null) {
             throw new UsuarioException($jefe->nombre_completo.' no tiene sede: asígnale una antes de hacerlo jefe inmediato (la necesita para los cierres).');
         }
@@ -208,6 +250,7 @@ class MoverJefeComoTrabajadorAction
             app(MoverTrabajadorAction::class)->exigirJefeInmediato($destino);
         }
 
+        
         if (! $esAdmin) {
             $areaDestino = $reglas->areaDe($actor, $destino);
 
@@ -235,6 +278,7 @@ class MoverJefeComoTrabajadorAction
         return $unidades;
     }
 
+    
     private function colocarComoJefe(User $actor, User $jefe, UnidadOrganica $destino, ?User $saliente): MovimientoOrganigrama
     {
         $destino = UnidadOrganica::findOrFail($destino->id);
@@ -246,6 +290,7 @@ class MoverJefeComoTrabajadorAction
             'jefe_area' => $jefe->jefe_area_id,
         ];
 
+        
         app(GuardarUnidadOrganicaAction::class)->ejecutar(
             $actor,
             $destino,
@@ -259,6 +304,8 @@ class MoverJefeComoTrabajadorAction
             ubicarJefe: true,
         );
 
+        
+        
         $jefe->refresh();
         if ((int) $jefe->unidad_organica_id !== (int) $destino->id || $jefe->sede_id === null) {
             $jefe->unidad_organica_id = $destino->id;
@@ -283,6 +330,12 @@ class MoverJefeComoTrabajadorAction
         ]);
     }
 
+    /**
+     * @param  array{turno?: ?string, fecha_ancla?: ?string, dias_trabajo?: ?int, dias_descanso?: ?int}|null  $turno
+     * @return array{turno: string, fecha_ancla: string, dias_trabajo: int, dias_descanso: int}|null null = no hay que cargar turno
+     *
+     * @throws UsuarioException
+     */
     private function validarTurno(User $jefe, ?array $turno): ?array
     {
         if (! $this->necesitaTurno($jefe)) {
@@ -310,12 +363,14 @@ class MoverJefeComoTrabajadorAction
         ];
     }
 
+    
     private function necesitaTurno(User $jefe): bool
     {
         return $jefe->regimen === '728'
             && ! ConfiguracionTurno::where('user_id', $jefe->id)->exists();
     }
 
+    
     private function relevarJefatura(User $actor, UnidadOrganica $unidad, User $jefe, ?int $reemplazoId): void
     {
         if ((int) $unidad->jefe_id !== (int) $jefe->id) {

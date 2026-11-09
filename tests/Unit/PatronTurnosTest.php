@@ -44,7 +44,7 @@ class PatronTurnosTest extends TestCase
     {
         $pasos = PatronTurnos::parsear('M M T T N D');
 
-        // Terminó en T (2.ª T) tras M M T T: el siguiente paso es N.
+        
         $offset = PatronTurnos::offsetContinuacion($pasos, ['MANANA', 'MANANA', 'TARDE', 'TARDE']);
         $this->assertSame(4, $offset);
         $this->assertSame('NOCHE', $pasos[$offset]);

@@ -18,22 +18,50 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
+/**
+ * Reporte de cierre de mes para RR. HH. (y jefes, parcialmente), en dos
+ * pestañas sobre el mismo mes:
+ *
+ *  - "resumen" (antes ResumenPapeletasIndex): conteos por motivo/unidad
+ *    y tiempos de respuesta — "salud del proceso". Solo RR. HH./admin,
+ *    igual que antes (Decisiones de RR. HH. se evalúa aparte, no se
+ *    toca acá).
+ *  - "horas" (antes HorasAcumuladasIndex): horas fuera de sede por
+ *    trabajador, para el descuento de planilla, con filtros propios y
+ *    exportación a Excel. Mismo alcance que antes: admin/RR. HH. ven
+ *    todo, jefe solo su equipo (ReporteHorasAcumuladasService::query()).
+ *
+ * Antes eran dos pantallas (y una ruta exclusiva de jefe); se fusionan
+ * porque ambas sirven la misma tarea de fin de mes, y de paso Resumen
+ * de papeletas hereda el export que le faltaba. Cada pestaña calcula
+ * SOLO sus propios datos (nada de correr las dos consultas pesadas en
+ * cada render) y los catálogos de filtros de la pestaña "horas" están
+ * memoizados con #[Computed] para no repetirlos en cada wire:model.live.
+ *
+ * @property-read Collection<int, User> $trabajadoresDisponibles
+ * @property-read Collection<int, Sede> $sedes
+ * @property-read Collection<int, Motivo> $motivos
+ */
 #[Layout('layouts.app')]
 #[Title('Resumen de papeletas')]
 class ResumenPapeletasIndex extends Component
 {
     use RestringeAReportes;
 
+    
     #[Url(as: 'tab', keep: false)]
     public string $tab = '';
 
     public string $mes;
 
+    
     public ?int $trabajadorId = null;
 
     public string $buscar = '';
 
+    
     public int $top = 0;
 
     public ?int $sedeId = null;
@@ -46,6 +74,7 @@ class ResumenPapeletasIndex extends Component
 
     public bool $soloConDescuento = false;
 
+    
     public string $vista = 'resumen';
 
     public function mount(): void
@@ -54,6 +83,8 @@ class ResumenPapeletasIndex extends Component
 
         $this->mes = now()->format('Y-m');
 
+        
+        
         if ($this->tab === '' || $this->tab === 'resumen') {
             $this->tab = 'horas';
         }
@@ -68,6 +99,7 @@ class ResumenPapeletasIndex extends Component
         $this->normalizarTab();
     }
 
+    
     private function normalizarTab(): void
     {
         if ($this->tab === 'resumen' && ! $this->puedeVerResumen()) {
@@ -83,6 +115,7 @@ class ResumenPapeletasIndex extends Component
         return $user->hasRole('admin') || $user->hasRole('rrhh');
     }
 
+    /** @return array<string, mixed> */
     protected function filtros(): array
     {
         return [
@@ -101,6 +134,8 @@ class ResumenPapeletasIndex extends Component
         $this->reset(['trabajadorId', 'buscar', 'top', 'sedeId', 'unidadOrganicaId', 'motivoId', 'regimen', 'soloConDescuento']);
     }
 
+    
+    /** @return BinaryFileResponse */
     public function exportar(ReporteHorasAcumuladasService $service)
     {
         $this->validate([
@@ -118,6 +153,11 @@ class ResumenPapeletasIndex extends Component
         return Excel::download(new HorasAcumuladasExport($resumen, $detalle), $nombreArchivo);
     }
 
+    /**
+     * Trabajadores disponibles para el filtro de la pestaña "horas" (memoizado: una vez por request).
+     *
+     * @return Collection<int, User>
+     */
     #[Computed]
     public function trabajadoresDisponibles(): Collection
     {
@@ -129,6 +169,8 @@ class ResumenPapeletasIndex extends Component
             : $user->trabajadoresParaReportes()->sortBy('name')->values();
     }
 
+    
+    /** @return Collection<int, Sede> */
     #[Computed]
     public function sedes(): Collection
     {
@@ -141,6 +183,7 @@ class ResumenPapeletasIndex extends Component
         return $query->orderBy('nombre')->get();
     }
 
+    /** @return Collection<int, Motivo> */
     #[Computed]
     public function motivos(): Collection
     {
