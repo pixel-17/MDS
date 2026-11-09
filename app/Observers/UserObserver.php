@@ -22,6 +22,9 @@ class UserObserver
 
     /**
       * @param  UnidadOrganica|null  $unidad  unidad del usuario ya cargada (con `jefe`
+      *                                       y `padre`, ver UnidadOrganica::arbolEnMemoria()).
+      *                                       Quien recalcula muchos usuarios la pasa para no
+      *                                       hacer queries por usuario; sin ella se busca.
       */
     public function resincronizar(User $user, ?UnidadOrganica $unidad = null): void
     {

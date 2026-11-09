@@ -12,6 +12,14 @@ class MoverJefeInmediatoAction
 {
     /**
       * @return array{
+      *     jefe: User,
+      *     unidad: UnidadOrganica,
+      *     origen: ?UnidadOrganica,
+      *     destino: UnidadOrganica,
+      *     jefe_area: array{antes: ?User, despues: ?User},
+      *     personas: int,
+      *     avisos: list<string>
+      * }
       */
     public function previsualizar(User $actor, User $jefe, UnidadOrganica $destino): array
     {

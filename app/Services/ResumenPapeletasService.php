@@ -35,6 +35,13 @@ class ResumenPapeletasService
 
     /**
       * @return array{
+      *     por_motivo: Collection<int, array{nombre: string, autorizadas: int, rechazadas: int, no_prosperaron: int, en_tramite: int, total: int}>,
+      *     por_unidad: Collection<int, array{nombre: string, autorizadas: int, rechazadas: int, no_prosperaron: int, en_tramite: int, total: int}>,
+      *     total: int,
+      *     minutos_rrhh: ?int,
+      *     minutos_jefe: ?int,
+      *     jefes_lentos: Collection<int, array{nombre: string, papeletas: int, minutos: int}>
+      * }
       */
     public function resumen(string $mes): array
     {
@@ -92,6 +99,13 @@ class ResumenPapeletasService
       * @param  Collection<int, Papeleta>  $papeletas
       * @param  callable(Papeleta): string  $clave
       * @return Collection<int, array{
+      *     nombre: string,
+      *     autorizadas: int,
+      *     rechazadas: int,
+      *     no_prosperaron: int,
+      *     en_tramite: int,
+      *     total: int
+      * }>
       */
     private function agrupar(Collection $papeletas, callable $clave): Collection
     {

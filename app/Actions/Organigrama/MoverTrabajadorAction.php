@@ -14,6 +14,14 @@ class MoverTrabajadorAction
 {
     /**
       * @return array{
+      *     trabajador: User,
+      *     origen: UnidadOrganica,
+      *     destino: UnidadOrganica,
+      *     jefe_inmediato: array{antes: ?User, despues: ?User, cambia: bool},
+      *     jefe_area: array{antes: ?User, despues: ?User, cambia: bool},
+      *     sede: array{actual: ?Sede, propuesta: ?Sede, propone_cambio: bool},
+      *     avisos: list<string>
+      * }
       */
     public function previsualizar(User $actor, User $trabajador, UnidadOrganica $destino): array
     {

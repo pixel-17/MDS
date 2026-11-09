@@ -31,6 +31,17 @@ class MoverJefeComoTrabajadorAction
 
     /**
       * @return array{
+      *     modo: string,
+      *     jefe: User,
+      *     destino: UnidadOrganica,
+      *     unidades: Collection<int, array{unidad: UnidadOrganica, es_area: bool, personas: int, subunidades: int, requiere_reemplazo: bool, candidatos: Collection<int, User>}>,
+      *     jefes_destino: Collection<int, User>,
+      *     requiere_reemplazar_destino: bool,
+      *     sede: array{actual: ?Sede, propuesta: ?Sede},
+      *     necesita_turno: bool,
+      *     turnos_validos: list<string>,
+      *     avisos: list<string>
+      * }
       */
     public function previsualizar(User $actor, User $jefe, UnidadOrganica $destino, string $modo = self::COMO_TRABAJADOR): array
     {

@@ -63,6 +63,12 @@ class AppServiceProvider extends ServiceProvider
 
         /**
           * @vite() de Laravel precarga en TODA página el CSS (y a veces
+          * el JS) de cualquier chunk que aparezca en "dynamicImports" del
+          * manifest, para evitar flash de estilos sin aplicar cuando el
+          * import dinámico resuelva — eso es justamente lo que hacía que
+          * estos dos archivos aparecieran en cada acción/página, aunque
+          * no hubiera ningún mapa en pantalla. Se excluye ese chunk del
+          * preload: solo se pedirá cuando el mapa realmente se use.
           */
 
     }

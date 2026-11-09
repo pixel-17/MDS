@@ -4,14 +4,14 @@ import typography from '@tailwindcss/typography';
 
 /** @type {import('tailwindcss').Config} */
 
-// ------------------------------------------------------------------
-// Identidad "Registro" (rediseño). El sistema reemplaza un papel
-// físico —la papeleta de permiso, con folio y sello— así que la
-// paleta nace de ahí: papel frío + una sola tinta de sello cálida.
-//
-// `tinta` y `sello` son los nombres de la paleta. Los alias históricos
-// `ocean-*` y `terracota-*` ya no existen: todas las vistas migraron.
-// ------------------------------------------------------------------
+
+
+
+
+
+
+
+
 const tinta = {
     50: '#f3f5f4',
     100: '#e2e8e7',
@@ -40,12 +40,12 @@ const sello = {
     950: '#301b10',
 };
 
-// ------------------------------------------------------------------
-// Colores de acento. Se suman a tinta/sello (no los reemplazan) para
-// dar más color a badges de estado, iconos, avatares y gráficos de
-// reportes en los dashboards. Úsalos como acento puntual, no como
-// fondo de página ni como reemplazo de tinta/sello/registro/alarma.
-// ------------------------------------------------------------------
+
+
+
+
+
+
 const azul = {
     50: '#eff6ff',
     100: '#dbeafe',
@@ -112,34 +112,34 @@ export default {
         './app/Support/**/*.php',
     ],
 
-    // resources/js/theme.js pone/quita la clase `dark` en <html> a mano.
-    // Sin esta línea Tailwind usaría prefers-color-scheme y las ~290
-    // utilidades dark: de las vistas ignorarían el botón de tema.
+    
+    
+    
     darkMode: 'class',
 
     theme: {
         extend: {
             fontFamily: {
-                // Inter: toda la interfaz funcional (formularios, botones,
-                // navegación, texto de cuerpo). Legible a tamaños chicos en
-                // pantallas de gama baja, que es como muchos trabajadores
-                // entran al sistema desde la calle.
+                
+                
+                
+                
                 sans: ['"Inter Variable"', 'Inter', ...defaultTheme.fontFamily.sans],
-                // Fraunces: la identidad (folios, títulos, cifras grandes
-                // del dashboard, wordmark). Con carácter propio de
-                // documento/registro oficial, no de plantilla genérica.
+                
+                
+                
                 display: ['"Fraunces Variable"', 'Fraunces', ...defaultTheme.fontFamily.serif],
-                // Para el número de folio (dato tabular tipo "N.° 0042"),
-                // no como recurso decorativo repartido por la interfaz.
+                
+                
                 mono: ['JetBrains Mono', ...defaultTheme.fontFamily.mono],
             },
 
             colors: {
                 tinta,
                 sello,
-                // Estados del registro: aprobar (verde-registro) y
-                // rechazar/vencer (rojo-sello). Tonos apagados de tinta
-                // de sello, no semáforo saturado.
+                
+                
+                
                 registro: {
                     50: '#f1f6f2',
                     100: '#dcebe0',
@@ -154,8 +154,8 @@ export default {
                     600: '#872f29',
                     700: '#6c2621',
                 },
-                // Acentos nuevos: azul, verde, morado, ámbar. Disponibles
-                // como bg-azul-500, text-verde-600, border-morado-400, etc.
+                
+                
                 azul,
                 verde,
                 morado,

@@ -60,6 +60,13 @@ class JefaturaUnidadService
 
     /**
       * @return array{
+      *     error: ?string,
+      *     jefe: array{antes: ?User, despues: ?User, cambia: bool, fuera_de_la_unidad: bool},
+      *     padre: array{antes: ?UnidadOrganica, despues: ?UnidadOrganica, cambia: bool},
+      *     personas: int,
+      *     subarbol: int,
+      *     avisos: list<string>
+      * }|null
       */
     public function previsualizar(?UnidadOrganica $unidad, ?int $jefeId, ?int $parentId, bool $ubicarJefe = false): ?array
     {
