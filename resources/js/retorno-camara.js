@@ -1,36 +1,6 @@
-/**
- * Marcar retorno (resources/views/trabajador/papeletas/show.blade.php).
- *
- * Antes había dos botones separados: "Usar mi ubicación actual" (GPS)
- * y "Tomar / adjuntar foto" (input[type=file], que también permitía
- * elegir una imagen ya guardada en la galería). Se unifican en un
- * solo flujo "Tomar foto de retorno" al estilo Timestamp Camera:
- *
- *   1) Se abre la cámara en vivo (getUserMedia, disparado por x-init en
- *      el <video> cuando Alpine lo monta) y en paralelo se pide la
- *      ubicación + se resuelve la dirección contra Nominatim. Mientras
- *      está en vivo, un reloj (horaActual, cada 1 s) + textoUbicacion()
- *      pintan una marca de agua sobre el video — estilo Timestamp
- *      Camera — con el MISMO formato que quedará sellado al capturar,
- *      para que no haya sorpresas entre lo que se ve y lo que se graba.
- *   2) Al capturar, se "sella" la foto con la dirección, la fecha y
- *      la hora directamente sobre el canvas, en el cliente — el
- *      servidor nunca recibe una foto sin el sello.
- *   3) La foto sellada (Blob) se inyecta al <input type="file"> oculto
- *      vía DataTransfer justo antes del submit nativo del formulario,
- *      así el backend (RetornoController) no cambia: sigue
- *      recibiendo foto + latitud + longitud por POST normal.
- *
- * No hay <input type=file> clickeable en ningún momento: la única
- * forma de llenar ese campo es capturando con la cámara en vivo, por
- * lo que no se puede adjuntar una foto de la galería.
- *
- * latitud/longitud se siguen enviando igual que antes (el backend los
- * usa para `dentro_de_radio`, ver MarcarRetornoAction) — la dirección
- * en texto es solo una lectura para el sello, no se guarda aparte.
- */
 
-/** Nominatim pide no abusar del servicio: un intento, con timeout corto. */
+
+
 async function resolverDireccion(lat, lng) {
     const controlador = new AbortController();
     const expira = setTimeout(() => controlador.abort(), 8000);
@@ -50,8 +20,8 @@ async function resolverDireccion(lat, lng) {
 
         return datos.display_name ?? null;
     } catch (error) {
-        // Sin internet, timeout, o Nominatim caído: se sigue con las
-        // coordenadas como texto, nunca se bloquea el retorno por esto.
+        
+        
         return null;
     } finally {
         clearTimeout(expira);
@@ -67,7 +37,7 @@ function formatearFechaHora(fecha) {
     };
 }
 
-/** Mismo texto que usa el sello final: la dirección si ya resolvió, si no las coordenadas. */
+
 function formatearUbicacion(direccion, lat, lng) {
     if (direccion) return direccion;
     if (lat && lng) return `${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}`;
@@ -98,7 +68,7 @@ function partirTexto(ctx, texto, anchoMaximo) {
     return lineas;
 }
 
-/** Sella fecha, hora y dirección sobre el frame capturado, estilo Timestamp Camera. */
+
 function sellarFoto(canvas, { direccion, lat, lng }) {
     const ctx = canvas.getContext('2d');
     const ancho = canvas.width;
@@ -144,7 +114,7 @@ function sellarFoto(canvas, { direccion, lat, lng }) {
 
 window.msscRetornoCamara = function () {
     return {
-        // 'inicial' -> 'abriendo' -> 'en-vivo' -> 'capturada'
+        
         estado: 'inicial',
         enviando: false,
 
@@ -158,10 +128,10 @@ window.msscRetornoCamara = function () {
         ubicacionError: '',
         camaraError: '',
 
-        // Reloj en vivo para la marca de agua sobre el video (estilo
-        // Timestamp Camera): se actualiza cada segundo mientras hay
-        // cámara abierta, independiente del sello que se graba recién
-        // al capturar.
+        
+        
+        
+        
         relojId: null,
         horaActual: '',
 
@@ -175,20 +145,20 @@ window.msscRetornoCamara = function () {
 
             this.iniciarReloj();
 
-            // En paralelo: la cámara no debe esperar a que resuelva el GPS.
-            // La apertura de la cámara en sí NO se llama desde acá: se
-            // dispara sola vía x-init="conectarCamara()" en el <video
-            // x-ref="video"> de abajo, cuando Alpine lo inserta en el DOM
-            // al activarse el x-if de "abriendo"/"en-vivo". Eso evita por
-            // completo la carrera de "getUserMedia resuelve antes de que
-            // exista el <video>" (antes se parchaba con un polling manual
-            // de hasta 200 ms que en equipos lentos igual podía agotarse).
+            
+            
+            
+            
+            
+            
+            
+            
             this.iniciarUbicacion();
         },
 
         iniciarReloj() {
             this.actualizarHora();
-            this.detenerReloj(); // por si quedó uno corriendo de un intento anterior
+            this.detenerReloj(); 
             this.relojId = setInterval(() => this.actualizarHora(), 1000);
         },
 
@@ -204,7 +174,7 @@ window.msscRetornoCamara = function () {
             }
         },
 
-        /** Texto de ubicación para la marca de agua en vivo (mismo formato que el sello final). */
+        
         textoUbicacion() {
             return formatearUbicacion(this.direccion, this.lat, this.lng);
         },
@@ -234,8 +204,8 @@ window.msscRetornoCamara = function () {
         },
 
         async cambiarCamara() {
-            // Acá $refs.video ya existe (la cámara está en vivo, el x-if
-            // nunca se desmontó), así que se puede llamar directo.
+            
+            
             this.facingMode = this.facingMode === 'environment' ? 'user' : 'environment';
             this.detenerStream();
             await this.conectarCamara();
@@ -281,7 +251,7 @@ window.msscRetornoCamara = function () {
                     this.fotoBlob = blob;
                     this.fotoPreviewUrl = URL.createObjectURL(blob);
                     this.estado = 'capturada';
-                    // Ya no hace falta mantener la cámara ni el reloj prendidos mientras se revisa/envía.
+                    
                     this.detenerStream();
                     this.detenerReloj();
                 },
@@ -304,7 +274,7 @@ window.msscRetornoCamara = function () {
             this.stream = null;
         },
 
-        /** Inyecta la foto sellada al input real justo antes del submit nativo del form. */
+        
         prepararEnvio(evento) {
             if (this.enviando) {
                 evento.preventDefault();

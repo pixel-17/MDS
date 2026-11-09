@@ -1,21 +1,4 @@
-/**
- * Selector de ubicación en mapa para el formulario de Sede
- * (resources/views/livewire/sedes/sede-form.blade.php).
- *
- * Reemplaza los inputs manuales de latitud/longitud: el admin marca
- * el lugar/zona haciendo clic o arrastrando el marcador, y este
- * componente llena `latitud`/`longitud` directamente en el
- * componente Livewire (App\Livewire\Sedes\SedeForm) vía $wire.set().
- *
- * Leaflet (JS + CSS + iconos, ~150 kB) NO va en el bundle general: solo
- * el formulario de Sede lo usa, así que se descarga con import() dinámico
- * cuando el mapa aparece (ver ./sede-mapa-leaflet.js). Este archivo solo
- * define la fábrica de Alpine y pesa casi nada.
- *
- * El radio (radioMetros) se sigue escribiendo en su propio input
- * numérico normal (wire:model.live); acá solo se observa para que el
- * círculo del mapa se ajuste en vivo.
- */
+
 window.msscMapaSede = function (config) {
     return {
         mapa: null,
@@ -25,8 +8,8 @@ window.msscMapaSede = function (config) {
         async init() {
             const { default: L } = await import('./sede-mapa-leaflet');
 
-            // Si el usuario navegó a otra página mientras se descargaba Leaflet,
-            // el contenedor ya no existe.
+            
+            
             if (! this.$refs.mapa?.isConnected) {
                 return;
             }
@@ -45,11 +28,11 @@ window.msscMapaSede = function (config) {
                 fillOpacity: 0.15,
             }).addTo(this.mapa);
 
-            // Sede nueva: el marcador ya aparece puesto sobre el mapa, pero
-            // $wire.latitud/longitud siguen en null hasta que el admin
-            // interactúa con él. Si no se sincroniza aquí, "Crear sede" falla
-            // la validación sin que el admin entienda por qué (parece que no
-            // hizo nada mal: el pin ya estaba ahí).
+            
+            
+            
+            
+            
             if (! config.tieneUbicacion) {
                 this.moverA(this.marcador.getLatLng());
             }

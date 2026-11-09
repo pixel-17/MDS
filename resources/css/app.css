@@ -1,11 +1,4 @@
-/*
- * Fuentes autoalojadas (antes venían de fonts.bunny.net en cada página:
- * una petición externa que bloquea el primer pintado y no existe sin
- * conexión). Son variables (un archivo cubre todos los pesos) y traen
- * `unicode-range`: el navegador solo descarga el subconjunto que la
- * página usa (latin para español). Los nombres de familia están en
- * tailwind.config.js (fontFamily).
- */
+
 @import '@fontsource-variable/inter/index.css';
 @import '@fontsource-variable/fraunces/index.css';
 
@@ -16,11 +9,6 @@
 [x-cloak] {
     display: none !important;
 }
-
-
-/* ==================================================================== */
-/*  Sistema de diseño "Papeletas"  elegante, con glassmorfismo  */
-/* ==================================================================== */
 
 :root {
     --surface: #ffffff;
@@ -36,10 +24,6 @@ html {
     scroll-behavior: smooth;
 }
 
-/* Fraunces lleva la identidad (folios, títulos, cifras grandes);
-   se aplica a los encabezados semánticos directamente para que no haga
-   falta agregar una clase en cada vista. Un span.font-display cubre
-   los casos puntuales (folio, wordmark) que no son un <h1-3>. */
 h1, h2, h3,
 .font-display {
     font-family: 'Fraunces', ui-serif, Georgia, serif;
@@ -52,10 +36,6 @@ body.app-bg {
     color: #101c22;
 }
 
-/* Modo oscuro: gris carbón neutro (zinc), a propósito SIN tinte azul/
-   marino — antes usaba #161c2c/#0b0f19/#111827, que llevan un canal azul
-   más alto que rojo/verde y se leían como "azul oscuro". Aquí R≈G≈B. */
-
 .dark body.app-bg,
 .dark .app-bg {
     --surface: #1f1f23;
@@ -64,11 +44,6 @@ body.app-bg {
     background: var(--surface-muted);
     color: #e4e4e7;
 }
-
-/* Fondo de las pantallas de acceso (login, recuperar contraseña, etc.):
-   un degradado radial muy sutil con la tinta de sello, para que no se
-   sienta como una pantalla gris plana sin perder la base "sin
-   glassmorfismo" del resto del sistema. */
 
 .auth-bg {
     background:
@@ -81,9 +56,7 @@ body.app-bg {
 }
 
 .dark .auth-bg {
-    /* Mismas superficies oscuras que .app-bg: sin esto la tarjeta del
-       login se quedaba blanca en modo oscuro y las etiquetas (claras)
-       no se leían. */
+    
     --surface: #1f1f23;
     --surface-muted: #14181a;
     --border-soft: #2d2d33;
@@ -104,10 +77,6 @@ body.app-bg {
         animation: none !important;
     }
 }
-
-/* ------------------------------------------------------------------ */
-/*  Superficies: tarjetas y paneles planos                            */
-/* ------------------------------------------------------------------ */
 
 .glass,
 .glass-strong,
@@ -141,9 +110,6 @@ body.app-bg {
     border: 1px solid var(--border-soft);
     box-shadow: 0 1px 4px 0 rgba(15, 23, 42, 0.09);
 }
-
-/* Superposiciones white/NN: antes se apoyaban en el desenfoque del glass,
-   ahora se remapean a tonos neutros planos, en claro y oscuro. */
 
 .hover\:bg-white\/70:hover,
 .hover\:bg-white\/60:hover,
@@ -183,21 +149,10 @@ body.app-bg {
     background-color: rgba(2, 132, 199, 0.12);
 }
 
-/* Texto: ajuste automático en modo oscuro sin tocar cada vista.
-   Escala neutra (zinc), no gris azulado, para que no reaparezca el
-   tinte "marino" en textos y superficies secundarias. */
-
 .dark {
     color-scheme: dark;
 }
 
-/* `color-scheme: dark` de arriba no basta para el listado que se abre al
-   hacer clic en un <select>: @tailwindcss/forms le pone `appearance: none`
-   a todo <select> (para poder pintar su propia flecha) y, en cuanto un
-   <select> tiene appearance personalizado, Chrome deja de respetar
-   color-scheme para ESE listado en particular y lo pinta siempre claro,
-   aunque el control ya cerrado sí se vea oscuro. Lo único que funciona
-   es colorear las <option> de forma explícita. */
 .dark select option,
 .dark select optgroup {
     background-color: var(--surface);
@@ -224,15 +179,6 @@ body.app-bg {
 .dark .text-gray-400 {
     color: #71717a;
 }
-
-/* Familia `tinta-*` (texto/fondo/borde): se usa en ~60 vistas para
-   títulos, etiquetas y bordes de input, pero nunca tuvo variante dark: 
-   propia — a diferencia de gray-* y white arriba, se quedaba con el
-   mismo tono oscuro/claro fijo en ambos temas. En modo oscuro eso
-   volvía casi ilegibles los títulos (tinta-950 es casi negro) y
-   dejaba tarjetas bg-tinta-50 brillando blancas sobre fondo oscuro.
-   Mismo criterio que el resto del archivo: un solo lugar que arregla
-   todas las vistas, sin tocar cada Blade una por una. */
 
 .dark .text-tinta-950,
 .dark .text-tinta-900 {
@@ -269,10 +215,6 @@ body.app-bg {
 .dark .bg-white\/80 {
     background-color: rgba(255, 255, 255, 0.05);
 }
-
-/* bg-gray-50/100 y border-gray-100/200: usadas en varias vistas (badges,
-   separadores, barras de progreso) sin variante dark: — sin esto quedan
-   como parches claros sobre fondo oscuro. */
 
 .dark .bg-gray-50,
 .dark .bg-gray-50\/80,
@@ -311,23 +253,11 @@ body.app-bg {
     background-clip: content-box;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Badges de estado (estado-papeleta, papeleta-ticket)                 */
-/* ------------------------------------------------------------------ */
-
-/* La cápsula del "sello": bordes casi rectos (no píldora) y una leve
-   rotación, como si estuviera estampado a mano — el color (bg/text/
-   ring por estado) lo aporta PapeletaEstadoPresentacion::para() en
-   cada uso, ya con sus propias variantes dark:. */
 .badge-tinta {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-semibold ring-1 ring-inset;
     transform: rotate(-1.5deg);
     letter-spacing: 0.01em;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Botones                                                             */
-/* ------------------------------------------------------------------ */
 
 .btn-glass {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold
@@ -383,22 +313,9 @@ body.app-bg {
     background: #be123c;
 }
 
-/* btn-danger-glass: alias histórico de btn-danger, todavía referenciado
-   por <x-danger-button>. Se mantiene como alias en vez de tocar el
-   componente para no arriesgar su uso en formularios de confirmación
-   (borrar cuenta, cancelar papeleta, etc.). */
 .btn-danger-glass {
     @apply btn-danger;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Acciones de fila (tablas de administración: Editar / Eliminar)      */
-/* ------------------------------------------------------------------ */
-
-/* Antes eran enlaces de texto subrayados, sin borde ni fondo — poco
-   visibles como acción y sin affordance de botón. Ahora son "chips"
-   pequeños con borde, coherentes con .btn-secondary/.btn-danger pero
-   a escala de fila de tabla. */
 
 .btn-row {
     @apply inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold
@@ -448,10 +365,6 @@ body.app-bg {
     border-color: rgba(248, 113, 113, 0.45);
 }
 
-/* ------------------------------------------------------------------ */
-/*  Tarjetas de estadística (dashboard)                                 */
-/* ------------------------------------------------------------------ */
-
 .stat-card {
     @apply glass-card flex items-center justify-between gap-3 p-4;
 }
@@ -468,10 +381,6 @@ body.app-bg {
 .dark .stat-card-value {
     color: #ffffff;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Inputs                                                              */
-/* ------------------------------------------------------------------ */
 
 .input-glass {
     @apply w-full rounded-xl px-4 py-2.5 text-sm
@@ -496,9 +405,6 @@ body.app-bg {
     border-color: #34343b;
 }
 
-/* Mismo caso que .dark select option en la sección de arriba: un <select>
-   con la clase .input-glass (ej. el de Motivo al crear una papeleta) no
-   hereda color-scheme de forma confiable en todos los navegadores. */
 .dark select.input-glass {
     color-scheme: dark;
 }
@@ -511,8 +417,6 @@ body.app-bg {
     border-color: #c6902f;
     box-shadow: 0 0 0 3px rgba(198, 144, 47, 0.18);
 }
-
-/* Scrollbar sutil */
 
 ::-webkit-scrollbar {
     width: 8px;
@@ -539,8 +443,6 @@ body.app-bg {
     background: #48484f;
     background-clip: content-box;
 }
-
-/* Utilidad: aparición escalonada de tarjetas en listas */
 
 .stagger > * {
     animation: fade-in-up 0.4s ease-out both;
@@ -590,10 +492,6 @@ body.app-bg {
     }
 }
 
-/* Flotación sutil para íconos hero (login, errores, bloqueo de puerta).
-   Usaba la clase .animate-float en 7 vistas pero nunca estuvo definida,
-   así que esos íconos quedaban estáticos. */
-
 @keyframes float {
     0%, 100% {
         transform: translateY(0);
@@ -614,26 +512,14 @@ body.app-bg {
     }
 }
 
-/* En oscuro una sombra clara casi no se nota sobre el fondo carbón:
-   se usa una sombra negra más profunda para que dropdowns, toasts y los
-   íconos "hero" mantengan sensación de elevación. */
-
 .dark .shadow-glass-lg {
     box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.6);
 }
-
-/* Marca de avatar / logo del sidebar: degradado con el color de marca.
-   .avatar-mark y .sidebar-brand-mark se usaban en topbar/sidebar/mobile-topbar
-   pero tampoco estaban definidas — el avatar y el logo se veían sin color. */
 
 .avatar-mark,
 .sidebar-brand-mark {
     background: linear-gradient(135deg, #647d7d 0%, #324e52 100%);
 }
-
-/* ==================================================================== */
-/*  Layout: Sidebar (Admin / RRHH / Jefe de Área)                       */
-/* ==================================================================== */
 
 .app-shell {
     display: flex;
@@ -797,37 +683,15 @@ body.app-bg {
     color: #e4e4e7;
 }
 
-/* ==================================================================== */
-/*  Layout: Mobile shell (Trabajador / Vigilante)                       */
-/* ==================================================================== */
-
-/* Fondo de pantalla completa del shell del trabajador
-   (components/trabajador-layout.blade.php). Mismo tono neutro que el
-   resto de la app — sin gradiente propio — para que la única superficie
-   "de marca" siga siendo el header (.glass-nav) y no compita con él. */
 .bg-institucional {
     background: var(--surface-muted);
 }
 
-/* Header del shell del trabajador: mismo degradado institucional que
-   .app-sidebar (Admin/Jefe/RRHH), para que ambas entradas al sistema
-   compartan una sola "superficie de marca". Los íconos dentro se pintan
-   en blanco vía .icon-chip + los modificadores !bg-white/10 ya puestos
-   en el markup. */
 .glass-nav {
     background: var(--sidebar-bg);
     box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset;
 }
 
-/* Badge/botón circular de ícono: solo geometría, sin fondo/color
-   propios a propósito. Cada lugar que lo usa (header del trabajador,
-   stat-card por tono, logo de acceso, tarjetas de welcome) ya trae su
-   propio bg-* / text-* de Tailwind — si icon-chip impusiera un color acá,
-   esas variantes de color quedarían todas iguales, ya que este archivo
-   no usa @layer y por lo tanto cualquier regla de acá le gana a una
-   utilidad de Tailwind sin `!`. El único caso sin bg-* / text-* propio
-   (botón de cerrar del drawer móvil) hereda el color del contenedor,
-   que es justamente lo que se necesita ahí. */
 .icon-chip {
     display: inline-flex;
     align-items: center;
@@ -937,8 +801,6 @@ body.app-bg {
     }
 }
 
-/* Barra de carga global de Livewire (resources/js/livewire-progreso.js).
-   Aparece solo si la respuesta tarda; usa el color de sello. */
 html::after {
     content: '';
     position: fixed;

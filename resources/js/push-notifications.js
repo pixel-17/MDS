@@ -1,15 +1,4 @@
-/**
- * Web push (notificaciones): registra el Service Worker (public/sw.js)
- * y gestiona la suscripción del navegador contra
- * NotificationChannels\WebPush\HasPushSubscriptions (backend), vía
- * PushSubscriptionController (routes/web.php: POST/DELETE
- * /push-subscriptions).
- *
- * El canal in-app (tabla `notifications`, componente Livewire
- * NotificationBell) sigue siendo el registro de verdad: si el
- * navegador no soporta push, no hay permiso concedido, o el usuario
- * nunca activa el botón, la bandeja in-app sigue funcionando igual.
- */
+
 
 function base64UrlAUint8Array(base64Url) {
     const padding = '='.repeat((4 - (base64Url.length % 4)) % 4);
@@ -78,9 +67,9 @@ async function suscribir() {
         body: JSON.stringify(suscripcion.toJSON()),
     });
 
-    // Si el servidor no la guardó (p. ej. 422 por un endpoint que no es de un
-    // servicio de push conocido, o 419/500), NO se deja el navegador suscrito:
-    // el botón diría "Desactivar" y nunca llegaría ninguna notificación.
+    
+    
+    
     if (!respuesta.ok) {
         console.warn('El servidor rechazó la suscripción push (HTTP ' + respuesta.status + ').');
         await suscripcion.unsubscribe();
@@ -111,11 +100,7 @@ async function desuscribir() {
     await suscripcion.unsubscribe();
 }
 
-/**
- * Componente Alpine usado en profile/device-settings-form.blade.php
- * (x-data="msscPushToggle()"): un único botón que activa o desactiva
- * push según el estado actual de la suscripción del navegador.
- */
+
 window.msscPushToggle = function () {
     return {
         etiqueta: 'Notificaciones push',
