@@ -10,7 +10,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
-
 class CrearUsuarioRequest extends FormRequest
 {
     public function authorize(): bool
@@ -18,17 +17,11 @@ class CrearUsuarioRequest extends FormRequest
         return true;
     }
 
-    /** @return array<string, mixed> */
     public function rules(): array
     {
         $unidadesDisponibles = $this->unidadesDisponibles();
         $esJefeDeArea = $unidadesDisponibles->isNotEmpty();
 
-        
-        
-        
-        
-        
         $existenteInactivo = User::where('dni', $this->input('dni'))
             ->where('activo', false)
             ->first();
@@ -39,17 +32,10 @@ class CrearUsuarioRequest extends FormRequest
             'dni' => ReglasDatosUsuario::dni(soloActivos: true),
             'email' => ReglasDatosUsuario::email($existenteInactivo?->id),
             'regimen' => ['required', Rule::in(['276', '728'])],
-            
-            
-            
-            
             'turno' => ['nullable', Rule::in(['MANANA', 'TARDE', 'NOCHE'])],
             'fecha_ancla' => ['nullable', 'required_with:turno', 'date'],
             'dias_trabajo' => ['nullable', 'integer', 'min:1', 'max:30'],
             'dias_descanso' => ['nullable', 'integer', 'min:1', 'max:30'],
-            
-            
-            
             'sede_id' => $esJefeDeArea && $this->input('tipo') === 'jefe_inmediato'
                 ? ['required', 'exists:sedes,id']
                 : ['nullable', 'exists:sedes,id'],
@@ -89,7 +75,6 @@ class CrearUsuarioRequest extends FormRequest
         });
     }
 
-    
     private function regimenEsperado(): ?string
     {
         $unidadesDisponibles = $this->unidadesDisponibles();
@@ -103,13 +88,11 @@ class CrearUsuarioRequest extends FormRequest
             return null;
         }
 
-        $unidad = UnidadOrganica::find((int) $this->input('unidad_organica_id'));
+        $unidad = UnidadOrganica::find($this->integer('unidad_organica_id'));
 
         return $unidad?->jefe?->regimen;
     }
 
-    
-    /** @return Collection<int, int> */
     public function unidadesDisponibles(): Collection
     {
         $encabezadas = $this->user()->unidadesDeArea ?? collect();

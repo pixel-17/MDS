@@ -14,25 +14,21 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
-
 class PapeletaActualizada implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets;
 
-    
     private const CANALES_POR_ENVIO = 50;
 
-    
     private const CACHE_DESTINATARIOS_FIJOS = 'broadcast.destinatarios_fijos';
 
     private const TTL_DESTINATARIOS_FIJOS = 60;
 
     /**
-      * @var array<int, true>
-      */
+     * @var array<int, true>
+     */
     private static array $pendientes = [];
 
-    /** @param  array<int, int>  $userIds */
     public function __construct(
         public int $papeletaId,
         public string $estado,
@@ -40,7 +36,6 @@ class PapeletaActualizada implements ShouldBroadcastNow
         public array $userIds,
     ) {}
 
-    /** @return array<int, PrivateChannel> */
     public function broadcastOn(): array
     {
         return array_map(
@@ -49,7 +44,6 @@ class PapeletaActualizada implements ShouldBroadcastNow
         );
     }
 
-    /** @return array<string, mixed> */
     public function broadcastWith(): array
     {
         return [
@@ -59,7 +53,6 @@ class PapeletaActualizada implements ShouldBroadcastNow
         ];
     }
 
-    
     public static function notificar(int $papeletaId): void
     {
         if (isset(self::$pendientes[$papeletaId])) {
@@ -68,9 +61,6 @@ class PapeletaActualizada implements ShouldBroadcastNow
 
         self::$pendientes[$papeletaId] = true;
 
-        
-        
-        
         DB::afterRollBack(function () use ($papeletaId) {
             unset(self::$pendientes[$papeletaId]);
         });
@@ -79,17 +69,12 @@ class PapeletaActualizada implements ShouldBroadcastNow
             unset(self::$pendientes[$papeletaId]);
 
             try {
-                
-                
                 try {
                     DashboardMetricsService::invalidar();
                 } catch (Throwable $e) {
                     report($e);
                 }
 
-                
-                
-                
                 if (app()->runningInConsole()) {
                     self::emitir($papeletaId);
                 } else {
@@ -101,7 +86,6 @@ class PapeletaActualizada implements ShouldBroadcastNow
         });
     }
 
-    
     private static function emitir(int $papeletaId): void
     {
         try {
@@ -130,18 +114,17 @@ class PapeletaActualizada implements ShouldBroadcastNow
     }
 
     /**
-      * @return array<int, int>
-      */
+     * @return array<int, int>
+     */
     private static function destinatariosFijos(): array
     {
         return Cache::remember(
             self::CACHE_DESTINATARIOS_FIJOS,
             self::TTL_DESTINATARIOS_FIJOS,
-            fn () => User::role(['rrhh', 'admin'])->pluck('id')->map(fn ($id) => (int) $id)->all(),
+            fn () => User::role(['rrhh', 'admin'])->pluck('id')->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)->all(),
         );
     }
 
-    
     public static function olvidarDestinatariosFijos(): void
     {
         Cache::forget(self::CACHE_DESTINATARIOS_FIJOS);

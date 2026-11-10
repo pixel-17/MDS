@@ -9,15 +9,12 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
-
 abstract class NotificacionEnVivo extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    
     public int $tries = 3;
 
-    /** @return int[] segundos de espera entre cada intento */
     public function backoff(): array
     {
         return [10, 60, 300];
@@ -31,35 +28,33 @@ abstract class NotificacionEnVivo extends Notification implements ShouldQueue
     ) {}
 
     /**
-      * @return array<int, string>
-      */
+     * @return array<int, string>
+     */
     public function via(object $notifiable): array
     {
         return ['database', WebPushChannel::class, 'broadcast'];
     }
 
     /**
-      * @return array<string, mixed>
-      */
+     * @return array<string, mixed>
+     */
     protected function datosExtra(): array
     {
         return [];
     }
 
-    
     abstract protected function etiquetaPush(): string;
 
-    
     abstract protected function textoAccion(): string;
 
     /**
-      * @return array<string, mixed>
-      */
+     * @return array<string, mixed>
+     */
     abstract protected function datosPush(): array;
 
     /**
-      * @return array<string, mixed>
-      */
+     * @return array<string, mixed>
+     */
     protected function payload(): array
     {
         return [
@@ -72,14 +67,13 @@ abstract class NotificacionEnVivo extends Notification implements ShouldQueue
     }
 
     /**
-      * @return array<string, mixed>
-      */
+     * @return array<string, mixed>
+     */
     public function toDatabase(object $notifiable): array
     {
         return $this->payload();
     }
 
-    
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
         return new BroadcastMessage([
@@ -98,11 +92,7 @@ abstract class NotificacionEnVivo extends Notification implements ShouldQueue
             ->badge('/icons/badge-72.png')
             ->tag($this->etiquetaPush());
 
-        $datos = $this->datosPush();
-
-        if ($datos !== []) {
-            $mensaje->data($datos);
-        }
+        $mensaje->data($this->datosPush());
 
         if ($this->url) {
             $mensaje->action($this->textoAccion(), 'ver');

@@ -18,7 +18,6 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
-
 class UnidadModal extends Component
 {
     use ManejaExcepcionesDeUsuario;
@@ -39,7 +38,6 @@ class UnidadModal extends Component
 
     public bool $activo = true;
 
-    
     public bool $pasarJefe = true;
 
     public ?string $error = null;
@@ -73,10 +71,8 @@ class UnidadModal extends Component
         $this->abierto = false;
     }
 
-    
     protected function autorizarAccion(?int $id, ?int $parentId): User
     {
-        /** @var User|null $actor */
         $actor = auth()->user();
 
         abort_unless($actor !== null, 403);
@@ -95,7 +91,6 @@ class UnidadModal extends Component
         return $actor;
     }
 
-    /** @return array<string, mixed> */
     protected function rules(): array
     {
         return [
@@ -122,7 +117,6 @@ class UnidadModal extends Component
             return;
         }
 
-        /** @var User $actor */
         $actor = auth()->user();
 
         if (! $this->intentar(
@@ -155,7 +149,6 @@ class UnidadModal extends Component
             return;
         }
 
-        /** @var User $actor */
         $actor = auth()->user();
 
         if (! $this->intentar(
@@ -169,21 +162,24 @@ class UnidadModal extends Component
         $this->dispatch('org-actualizado', mensaje: 'Unidad eliminada.');
     }
 
+    private function nombreDePadre(int $parentId): string
+    {
+        $nombre = UnidadOrganica::whereKey($parentId)->value('nombre');
+
+        return is_string($nombre) ? $nombre : '';
+    }
+
     public function render(): View
     {
         if (! $this->abierto) {
             return view('livewire.organigrama.unidad-modal', ['padres' => [], 'jefes' => [], 'resumen' => null, 'contexto' => null, 'vista' => null, 'esAdmin' => false]);
         }
 
-        /** @var User $actor */
         $actor = auth()->user();
         $esAdmin = $actor->hasRole('admin');
 
         $unidad = $this->unidadId ? UnidadOrganica::find($this->unidadId) : null;
 
-        
-        
-        
         $unidadId = $unidad?->id;
         $descendientes = $unidad?->descendantIds() ?? [];
 
@@ -203,7 +199,6 @@ class UnidadModal extends Component
             ->orderBy('name')->orderBy('apellido');
 
         if (! $esAdmin) {
-            
             $reglas = app(ReglasOrganigrama::class);
             $padreActual = $this->parentId ? UnidadOrganica::find($this->parentId) : null;
             $areaId = $padreActual ? $reglas->areaDe($actor, $padreActual) : null;
@@ -219,19 +214,16 @@ class UnidadModal extends Component
             ->all();
 
         return view('livewire.organigrama.unidad-modal', [
-            
             'vista' => app(JefaturaUnidadService::class)->previsualizar($unidad, $this->jefeId, $this->parentId, $this->pasarJefe),
             'padres' => $padres,
             'jefes' => $jefes,
-            
             'resumen' => $unidad ? [
                 'personas' => $unidad->miembros()->count(),
                 'hijos' => $unidad->hijos()->count(),
             ] : null,
-            
             'contexto' => $unidad
                 ? $unidad->padre?->nombre
-                : ($this->parentId ? 'Dentro de '.UnidadOrganica::whereKey($this->parentId)->value('nombre') : 'Unidad raíz'),
+                : ($this->parentId ? 'Dentro de '.$this->nombreDePadre($this->parentId) : 'Unidad raíz'),
             'esAdmin' => $esAdmin,
         ]);
     }

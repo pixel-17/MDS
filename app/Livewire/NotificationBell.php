@@ -3,10 +3,10 @@
 namespace App\Livewire;
 
 use App\Livewire\Concerns\EscuchaNotificacionesEnVivo;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
-
 
 class NotificationBell extends Component
 {
@@ -14,7 +14,6 @@ class NotificationBell extends Component
 
     public int $porMostrar = 8;
 
-    
     protected function escuchaCambiosDeEstado(): bool
     {
         return false;
@@ -22,7 +21,6 @@ class NotificationBell extends Component
 
     public function marcarComoLeida(string $id): void
     {
-        /** @var \App\Models\User $usuario */
         $usuario = Auth::user();
 
         $notificacion = $usuario->notifications()->whereKey($id)->first();
@@ -32,7 +30,6 @@ class NotificationBell extends Component
 
     public function marcarTodasComoLeidas(): void
     {
-        /** @var \App\Models\User $usuario */
         $usuario = Auth::user();
 
         $usuario->unreadNotifications->markAsRead();
@@ -40,12 +37,15 @@ class NotificationBell extends Component
 
     public function render(): View
     {
-        /** @var \App\Models\User $usuario */
         $usuario = Auth::user();
+
+        $noLeidas = $usuario->unreadNotifications()->count();
+
+        $this->dispatch('contador-notificaciones-actualizado', cantidad: $noLeidas);
 
         return view('livewire.notification-bell', [
             'notificaciones' => $usuario->notifications()->latest()->take($this->porMostrar)->get(),
-            'noLeidas' => $usuario->unreadNotifications()->count(),
+            'noLeidas' => $noLeidas,
         ]);
     }
 }

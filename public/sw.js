@@ -1,5 +1,4 @@
 
-
 self.addEventListener('push', (event) => {
     if (!event.data) {
         return;
@@ -25,6 +24,18 @@ self.addEventListener('push', (event) => {
     };
 
     event.waitUntil(self.registration.showNotification(titulo, opciones));
+
+    const cantidadNoLeidas = payload.data && typeof payload.data.badgeCount === 'number'
+        ? payload.data.badgeCount
+        : null;
+
+    if (cantidadNoLeidas !== null && 'setAppBadge' in self.navigator) {
+        event.waitUntil(
+            cantidadNoLeidas > 0
+                ? self.navigator.setAppBadge(cantidadNoLeidas).catch(() => {})
+                : self.navigator.clearAppBadge().catch(() => {})
+        );
+    }
 });
 
 self.addEventListener('notificationclick', (event) => {

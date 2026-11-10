@@ -12,7 +12,6 @@ use App\States\Papeleta\Rechazada;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-
 class PapeletaController extends Controller
 {
     use ResuelveUsuarioAutenticado;
@@ -23,8 +22,6 @@ class PapeletaController extends Controller
 
         $papeleta->load(['motivo', 'sede', 'trabajador', 'retorno', 'sustentos', 'historial.actor', 'jefeInmediato', 'jefeArea', 'enRevisionPor']);
 
-        
-        
         $tomado = $bloqueo->marcar($papeleta, $this->usuarioAutenticado());
         $enRevisionPor = $tomado ? null : $bloqueo->nombreRevisor($papeleta);
 
@@ -36,8 +33,8 @@ class PapeletaController extends Controller
     }
 
     /**
-      * @return array{mes: string, papeletas: int, rechazadas: int, observaciones: int, minutos: int, minutos_con_descuento: int}
-      */
+     * @return array{mes: string, papeletas: int, rechazadas: int, observaciones: int, minutos: int, minutos_con_descuento: int}
+     */
     private function historialDelMes(Request $request, Papeleta $papeleta, ReporteHorasAcumuladasService $reporte): array
     {
         $mes = $papeleta->dia_operativo->format('Y-m');
@@ -57,8 +54,8 @@ class PapeletaController extends Controller
             'rechazadas' => (clone $delMes)->whereState('estado', Rechazada::class)->count(),
             'observaciones' => (int) (clone $delMes)->sum('contador_observaciones_jefe')
                 + (int) (clone $delMes)->sum('contador_observaciones_rrhh'),
-            'minutos' => (int) $detalle->sum('minutos'),
-            'minutos_con_descuento' => (int) $detalle->where('suma_descuento', true)->sum('minutos'),
+            'minutos' => (static fn (mixed $v): int => is_numeric($v) ? (int) $v : 0)($detalle->sum('minutos')),
+            'minutos_con_descuento' => (static fn (mixed $v): int => is_numeric($v) ? (int) $v : 0)($detalle->where('suma_descuento', true)->sum('minutos')),
         ];
     }
 }

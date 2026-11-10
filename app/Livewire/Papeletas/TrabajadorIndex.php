@@ -3,6 +3,7 @@
 namespace App\Livewire\Papeletas;
 
 use App\Livewire\Concerns\EscuchaNotificacionesEnVivo;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -10,7 +11,6 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
-
 
 #[Layout('components.trabajador-layout')]
 #[Title('Mis papeletas')]
@@ -20,7 +20,6 @@ class TrabajadorIndex extends Component
 
     public string $buscar = '';
 
-    
     #[Url(as: 'todas')]
     public bool $verTodas = false;
 
@@ -31,9 +30,6 @@ class TrabajadorIndex extends Component
 
     public function updatedVerTodas(): void
     {
-        
-        
-        
         if (! $this->verTodas) {
             $this->buscar = '';
         }
@@ -45,7 +41,6 @@ class TrabajadorIndex extends Component
     {
         $termino = trim($this->buscar);
 
-        /** @var \App\Models\User $usuario */
         $usuario = Auth::user();
 
         $papeletas = $usuario->papeletas()
@@ -58,7 +53,6 @@ class TrabajadorIndex extends Component
             ->orderByDesc('papeletas.id')
             ->paginate(15);
 
-        
         $tieneAlguna = ! $papeletas->isEmpty() || $this->verTodas || $termino !== ''
             || $usuario->papeletas()->exists();
 

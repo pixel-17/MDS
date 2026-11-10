@@ -7,12 +7,10 @@ use Database\Seeders\ConfiguracionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-
 class ConfiguracionSinDesajusteTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @return array<int, string> */
     private function clavesLeidasPorElCodigo(): array
     {
         $claves = [];
@@ -22,7 +20,7 @@ class ConfiguracionSinDesajusteTest extends TestCase
                 continue;
             }
 
-            preg_match_all("/Configuracion::valorDe\(\s*'([A-Z0-9_]+)'/", file_get_contents($archivo->getPathname()), $coincidencias);
+            preg_match_all("/Configuracion::(?:valorDe|valorEnteroDe|valorTextoDe)\(\s*'([A-Z0-9_]+)'/", file_get_contents($archivo->getPathname()), $coincidencias);
 
             array_push($claves, ...$coincidencias[1]);
         }

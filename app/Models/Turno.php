@@ -9,32 +9,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
-  * @property int $id
-  * @property int $user_id
-  * @property int|null $sede_id
-  * @property Carbon $fecha
-  * @property string|null $hora_inicio
-  * @property string|null $hora_fin
-  * @property bool $es_descanso
-  * @property string|null $turno
-  * @property-read User $usuario
-  * @property-read Sede|null $sede
-  */
+ * @property int $id
+ * @property int $user_id
+ * @property int|null $sede_id
+ * @property Carbon $fecha
+ * @property string|null $hora_inicio
+ * @property string|null $hora_fin
+ * @property bool $es_descanso
+ * @property string|null $turno
+ * @property-read User $usuario
+ * @property-read Sede|null $sede
+ */
 class Turno extends Model
 {
     protected static function booted(): void
     {
-        
-        
-        
-        
-        
-        
-        
-        
-        
         static::saved(function (self $turno) {
-            $antes = $turno->wasChanged('user_id') ? (int) $turno->getOriginal('user_id') : null;
+            $original = $turno->getOriginal('user_id');
+            $antes = $turno->wasChanged('user_id') && is_numeric($original) ? (int) $original : null;
 
             HorarioActualizado::notificar(...array_filter([$turno->user_id, $antes]));
         });
@@ -61,22 +53,21 @@ class Turno extends Model
     }
 
     /**
-      * @return BelongsTo<User, $this>
-      */
+     * @return BelongsTo<User, $this>
+     */
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
-      * @return BelongsTo<Sede, $this>
-      */
+     * @return BelongsTo<Sede, $this>
+     */
     public function sede(): BelongsTo
     {
         return $this->belongsTo(Sede::class);
     }
 
-    
     public function cubre(Carbon $momento): bool
     {
         $limites = $this->limites();
@@ -90,15 +81,14 @@ class Turno extends Model
         return $momento->greaterThanOrEqualTo($inicio) && $momento->lessThanOrEqualTo($fin);
     }
 
-    
     public function finReal(): ?Carbon
     {
         return $this->limites()[1] ?? null;
     }
 
     /**
-      * @return array{0: Carbon, 1: Carbon}|null [inicio, fin] absolutos
-      */
+     * @return array{0: Carbon, 1: Carbon}|null [inicio, fin] absolutos
+     */
     private function limites(): ?array
     {
         if ($this->es_descanso || ! $this->hora_inicio || ! $this->hora_fin) {
@@ -115,15 +105,11 @@ class Turno extends Model
         return [$inicio, $fin];
     }
 
-    
     public static function vigenteParaUsuario(int $userId, ?Carbon $momento = null): ?self
     {
         $momento ??= now();
 
         return static::where('user_id', $userId)
-            
-            
-            
             ->where(fn ($q) => $q
                 ->whereDate('fecha', $momento->toDateString())
                 ->orWhereDate('fecha', $momento->copy()->subDay()->toDateString()))
@@ -131,7 +117,6 @@ class Turno extends Model
             ->first(fn (self $turno) => $turno->cubre($momento));
     }
 
-    
     public function codigo(): string
     {
         if ($this->es_descanso || ! $this->hora_inicio) {
@@ -143,14 +128,13 @@ class Turno extends Model
         }
 
         return match ((string) $this->hora_inicio) {
-            (string) Configuracion::valorDe('TURNO_MANANA_HORA_INICIO', '06:00') => 'MANANA',
-            (string) Configuracion::valorDe('TURNO_TARDE_HORA_INICIO', '14:00') => 'TARDE',
-            (string) Configuracion::valorDe('TURNO_NOCHE_HORA_INICIO', '22:00') => 'NOCHE',
+            Configuracion::valorTextoDe('TURNO_MANANA_HORA_INICIO', '06:00') => 'MANANA',
+            Configuracion::valorTextoDe('TURNO_TARDE_HORA_INICIO', '14:00') => 'TARDE',
+            Configuracion::valorTextoDe('TURNO_NOCHE_HORA_INICIO', '22:00') => 'NOCHE',
             default => 'DIA',
         };
     }
 
-    
     public function etiqueta(): string
     {
         return match ($this->codigo()) {
@@ -162,7 +146,6 @@ class Turno extends Model
         };
     }
 
-    
     public function nombreTurno(): string
     {
         return match ($this->etiqueta()) {
@@ -174,7 +157,6 @@ class Turno extends Model
         };
     }
 
-    
     public function claseColor(): string
     {
         return TurnoColores::para($this->etiqueta());

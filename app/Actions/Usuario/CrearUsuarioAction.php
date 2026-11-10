@@ -11,7 +11,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
-
 class CrearUsuarioAction
 {
     public function __construct(
@@ -19,19 +18,13 @@ class CrearUsuarioAction
     ) {}
 
     /**
-      * @param  array{name:string,apellido:string,dni:string,email:string,regimen:string,sede_id:?int,unidad_organica_id:?int,tipo:string,turno?:?string,fecha_ancla?:?string,dias_trabajo?:?int,dias_descanso?:?int}  $datos
-      */
+     * @param  array{name:string,apellido:string,dni:string,email:string,regimen:string,sede_id:?int,unidad_organica_id:?int,tipo:string,turno?:?string,fecha_ancla?:?string,dias_trabajo?:?int,dias_descanso?:?int}  $datos
+     */
     public function ejecutar(User $creador, array $datos, bool $esJefeDeArea): User
     {
         $esJefeInmediatoNuevo = $esJefeDeArea && $datos['tipo'] === 'jefe_inmediato';
 
         $nuevo = DB::transaction(function () use ($creador, $datos, $esJefeDeArea, $esJefeInmediatoNuevo) {
-            
-            
-            
-            
-            
-            
             $existente = User::where('dni', $datos['dni'])->lockForUpdate()->first();
 
             if ($existente) {
@@ -52,9 +45,6 @@ class CrearUsuarioAction
             ];
 
             if ($existente) {
-                
-                
-                
                 $existente->forceFill([
                     'two_factor_secret' => null,
                     'two_factor_recovery_codes' => null,
@@ -75,12 +65,6 @@ class CrearUsuarioAction
                 $this->asignarComoJefeDeUnidad($nuevo, (int) $datos['unidad_organica_id']);
             }
 
-            
-            
-            
-            
-            
-            
             if ($datos['regimen'] === '728' && ! $esJefeInmediatoNuevo && ! empty($datos['turno'])) {
                 $fechaAncla = $datos['fecha_ancla'] ?? null;
 
@@ -104,7 +88,6 @@ class CrearUsuarioAction
         return $nuevo;
     }
 
-    
     private function validarReingreso(User $existente): void
     {
         if ($existente->activo) {
@@ -135,19 +118,20 @@ class CrearUsuarioAction
     }
 
     /**
-      * @param  array<string, mixed>  $datos
-      */
+     * @param  array<string, mixed>  $datos
+     */
     private function resolverSede(User $creador, array $datos, bool $esJefeDeArea, bool $esJefeInmediatoNuevo): ?int
     {
         if ($esJefeInmediatoNuevo) {
-            return $datos['sede_id'] ?? $creador->sede_id;
+            return is_numeric($datos['sede_id'] ?? null) ? (int) $datos['sede_id'] : $creador->sede_id;
         }
 
         if (! $esJefeDeArea) {
             return $creador->sede_id;
         }
 
-        $sedeDelJefe = UnidadOrganica::with('jefe')->find((int) $datos['unidad_organica_id'])?->jefe?->sede_id;
+        $unidadOrganicaId = is_numeric($datos['unidad_organica_id'] ?? null) ? (int) $datos['unidad_organica_id'] : 0;
+        $sedeDelJefe = UnidadOrganica::with('jefe')->find($unidadOrganicaId)?->jefe?->sede_id;
 
         return $sedeDelJefe ?? $creador->sede_id;
     }

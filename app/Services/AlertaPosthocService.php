@@ -11,7 +11,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 
-
 class AlertaPosthocService
 {
     public const CANTIDAD_DEFECTO = 10;
@@ -19,8 +18,8 @@ class AlertaPosthocService
     public const HORAS_DEFECTO = 24;
 
     /**
-      * @return bool true si se envió una alerta en esta corrida
-      */
+     * @return bool true si se envió una alerta en esta corrida
+     */
     public function evaluar(): bool
     {
         $total = $this->pendientes()->count();
@@ -29,8 +28,8 @@ class AlertaPosthocService
             return false;
         }
 
-        $umbralCantidad = max(1, (int) Configuracion::valorDe('POSTHOC_ALERTA_CANTIDAD', self::CANTIDAD_DEFECTO));
-        $umbralHoras = max(1, (int) Configuracion::valorDe('POSTHOC_ALERTA_HORAS', self::HORAS_DEFECTO));
+        $umbralCantidad = max(1, Configuracion::valorEnteroDe('POSTHOC_ALERTA_CANTIDAD', self::CANTIDAD_DEFECTO));
+        $umbralHoras = max(1, Configuracion::valorEnteroDe('POSTHOC_ALERTA_HORAS', self::HORAS_DEFECTO));
 
         $horasDeLaMasAntigua = $this->horasDeLaMasAntigua();
 
@@ -41,8 +40,6 @@ class AlertaPosthocService
             return false;
         }
 
-        
-        
         if (! Cache::add('alerta-posthoc:'.now()->toDateString(), true, now()->endOfDay())) {
             return false;
         }
@@ -53,22 +50,21 @@ class AlertaPosthocService
     }
 
     /**
-      * @return Builder<Papeleta>
-      */
+     * @return Builder<Papeleta>
+     */
     private function pendientes(): Builder
     {
         return Papeleta::where('autorizado_con_rrhh_fuera_horario', true)
             ->whereIn('revision_posthoc_estado', ['pendiente', 'respondida']);
     }
 
-    
     private function horasDeLaMasAntigua(): int
     {
         $masAntigua = $this->pendientes()
             ->selectRaw('MIN(COALESCE(hora_salida_real, created_at)) as desde')
             ->value('desde');
 
-        if ($masAntigua === null) {
+        if (! is_string($masAntigua) && ! is_int($masAntigua)) {
             return 0;
         }
 

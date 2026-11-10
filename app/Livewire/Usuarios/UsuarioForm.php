@@ -25,7 +25,6 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Spatie\Permission\Models\Role;
 
-
 #[Layout('layouts.app')]
 #[Title('Usuario')]
 class UsuarioForm extends Component
@@ -35,7 +34,6 @@ class UsuarioForm extends Component
     #[Locked]
     public ?User $usuario = null;
 
-    
     #[Locked]
     public string $alcance = 'admin';
 
@@ -51,40 +49,29 @@ class UsuarioForm extends Component
 
     public string $regimen = '';
 
-    
     public string $turno = '';
 
     public ?int $sedeId = null;
 
     public ?int $unidadOrganicaId = null;
 
-    /** @var array<int, int|string> */
     public array $rolesSeleccionados = [];
 
     public bool $activo = true;
 
-    
     public string $tipo = 'trabajador';
 
-    
     #[Locked]
     public bool $nuevoAdmin = false;
 
-    
     #[Locked]
     public bool $volverAlOrganigrama = false;
-
-    
-    
-    
 
     public function mount(?User $usuario = null): void
     {
         $existente = $usuario?->exists ? $usuario : null;
 
         $this->alcance = $this->resolverAlcance($existente);
-        
-        
         $this->volverAlOrganigrama = request()->query('volver') === 'organigrama';
 
         if ($existente) {
@@ -96,17 +83,15 @@ class UsuarioForm extends Component
             $this->regimen = $existente->regimen ?? '';
             $this->sedeId = $existente->sede_id;
             $this->unidadOrganicaId = $existente->unidad_organica_id;
-            $this->rolesSeleccionados = $existente->roles->pluck('id')->all();
+            $this->rolesSeleccionados = self::aEnteros($existente->roles->pluck('id')->all());
             $this->activo = $existente->activo;
 
             return;
         }
 
-        
-
         if ($this->esAdmin() && request()->query('tipo') === 'admin') {
             $this->nuevoAdmin = true;
-            $adminId = (int) Role::where('name', 'admin')->value('id');
+            $adminId = self::idDelRol('admin');
             $this->rolesSeleccionados = $adminId > 0 ? [(string) $adminId] : [];
 
             return;
@@ -116,7 +101,6 @@ class UsuarioForm extends Component
             return;
         }
 
-        
         $unidadId = request()->integer('unidad') ?: null;
 
         if ($unidadId && $this->esArea() && ! in_array($unidadId, $this->idsDeArea(), true)) {
@@ -136,24 +120,10 @@ class UsuarioForm extends Component
         }
     }
 
-    
-    
-    
-
-    
     protected function resolverAlcance(?User $objetivo): string
     {
-        /** @var User $actor */
         $actor = Auth::user();
 
-        
-        
-        
-        
-        
-        
-        
-        
         if ($actor->hasRole('admin') && ($objetivo || request()->query('tipo') === 'admin' || $this->nuevoAdmin)) {
             return 'admin';
         }
@@ -176,6 +146,27 @@ class UsuarioForm extends Component
         return 'equipo';
     }
 
+    private static function idDelRol(string $nombre): int
+    {
+        $id = Role::where('name', $nombre)->value('id');
+
+        return is_numeric($id) ? (int) $id : 0;
+    }
+
+    private static function aEnteros(mixed $valores): array
+    {
+        if (! is_array($valores)) {
+            return [];
+        }
+
+        return array_map(static fn (mixed $id): int => is_numeric($id) ? (int) $id : 0, $valores);
+    }
+
+    private static function aTexto(mixed $valor): string
+    {
+        return is_scalar($valor) ? (string) $valor : '';
+    }
+
     protected function esAdmin(): bool
     {
         return $this->alcance === 'admin';
@@ -192,8 +183,8 @@ class UsuarioForm extends Component
     }
 
     /**
-      * @return array<int, int>
-      */
+     * @return array<int, int>
+     */
     protected function idsDeArea(?User $actor = null): array
     {
         $actor ??= Auth::user();
@@ -212,18 +203,6 @@ class UsuarioForm extends Component
         return $ids->map(fn ($id) => (int) $id)->unique()->values()->all();
     }
 
-    
-    
-    
-    
-    
-    
-
-    
-    
-    
-
-    /** @return array<string, mixed> */
     protected function rules(): array
     {
         $creando = $this->usuario === null;
@@ -234,7 +213,6 @@ class UsuarioForm extends Component
             'email' => ReglasDatosUsuario::email($this->usuario?->id),
         ];
 
-        
         if ($creando || ! $this->esEquipo()) {
             $reglas['dni'] = ReglasDatosUsuario::dni(
                 $this->usuario?->id,
@@ -242,7 +220,6 @@ class UsuarioForm extends Component
             );
         }
 
-        
         if (! $this->esEquipo() || $creando) {
             $reglas['regimen'] = [
                 $this->esAdmin() && $this->esSoloAdmin() ? 'nullable' : 'required',
@@ -273,8 +250,6 @@ class UsuarioForm extends Component
             }
         }
 
-        
-        
         if ($this->esEquipo() && ! $creando) {
             $reglas['activo'] = ['boolean'];
             $reglas['sedeId'] = ['nullable', 'exists:sedes,id'];
@@ -284,7 +259,6 @@ class UsuarioForm extends Component
         return $reglas;
     }
 
-    /** @var array<string, string> */
     protected $messages = [
         'rolesSeleccionados.required' => 'Selecciona al menos un rol: un usuario sin rol no puede usar el sistema.',
         'rolesSeleccionados.min' => 'Selecciona al menos un rol: un usuario sin rol no puede usar el sistema.',
@@ -294,13 +268,8 @@ class UsuarioForm extends Component
         'sedeId.required' => 'Indica la sede: es necesaria para los cierres.',
     ];
 
-    
-    
-    
-
     public function guardar(GeneradorTurnoMensualService $generador): void
     {
-        
         $this->alcance = $this->resolverAlcance($this->usuario);
 
         $datos = $this->validate();
@@ -321,11 +290,10 @@ class UsuarioForm extends Component
     }
 
     /**
-      * @param  array<string, mixed>  $datos
-      */
+     * @param  array<string, mixed>  $datos
+     */
     protected function guardarComoJefe(array $datos): void
     {
-        /** @var User $actor */
         $actor = Auth::user();
         $esArea = $this->esArea();
 
@@ -337,11 +305,11 @@ class UsuarioForm extends Component
 
         try {
             $nuevo = app(CrearUsuarioAction::class)->ejecutar($actor, [
-                'name' => $datos['name'],
-                'apellido' => $datos['apellido'],
-                'dni' => $datos['dni'],
-                'email' => $datos['email'],
-                'regimen' => $datos['regimen'],
+                'name' => self::aTexto($datos['name']),
+                'apellido' => self::aTexto($datos['apellido']),
+                'dni' => self::aTexto($datos['dni']),
+                'email' => self::aTexto($datos['email']),
+                'regimen' => self::aTexto($datos['regimen']),
                 'sede_id' => $esArea ? $this->sedeId : null,
                 'unidad_organica_id' => $esArea ? $this->unidadOrganicaId : null,
                 'tipo' => $esArea ? $this->tipo : 'trabajador',
@@ -366,8 +334,8 @@ class UsuarioForm extends Component
     }
 
     /**
-      * @param  array<string, mixed>  $datos
-      */
+     * @param  array<string, mixed>  $datos
+     */
     protected function guardarComoJefeInmediato(array $datos): void
     {
         if ($this->usuario === null) {
@@ -376,7 +344,6 @@ class UsuarioForm extends Component
 
         $usuario = $this->usuario;
 
-        /** @var User $actor */
         $actor = Auth::user();
 
         abort_unless($actor->can('editar', $usuario), 403);
@@ -405,14 +372,13 @@ class UsuarioForm extends Component
 
         DB::transaction(function () use ($datos, $activo, $debeRetirarTurno, $usuario) {
             app(EditarUsuarioAction::class)->ejecutar($usuario, [
-                'name' => $datos['name'],
-                'apellido' => $datos['apellido'],
-                'email' => $datos['email'],
+                'name' => self::aTexto($datos['name']),
+                'apellido' => self::aTexto($datos['apellido']),
+                'email' => self::aTexto($datos['email']),
                 'sede_id' => $usuario->sede_id,
                 'unidad_organica_id' => $usuario->unidad_organica_id,
             ], false);
 
-            
             $usuario->update([
                 'sede_id' => $datos['sedeId'] ?? $usuario->sede_id,
                 'regimen' => $datos['regimen'] ?? $usuario->regimen,
@@ -435,24 +401,21 @@ class UsuarioForm extends Component
     }
 
     /**
-      * @param  array<string, mixed>  $datos
-      */
+     * @param  array<string, mixed>  $datos
+     */
     protected function guardarComoAdminOArea(array $datos, GeneradorTurnoMensualService $generador): void
     {
         $esAdmin = $this->esAdmin();
-        $adminId = (int) Role::where('name', 'admin')->value('id');
-        $trabajadorId = (int) Role::where('name', 'trabajador')->value('id');
+        $adminId = self::idDelRol('admin');
+        $trabajadorId = self::idDelRol('trabajador');
 
-        
         $roles = $esAdmin
-            ? array_map('intval', $datos['rolesSeleccionados'])
-            : ($this->usuario->roles ?? collect())->pluck('id')->map(fn ($id) => (int) $id)->all();
+            ? self::aEnteros($datos['rolesSeleccionados'])
+            : self::aEnteros(($this->usuario->roles ?? collect())->pluck('id')->all());
 
         $activo = ($esAdmin || $this->esArea())
             ? (bool) ($datos['activo'] ?? $this->usuario->activo ?? true)
             : true;
-
-        
 
         if ($esAdmin) {
             if ($this->esSoloAdmin() && $this->regimen !== '') {
@@ -474,7 +437,7 @@ class UsuarioForm extends Component
             }
 
             if ($this->usuario?->esUnicoRrhhActivo()) {
-                $rolRrhhId = (int) Role::where('name', 'rrhh')->value('id');
+                $rolRrhhId = self::idDelRol('rrhh');
 
                 if (! $activo) {
                     $this->addError('activo', 'Es el único usuario de RR. HH. activo. Designa primero a otra persona.');
@@ -504,15 +467,9 @@ class UsuarioForm extends Component
             }
         }
 
-        
-        
-        
-        
-        
-        
         if ($this->usuario
             && $this->usuario->unidad_organica_id !== null
-            && (int) $datos['unidadOrganicaId'] !== (int) $this->usuario->unidad_organica_id
+            && (is_numeric($datos['unidadOrganicaId']) ? (int) $datos['unidadOrganicaId'] : 0) !== (int) $this->usuario->unidad_organica_id
             && $this->usuario->unidadesQueEncabeza()->exists()
         ) {
             $this->addError('unidadOrganicaId', 'Encabeza una unidad: reasigna primero esa jefatura antes de moverlo a otra unidad.');
@@ -520,10 +477,7 @@ class UsuarioForm extends Component
             return;
         }
 
-        
-
         if ($this->usuario?->activo && ! $activo) {
-            /** @var User $actor */
             $actor = Auth::user();
 
             $motivo = app(CambiarEstadoUsuarioAction::class)->motivoParaNoDesactivar($actor, $this->usuario);
@@ -543,8 +497,6 @@ class UsuarioForm extends Component
             }
         }
 
-        
-
         $atributos = [
             'name' => $datos['name'],
             'apellido' => $datos['apellido'],
@@ -553,13 +505,11 @@ class UsuarioForm extends Component
         ];
 
         if (! $this->esArea() || $this->usuario === null) {
-            
             $atributos['dni'] = $datos['dni'];
             $atributos['regimen'] = $datos['regimen'] ?: null;
             $atributos['sede_id'] = $datos['sedeId'];
             $atributos['unidad_organica_id'] = in_array($adminId, $roles, true) ? null : $datos['unidadOrganicaId'];
         } else {
-            
             $atributos['sede_id'] = $datos['sedeId'];
             $atributos['unidad_organica_id'] = $datos['unidadOrganicaId'];
             $atributos['regimen'] = $datos['regimen'] ?: null;
@@ -571,7 +521,7 @@ class UsuarioForm extends Component
         DB::transaction(function () use ($atributos, $datos, $generador, $debeRetirarTurno, $esAdmin, $activo, $roles) {
             if ($this->usuario) {
                 if ($esAdmin && filled($datos['password'] ?? null)) {
-                    $atributos['password'] = Hash::make($datos['password']);
+                    $atributos['password'] = Hash::make(self::aTexto($datos['password']));
                     $atributos['debe_actualizar_password'] = true;
                 }
 
@@ -585,7 +535,7 @@ class UsuarioForm extends Component
                     $generador->retirarTurno($this->usuario);
                 }
             } else {
-                $atributos['password'] = Hash::make($datos['dni']);
+                $atributos['password'] = Hash::make(self::aTexto($datos['dni']));
                 $atributos['debe_actualizar_password'] = true;
 
                 $this->usuario = User::create($atributos);
@@ -606,11 +556,6 @@ class UsuarioForm extends Component
         $this->redirectRoute($esAdmin ? 'usuarios-admin.index' : 'usuarios.index', navigate: false);
     }
 
-    
-    
-    
-
-    
     protected function sedeHeredada(): ?string
     {
         if ($this->usuario !== null || ! $this->esArea() || $this->tipo !== 'trabajador') {
@@ -622,7 +567,6 @@ class UsuarioForm extends Component
             ?? 'Sin sede';
     }
 
-    
     protected function buscarCuentaExistente(): ?User
     {
         if (! $this->esAdmin() || $this->usuario !== null || strlen($this->dni) !== 8) {

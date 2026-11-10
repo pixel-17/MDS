@@ -10,10 +10,8 @@ use App\Models\UnidadOrganica;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
-
 class ArmadorOrganigrama
 {
-    
     public const ESTADOS_PENDIENTES = [
         'pendiente_jefe' => 'Pendiente del jefe',
         'observada_por_jefe' => 'Observada por el jefe',
@@ -28,13 +26,10 @@ class ArmadorOrganigrama
     ) {}
 
     /**
-      * @return array{raices: Collection<int, NodoOrganigrama>, stats: array<string, int>, conteoSedes: array<int|string, int>, unidades: \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>, enAlcance: array<int, true>}
-      */
+     * @return array{raices: Collection<int, NodoOrganigrama>, stats: array<string, int>, conteoSedes: array<int|string, int>, unidades: \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>, enAlcance: array<int, true>}
+     */
     public function armar(User $usuario): array
     {
-        
-        
-        
         $unidades = UnidadOrganica::query()
             ->orderBy('nombre')
             ->get();
@@ -42,8 +37,6 @@ class ArmadorOrganigrama
         $porPadre = $unidades->groupBy('parent_id');
 
         $stats = ['unidades' => 0, 'personas' => 0, 'sin_sede' => 0, 'sin_jefe' => 0];
-        
-        
         $conteoSedes = [];
 
         $raicesDeAlcance = $this->raicesPara($usuario, $unidades, $porPadre);
@@ -52,10 +45,6 @@ class ArmadorOrganigrama
         $this->cargarRama($unidades, $enAlcance);
 
         $raices = $raicesDeAlcance
-            
-            
-            
-            
             ->map(function (UnidadOrganica $u) use ($porPadre, &$stats, &$conteoSedes) {
                 return $this->construirNodo($u, $porPadre, $stats, $conteoSedes);
             })
@@ -66,9 +55,9 @@ class ArmadorOrganigrama
     }
 
     /**
-      * @param  \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>  $unidades
-      * @param  array<int, true>  $enAlcance
-      */
+     * @param  \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>  $unidades
+     * @param  array<int, true>  $enAlcance
+     */
     public function cargarRama(Collection $unidades, array $enAlcance): void
     {
         $unidades
@@ -76,8 +65,6 @@ class ArmadorOrganigrama
             ->loadMissing([
                 'jefe.sede',
                 'miembros' => fn ($q) => $q
-                    
-                    
                     ->when(! $this->verInactivos, fn ($q) => $q->where('activo', true))
                     ->with('sede')
                     ->orderBy('name')
@@ -86,10 +73,10 @@ class ArmadorOrganigrama
     }
 
     /**
-      * @param  Collection<int, UnidadOrganica>  $unidades
-      * @param  array<int, true>  $enAlcance  ids de unidades dentro del alcance (ver idsEnAlcance)
-      * @return array<string, mixed>|null
-      */
+     * @param  Collection<int, UnidadOrganica>  $unidades
+     * @param  array<int, true>  $enAlcance  ids de unidades dentro del alcance (ver idsEnAlcance)
+     * @return array<string, mixed>|null
+     */
     public function fichaDe(?int $personaId, Collection $unidades, array $enAlcance): ?array
     {
         if ($personaId === null) {
@@ -118,7 +105,8 @@ class ArmadorOrganigrama
             ->groupBy('estado')
             ->pluck('total', 'estado');
 
-        $turno = ConfiguracionTurno::where('user_id', $persona->id)->value('turno');
+        $turnoValor = ConfiguracionTurno::where('user_id', $persona->id)->value('turno');
+        $turno = is_string($turnoValor) ? $turnoValor : null;
 
         return [
             'persona' => $persona,
@@ -128,27 +116,30 @@ class ArmadorOrganigrama
             ]),
             'turno' => $turno ? ConfiguracionTurno::etiquetaDeTurno($turno) : null,
             'pendientes' => collect(self::ESTADOS_PENDIENTES)
-                ->map(fn (string $etiqueta, string $estado) => ['etiqueta' => $etiqueta, 'total' => (int) ($porEstado[$estado] ?? 0)])
+                ->map(function (string $etiqueta, string $estado) use ($porEstado): array {
+                    $total = $porEstado[$estado] ?? 0;
+
+                    return ['etiqueta' => $etiqueta, 'total' => is_numeric($total) ? (int) $total : 0];
+                })
                 ->filter(fn (array $fila) => $fila['total'] > 0)
                 ->values(),
-            'pendientes_total' => (int) $porEstado->sum(),
+            'pendientes_total' => is_numeric($totalPendientes = $porEstado->sum()) ? (int) $totalPendientes : 0,
         ];
     }
 
     /**
-      * @param  Collection<int, UnidadOrganica>  $raicesDeAlcance
-      * @param  \Illuminate\Support\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
-      * @return array<int, true>
-      */
+     * @param  Collection<int, UnidadOrganica>  $raicesDeAlcance
+     * @param  Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
+     * @return array<int, true>
+     */
     public function idsEnAlcance(Collection $raicesDeAlcance, Collection $porPadre): array
     {
         $enAlcance = [];
-        $pendientes = $raicesDeAlcance->pluck('id')->all();
+        $pendientes = $raicesDeAlcance->pluck('id')->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)->all();
 
         while ($pendientes) {
             $id = array_pop($pendientes);
 
-            
             if (isset($enAlcance[$id])) {
                 continue;
             }
@@ -163,9 +154,9 @@ class ArmadorOrganigrama
     }
 
     /**
-      * @param  array<int, true>  $enAlcance
-      * @return Collection<int, array{movimiento: MovimientoOrganigrama, puede_deshacer: bool}>
-      */
+     * @param  array<int, true>  $enAlcance
+     * @return Collection<int, array{movimiento: MovimientoOrganigrama, puede_deshacer: bool}>
+     */
     public function historialDe(User $usuario, array $enAlcance, bool $modoEdicion): Collection
     {
         $consulta = MovimientoOrganigrama::query()
@@ -187,10 +178,10 @@ class ArmadorOrganigrama
     }
 
     /**
-      * @param  Collection<int, UnidadOrganica>  $unidades
-      * @param  \Illuminate\Support\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
-      * @return Collection<int, UnidadOrganica>
-      */
+     * @param  Collection<int, UnidadOrganica>  $unidades
+     * @param  Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
+     * @return Collection<int, UnidadOrganica>
+     */
     public function raicesPara(User $usuario, Collection $unidades, Collection $porPadre): Collection
     {
         if ($usuario->hasRole('admin')) {
@@ -200,17 +191,12 @@ class ArmadorOrganigrama
         $porId = $unidades->keyBy('id');
         $esJefeDeArea = $usuario->esJefeDeArea();
 
-        
-        
-        
         $encabezadas = $unidades
             ->where('jefe_id', $usuario->id)
             ->when($esJefeDeArea, fn ($col) => $col->filter(fn (UnidadOrganica $u) => $porPadre->has($u->id)))
             ->pluck('id')
             ->all();
 
-        
-        
         return $unidades
             ->whereIn('id', $encabezadas)
             ->filter(function (UnidadOrganica $u) use ($porId, $encabezadas) {
@@ -226,10 +212,10 @@ class ArmadorOrganigrama
     }
 
     /**
-      * @param  \Illuminate\Support\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
-      * @param  array<string, int>  $stats
-      * @param  array<int|string, int>  $conteoSedes
-      */
+     * @param  Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, UnidadOrganica>>  $porPadre
+     * @param  array<string, int>  $stats
+     * @param  array<int|string, int>  $conteoSedes
+     */
     private function construirNodo(UnidadOrganica $unidad, Collection $porPadre, array &$stats, array &$conteoSedes): ?NodoOrganigrama
     {
         $q = mb_strtolower(trim($this->buscar));
@@ -241,8 +227,6 @@ class ArmadorOrganigrama
             default => (int) $p->sede_id === (int) $this->sede,
         };
 
-        
-        
         $jefes = collect([$unidad->jefe])
             ->filter()
             ->unique('id')
@@ -255,7 +239,6 @@ class ArmadorOrganigrama
             || $jefes->contains(fn (User $j) => $contiene($j->nombre_completo) || $contiene($j->dni))
         );
 
-        
         $miembrosBase = $unidad->miembros
             ->reject(fn (User $m) => $jefes->contains('id', $m->id))
             ->when(! $this->verInactivos, fn (Collection $c) => $c->where('activo', true))
@@ -264,7 +247,6 @@ class ArmadorOrganigrama
             ))
             ->values();
 
-        
         $contados = $miembrosBase->concat(
             $q === '' || $coincideUnidad ? $jefes : $jefes->filter(fn (User $j) => $contiene($j->nombre_completo) || $contiene($j->dni))
         );
@@ -276,8 +258,6 @@ class ArmadorOrganigrama
         $miembros = $miembrosBase->filter($enSede)->values();
         $jefesEnFiltro = $jefes->filter($enSede)->values();
 
-        
-        
         $hijos = $porPadre->get($unidad->id, collect())
             ->map(function (UnidadOrganica $h) use ($porPadre, &$stats, &$conteoSedes) {
                 return $this->construirNodo($h, $porPadre, $stats, $conteoSedes);
@@ -292,7 +272,6 @@ class ArmadorOrganigrama
             return null;
         }
 
-        
         $sinJefe = ! $unidad->jefe?->activo;
 
         $stats['unidades']++;
@@ -303,11 +282,11 @@ class ArmadorOrganigrama
         return new NodoOrganigrama(
             unidad: $unidad,
             jefes: $jefes,
-            jefesEnFiltro: $jefesEnFiltro->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
+            jefesEnFiltro: $jefesEnFiltro->pluck('id')->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)->values()->all(),
             filtroSede: $hayFiltroSede,
             miembros: $miembros,
             hijos: $hijos,
-            total: $miembros->count() + $jefesEnFiltro->count() + $hijos->sum('total'),
+            total: $miembros->count() + $jefesEnFiltro->count() + (is_numeric($totalHijos = $hijos->sum('total')) ? (int) $totalHijos : 0),
             sinJefe: $sinJefe,
         );
     }

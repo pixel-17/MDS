@@ -18,7 +18,6 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-
 #[Layout('layouts.app')]
 #[Title('Calendario de turnos — mi equipo')]
 class CalendarioEquipoIndex extends Component
@@ -27,15 +26,12 @@ class CalendarioEquipoIndex extends Component
 
     public int $mes;
 
-    
     #[Locked]
     public ?int $jefeId = null;
 
-    
     #[Locked]
     public int $version = 0;
 
-    /** @var array<int, string> */
     #[Locked]
     public array $advertencias = [];
 
@@ -53,11 +49,9 @@ class CalendarioEquipoIndex extends Component
         $this->mes = now()->month;
     }
 
-    
     private function jefeVista(): User
     {
         if ($this->jefeId === null) {
-            /** @var User $usuario */
             $usuario = auth()->user();
 
             return $usuario;
@@ -98,8 +92,8 @@ class CalendarioEquipoIndex extends Component
     }
 
     /**
-      * @param  array<int|string, array<string, string>>  $cambios  userId => dias (solo filas 728 modificadas)
-      */
+     * @param  array<int|string, array<string, string>>  $cambios  userId => dias (solo filas 728 modificadas)
+     */
     public function guardar(ProgramacionTurnoService $servicio, array $cambios): void
     {
         $this->mensaje = null;
@@ -123,8 +117,8 @@ class CalendarioEquipoIndex extends Component
     }
 
     /**
-      * @param  array<int|string, array<string, string>>  $cambios
-      */
+     * @param  array<int|string, array<string, string>>  $cambios
+     */
     public function guardarIgualmente(ProgramacionTurnoService $servicio, array $cambios): void
     {
         $this->persistir($servicio, $this->equipo728(), $cambios);
@@ -136,12 +130,11 @@ class CalendarioEquipoIndex extends Component
     }
 
     /**
-      * @param  Collection<int, User>  $equipo
-      * @param  array<int|string, array<string, string>>  $cambios
-      */
+     * @param  Collection<int, User>  $equipo
+     * @param  array<int|string, array<string, string>>  $cambios
+     */
     private function persistir(ProgramacionTurnoService $servicio, Collection $equipo, array $cambios): void
     {
-        /** @var User $actor */
         $actor = auth()->user();
 
         $servicio->guardarEquipo($equipo, $this->anio, $this->mes, $cambios, $actor);
@@ -152,8 +145,8 @@ class CalendarioEquipoIndex extends Component
     }
 
     /**
-      * @return Collection<int, User>
-      */
+     * @return Collection<int, User>
+     */
     private function equipo728(): Collection
     {
         [$trabajadores, , $soloLectura] = app(EquipoDelJefeService::class)->para($this->jefeVista());
@@ -164,8 +157,8 @@ class CalendarioEquipoIndex extends Component
     }
 
     /**
-      * @return Collection<int, User>
-      */
+     * @return Collection<int, User>
+     */
     private function equipo276(): Collection
     {
         [$trabajadores, , $soloLectura] = app(EquipoDelJefeService::class)->para($this->jefeVista());
@@ -175,7 +168,6 @@ class CalendarioEquipoIndex extends Component
             ->keyBy('id');
     }
 
-    
     public function cargarHorario276(GeneradorTurnoMensualService $generador, int $userId): void
     {
         $equipo276 = $this->equipo276();
@@ -183,13 +175,8 @@ class CalendarioEquipoIndex extends Component
 
         abort_if($trabajador === null, 403);
 
-        
-        
-        
-        
         $ciclo = GeneradorTurnoMensualService::cicloOrdinario276(now()->startOfWeek());
 
-        /** @var User $actor */
         $actor = auth()->user();
 
         $generador->cargarConfiguracion(
@@ -230,9 +217,6 @@ class CalendarioEquipoIndex extends Component
             ->groupBy('user_id')
             ->map(fn ($turnos) => $turnos->keyBy(fn (Turno $turno) => $turno->fecha->day));
 
-        
-        
-        
         $equipo728 = $this->equipo728();
         $validos728 = [...ConfiguracionTurno::TURNOS_728, ProgramacionTurnoService::DESCANSO];
 
@@ -280,15 +264,15 @@ class CalendarioEquipoIndex extends Component
     }
 
     /**
-      * @return array<int, int>
-      */
+     * @return array<int, int>
+     */
     private function diasLaborables276(): array
     {
         return array_map(
             'intval',
             array_filter(array_map('trim', explode(
                 ',',
-                (string) Configuracion::valorDe('HORARIO_ORDINARIO_DIAS_LABORABLES', '1,2,3,4,5')
+                Configuracion::valorTextoDe('HORARIO_ORDINARIO_DIAS_LABORABLES', '1,2,3,4,5')
             )))
         );
     }

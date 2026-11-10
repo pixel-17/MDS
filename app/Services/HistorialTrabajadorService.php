@@ -4,16 +4,17 @@ namespace App\Services;
 
 use App\Models\Papeleta;
 use App\Models\User;
+use App\States\Papeleta\PapeletaState;
 use App\Support\Minutos;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-
 
 class HistorialTrabajadorService
 {
     /**
-      * @return Collection<int, User>
-      */
+     * @return Collection<int, User>
+     */
     public function trabajadoresVisibles(User $usuario, string $buscar = ''): Collection
     {
         if ($usuario->hasRole('admin') || $usuario->hasRole('rrhh')) {
@@ -43,7 +44,6 @@ class HistorialTrabajadorService
             ->values();
     }
 
-    
     public function puedeVer(User $usuario, User $trabajador): bool
     {
         if ($usuario->hasRole('admin') || $usuario->hasRole('rrhh')) {
@@ -54,8 +54,8 @@ class HistorialTrabajadorService
     }
 
     /**
-      * @return Collection<int, array{id: int, dia: \Illuminate\Support\Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<\App\States\Papeleta\PapeletaState>, abandono: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}>
-      */
+     * @return Collection<int, array{id: int, dia: Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<PapeletaState>, abandono: bool, salida: Carbon|null, retorno: Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}>
+     */
     public function historial(User $trabajador): Collection
     {
         $resultado = Papeleta::where('trabajador_id', $trabajador->id)
@@ -68,9 +68,6 @@ class HistorialTrabajadorService
                 'motivo' => $p->motivo->nombre,
                 'sede' => $p->sede->nombre,
                 'estado' => class_basename($p->estado),
-                
-                
-                
                 'estado_fqcn' => get_class($p->estado),
                 'abandono' => $p->esAbandono(),
                 'salida' => $p->hora_salida_real,
@@ -82,24 +79,26 @@ class HistorialTrabajadorService
                 'sustento_estado' => $p->sustentos->last()?->estado,
             ]);
 
-        /** @var Collection<int, array{id: int, dia: \Illuminate\Support\Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<\App\States\Papeleta\PapeletaState>, abandono: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}> $resultado */
         return $resultado;
     }
 
     /**
-      * @param  Collection<int, array{id: int, dia: \Illuminate\Support\Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<\App\States\Papeleta\PapeletaState>, abandono: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}>  $historial
-      * @return array<string, int>
-      */
+     * @param  Collection<int, array{id: int, dia: Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<PapeletaState>, abandono: bool, salida: Carbon|null, retorno: Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}>  $historial
+     * @return array<string, int>
+     */
     public function resumen(Collection $historial): array
     {
         $conHoras = $historial->filter(fn (array $f) => $f['minutos'] !== null);
+
+        $minutosTotales = $conHoras->sum('minutos');
+        $minutosConDescuento = $conHoras->where('suma_descuento', true)->sum('minutos');
 
         return [
             'papeletas_total' => $historial->count(),
             'rechazadas' => $historial->where('estado', 'Rechazada')->count(),
             'vencidas' => $historial->where('estado', 'Vencida')->count(),
-            'minutos_totales' => $conHoras->sum('minutos'),
-            'minutos_con_descuento' => $conHoras->where('suma_descuento', true)->sum('minutos'),
+            'minutos_totales' => is_numeric($minutosTotales) ? (int) $minutosTotales : 0,
+            'minutos_con_descuento' => is_numeric($minutosConDescuento) ? (int) $minutosConDescuento : 0,
         ];
     }
 }

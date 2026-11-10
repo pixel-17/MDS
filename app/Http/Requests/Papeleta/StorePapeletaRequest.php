@@ -8,7 +8,6 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
-
 class StorePapeletaRequest extends FormRequest
 {
     public function authorize(): bool
@@ -16,15 +15,8 @@ class StorePapeletaRequest extends FormRequest
         return (bool) $this->user()?->can('crear', Papeleta::class);
     }
 
-    /** @return array<string, mixed> */
     public function rules(): array
     {
-        
-        
-        
-        
-        
-        
         $tope = $this->user()?->regimen === '728'
             ? now()->addDay()->endOfDay()
             : now()->endOfDay();
@@ -33,8 +25,6 @@ class StorePapeletaRequest extends FormRequest
             'motivo_id' => ['required', 'integer', Rule::exists('motivos', 'id')->where('activo', true)],
             'justificacion' => ['nullable', 'string', 'max:2000'],
             'adjunto_inicial_path' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png'],
-            
-            
             'hora_retorno_estimado' => ['nullable', 'date', 'after:now', 'before:'.$tope->toDateTimeString()],
         ];
     }
@@ -42,7 +32,7 @@ class StorePapeletaRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
-            $motivo = Motivo::find((int) $this->input('motivo_id'));
+            $motivo = Motivo::find($this->integer('motivo_id'));
 
             if ($motivo && $motivo->adjunto === 'obligatorio' && ! $this->filled('justificacion')) {
                 $validator->errors()->add('justificacion', "La justificación es obligatoria para el motivo {$motivo->nombre}.");

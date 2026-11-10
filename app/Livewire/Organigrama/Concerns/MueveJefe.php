@@ -10,31 +10,27 @@ use App\Exceptions\UsuarioException;
 use App\Models\UnidadOrganica;
 use App\Models\User;
 
-
 trait MueveJefe
 {
     /**
-      * @var array{jefe: int, origen: int, destino: int}|null
-      */
+     * @var array{jefe: int, origen: int, destino: int}|null
+     */
     public ?array $propuestaJefe = null;
 
-    
     public string $modoJefe = '';
 
-    
     public string|int|null $reemplazaDestino = null;
 
     /**
-      * @var array<int|string, int|string|null>
-      */
+     * @var array<int|string, int|string|null>
+     */
     public array $reemplazos = [];
 
     /**
-      * @var array{turno: ?string, fecha_ancla: ?string, dias_trabajo: int|string, dias_descanso: int|string}
-      */
+     * @var array{turno: ?string, fecha_ancla: ?string, dias_trabajo: int|string, dias_descanso: int|string}
+     */
     public array $turnoJefe = ['turno' => null, 'fecha_ancla' => null, 'dias_trabajo' => 6, 'dias_descanso' => 1];
 
-    
     private function proponerMovimientoJefe(User $usuario, User $jefe, UnidadOrganica $destino): void
     {
         $errores = [];
@@ -63,7 +59,6 @@ trait MueveJefe
             return;
         }
 
-        
         $this->modoJefe = count($posibles) === 1 ? $posibles[0] : '';
         $this->reemplazos = [];
         $this->reemplazaDestino = null;
@@ -71,9 +66,13 @@ trait MueveJefe
 
         $this->propuestaJefe = [
             'jefe' => (int) $jefe->id,
-            'origen' => (int) ($unidad !== null
-                ? $unidad['unidad']->parent_id
-                : ($jefe->unidadesQueEncabeza()->value('parent_id') ?? 0)),
+            'origen' => $unidad !== null
+                ? (int) $unidad['unidad']->parent_id
+                : (static function () use ($jefe): int {
+                    $valor = $jefe->unidadesQueEncabeza()->value('parent_id');
+
+                    return is_numeric($valor) ? (int) $valor : 0;
+                })(),
             'destino' => (int) $destino->id,
         ];
     }
@@ -86,11 +85,6 @@ trait MueveJefe
         $reemplazos = $this->reemplazos;
         $reemplazaDestino = ($this->reemplazaDestino !== null && $this->reemplazaDestino !== '') ? (int) $this->reemplazaDestino : null;
         $turno = $this->turnoJefe;
-        
-        
-        
-        
-        
         $turno['dias_trabajo'] = $turno['dias_trabajo'] !== '' ? (int) $turno['dias_trabajo'] : null;
         $turno['dias_descanso'] = $turno['dias_descanso'] !== '' ? (int) $turno['dias_descanso'] : null;
 
@@ -146,7 +140,6 @@ trait MueveJefe
                 $reemplazaDestino,
             );
         } catch (UsuarioException $e) {
-            
             $this->propuestaJefe = $propuesta;
             $this->mensajeError = $e->getMessage();
 
@@ -163,8 +156,8 @@ trait MueveJefe
     }
 
     /**
-      * @return array<string, mixed>|null
-      */
+     * @return array<string, mixed>|null
+     */
     private function vistaPreviaMovimientoJefe(User $usuario): ?array
     {
         if ($this->propuestaJefe === null) {

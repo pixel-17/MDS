@@ -14,7 +14,6 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
-
 class BajaConReemplazo extends Component
 {
     use ManejaExcepcionesDeUsuario;
@@ -26,8 +25,8 @@ class BajaConReemplazo extends Component
     public ?int $usuarioId = null;
 
     /**
-      * @var array<int|string, array<string, mixed>>
-      */
+     * @var array<int|string, array<string, mixed>>
+     */
     public array $decisiones = [];
 
     public ?string $error = null;
@@ -80,7 +79,8 @@ class BajaConReemplazo extends Component
             ];
 
             if ($modo === CambiarEstadoUsuarioAction::REEMPLAZO_NUEVO) {
-                $correo = (string) ($decision['nuevo']['email'] ?? '');
+                $emailNuevo = $decision['nuevo']['email'] ?? '';
+                $correo = is_scalar($emailNuevo) ? (string) $emailNuevo : '';
                 if ($correo !== '' && User::where('email', $correo)->exists()) {
                     $this->error = 'El correo '.$correo.' ya está registrado: usa otro o elige a esa persona como reemplazo.';
 
@@ -89,7 +89,6 @@ class BajaConReemplazo extends Component
             }
         }
 
-        /** @var User $actor */
         $actor = auth()->user();
 
         if (! $this->intentar(

@@ -13,10 +13,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-
 class GeneradorTurnoMensualService
 {
-    
     public function cargarConfiguracion(
         User $trabajador,
         string $turno,
@@ -37,17 +35,6 @@ class GeneradorTurnoMensualService
             ]);
         }
 
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         if ($trabajador->regimen === '276') {
             $ciclo = self::cicloOrdinario276($fechaAncla);
             $fechaAncla = $ciclo['fecha_ancla'];
@@ -71,7 +58,6 @@ class GeneradorTurnoMensualService
         return $config;
     }
 
-    
     public function generarMes(
         User $trabajador,
         Carbon $mesInicio,
@@ -83,9 +69,6 @@ class GeneradorTurnoMensualService
             return;
         }
 
-        
-        
-        
         $config ??= ConfiguracionTurno::where('user_id', $trabajador->id)->first();
 
         if (! $config) {
@@ -95,11 +78,6 @@ class GeneradorTurnoMensualService
         $anio = $mesInicio->year;
         $mes = $mesInicio->month;
 
-        
-        
-        
-        
-        
         if ($origen === 'automatico') {
             $yaTieneCargaEsteMes = CargaTurnoMensual::where('user_id', $trabajador->id)
                 ->where('anio', $anio)
@@ -136,12 +114,6 @@ class GeneradorTurnoMensualService
             $dia->addDay();
         }
 
-        
-        
-        
-        
-        
-        
         Turno::upsert(
             $filas,
             ['user_id', 'fecha'],
@@ -160,14 +132,10 @@ class GeneradorTurnoMensualService
         HorarioActualizado::notificar($trabajador->id);
     }
 
-    
     public static function esDescansoEnFecha(Carbon $fechaAncla, Carbon $dia, int $diasTrabajo, int $diasDescanso): bool
     {
         $ciclo = $diasTrabajo + $diasDescanso;
 
-        
-        
-        
         $offset = $fechaAncla->diffInDays($dia, absolute: false);
         $posicion = (($offset % $ciclo) + $ciclo) % $ciclo;
 
@@ -175,8 +143,8 @@ class GeneradorTurnoMensualService
     }
 
     /**
-      * @return array{dias_trabajo: int, dias_descanso: int, fecha_ancla: Carbon}
-      */
+     * @return array{dias_trabajo: int, dias_descanso: int, fecha_ancla: Carbon}
+     */
     public static function cicloOrdinario276(?Carbon $referencia = null): array
     {
         $referencia ??= now();
@@ -185,12 +153,10 @@ class GeneradorTurnoMensualService
             'intval',
             array_filter(array_map('trim', explode(
                 ',',
-                (string) Configuracion::valorDe('HORARIO_ORDINARIO_DIAS_LABORABLES', '1,2,3,4,5')
+                Configuracion::valorTextoDe('HORARIO_ORDINARIO_DIAS_LABORABLES', '1,2,3,4,5')
             )))
         );
 
-        
-        
         $todosLosDias = [1, 2, 3, 4, 5, 6, 7];
         $diasDescansoIso = array_values(array_diff($todosLosDias, $diasLaborables));
 
@@ -207,7 +173,6 @@ class GeneradorTurnoMensualService
         ];
     }
 
-    
     public function retirarTurno(User $trabajador, ?Carbon $desde = null): void
     {
         $desde = ($desde ?? now())->copy()->startOfDay();
@@ -227,7 +192,6 @@ class GeneradorTurnoMensualService
         HorarioActualizado::notificar($trabajador->id);
     }
 
-    
     public function generarProximoMesParaTodos(): void
     {
         $mesEnCurso = now()->startOfMonth();
@@ -241,9 +205,6 @@ class GeneradorTurnoMensualService
             return;
         }
 
-        
-        
-        
         $cargasExistentes = CargaTurnoMensual::whereIn('user_id', $configs->pluck('user_id'))
             ->where(function ($q) use ($mesEnCurso, $proximoMes) {
                 $q->where(fn ($q2) => $q2->where('anio', $mesEnCurso->year)->where('mes', $mesEnCurso->month))
@@ -273,8 +234,8 @@ class GeneradorTurnoMensualService
     }
 
     /**
-      * @param  'INICIO'|'FIN'  $extremo
-      */
+     * @param  'INICIO'|'FIN'  $extremo
+     */
     public static function claveDeHora(string $turno, string $extremo): string
     {
         return in_array($turno, ['MANANA', 'TARDE', 'NOCHE'], true)
@@ -283,26 +244,26 @@ class GeneradorTurnoMensualService
     }
 
     /**
-      * @return array{0: string, 1: string} [hora_inicio, hora_fin] en H:i
-      */
+     * @return array{0: string, 1: string} [hora_inicio, hora_fin] en H:i
+     */
     public function horasDe(string $turno): array
     {
         return match ($turno) {
             'MANANA' => [
-                (string) Configuracion::valorDe('TURNO_MANANA_HORA_INICIO', '06:00'),
-                (string) Configuracion::valorDe('TURNO_MANANA_HORA_FIN', '14:00'),
+                Configuracion::valorTextoDe('TURNO_MANANA_HORA_INICIO', '06:00'),
+                Configuracion::valorTextoDe('TURNO_MANANA_HORA_FIN', '14:00'),
             ],
             'TARDE' => [
-                (string) Configuracion::valorDe('TURNO_TARDE_HORA_INICIO', '14:00'),
-                (string) Configuracion::valorDe('TURNO_TARDE_HORA_FIN', '22:00'),
+                Configuracion::valorTextoDe('TURNO_TARDE_HORA_INICIO', '14:00'),
+                Configuracion::valorTextoDe('TURNO_TARDE_HORA_FIN', '22:00'),
             ],
             'NOCHE' => [
-                (string) Configuracion::valorDe('TURNO_NOCHE_HORA_INICIO', '22:00'),
-                (string) Configuracion::valorDe('TURNO_NOCHE_HORA_FIN', '06:00'),
+                Configuracion::valorTextoDe('TURNO_NOCHE_HORA_INICIO', '22:00'),
+                Configuracion::valorTextoDe('TURNO_NOCHE_HORA_FIN', '06:00'),
             ],
             default => [
-                (string) Configuracion::valorDe('HORARIO_ORDINARIO_HORA_INICIO', HorarioOrdinarioService::HORA_INICIO_DEFECTO),
-                (string) Configuracion::valorDe('HORARIO_ORDINARIO_HORA_FIN', HorarioOrdinarioService::HORA_FIN_DEFECTO),
+                Configuracion::valorTextoDe('HORARIO_ORDINARIO_HORA_INICIO', HorarioOrdinarioService::HORA_INICIO_DEFECTO),
+                Configuracion::valorTextoDe('HORARIO_ORDINARIO_HORA_FIN', HorarioOrdinarioService::HORA_FIN_DEFECTO),
             ],
         };
     }

@@ -17,7 +17,6 @@ use App\Services\BloqueoRevisionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 
-
 class DecisionController extends Controller
 {
     use ResuelveUsuarioAutenticado;
@@ -42,7 +41,7 @@ class DecisionController extends Controller
         $this->authorize('decidirComoRrhh', $papeleta);
 
         try {
-            $action->ejecutar($papeleta, $this->usuarioAutenticado(), $request->input('comentario'));
+            $action->ejecutar($papeleta, $this->usuarioAutenticado(), $request->string('comentario')->toString());
         } catch (PapeletaException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -57,7 +56,7 @@ class DecisionController extends Controller
         $this->authorize('decidirComoRrhh', $papeleta);
 
         try {
-            $action->ejecutar($papeleta, $this->usuarioAutenticado(), $request->input('comentario'));
+            $action->ejecutar($papeleta, $this->usuarioAutenticado(), $request->string('comentario')->toString());
         } catch (PapeletaException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -87,7 +86,7 @@ class DecisionController extends Controller
         $this->authorize('revisarPosthoc', $papeleta);
 
         try {
-            $action->observar($papeleta, $this->usuarioAutenticado(), $request->input('comentario'));
+            $action->observar($papeleta, $this->usuarioAutenticado(), $request->string('comentario')->toString());
         } catch (PapeletaException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -102,7 +101,7 @@ class DecisionController extends Controller
         $this->authorize('revisarPosthoc', $papeleta);
 
         try {
-            $action->noAprobar($papeleta, $this->usuarioAutenticado(), $request->input('comentario'));
+            $action->noAprobar($papeleta, $this->usuarioAutenticado(), $request->string('comentario')->toString());
         } catch (PapeletaException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -120,9 +119,9 @@ class DecisionController extends Controller
             $action->ejecutar(
                 $papeleta,
                 $this->usuarioAutenticado(),
-                $request->filled('hora_retorno') ? Carbon::parse($request->input('hora_retorno')) : null,
-                $request->filled('motivo_id') ? (int) $request->input('motivo_id') : null,
-                $request->input('comentario'),
+                $request->filled('hora_retorno') ? Carbon::parse($request->string('hora_retorno')->toString()) : null,
+                $request->filled('motivo_id') ? $request->integer('motivo_id') : null,
+                $request->string('comentario')->toString(),
             );
         } catch (PapeletaException $e) {
             return back()->withInput()->with('error', $e->getMessage());

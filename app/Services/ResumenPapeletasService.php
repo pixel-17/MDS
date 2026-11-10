@@ -18,10 +18,8 @@ use App\Support\Minutos;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
-
 class ResumenPapeletasService
 {
-    
     private const GRUPOS = [
         'autorizadas' => [
             AutorizadaYCorriendo::class, Cerrada::class, EnJustificacion::class, Finalizada::class,
@@ -34,15 +32,15 @@ class ResumenPapeletasService
     public function __construct(private ReporteHorasAcumuladasService $reporte) {}
 
     /**
-      * @return array{
-      *     por_motivo: Collection<int, array{nombre: string, autorizadas: int, rechazadas: int, no_prosperaron: int, en_tramite: int, total: int}>,
-      *     por_unidad: Collection<int, array{nombre: string, autorizadas: int, rechazadas: int, no_prosperaron: int, en_tramite: int, total: int}>,
-      *     total: int,
-      *     minutos_rrhh: ?int,
-      *     minutos_jefe: ?int,
-      *     jefes_lentos: Collection<int, array{nombre: string, papeletas: int, minutos: int}>
-      * }
-      */
+     * @return array{
+     * por_motivo: Collection<int, array{nombre: string, autorizadas: int, rechazadas: int, no_prosperaron: int, en_tramite: int, total: int}>,
+     * por_unidad: Collection<int, array{nombre: string, autorizadas: int, rechazadas: int, no_prosperaron: int, en_tramite: int, total: int}>,
+     * total: int,
+     * minutos_rrhh: ?int,
+     * minutos_jefe: ?int,
+     * jefes_lentos: Collection<int, array{nombre: string, papeletas: int, minutos: int}>
+     * }
+     */
     public function resumen(string $mes): array
     {
         [$inicio, $fin] = $this->reporte->rangoDelMes($mes);
@@ -96,23 +94,22 @@ class ResumenPapeletasService
     }
 
     /**
-      * @param  Collection<int, Papeleta>  $papeletas
-      * @param  callable(Papeleta): string  $clave
-      * @return Collection<int, array{
-      *     nombre: string,
-      *     autorizadas: int,
-      *     rechazadas: int,
-      *     no_prosperaron: int,
-      *     en_tramite: int,
-      *     total: int
-      * }>
-      */
+     * @param  Collection<int, Papeleta>  $papeletas
+     * @param  callable(Papeleta): string  $clave
+     * @return Collection<int, array{
+     * nombre: string,
+     * autorizadas: int,
+     * rechazadas: int,
+     * no_prosperaron: int,
+     * en_tramite: int,
+     * total: int
+     * }>
+     */
     private function agrupar(Collection $papeletas, callable $clave): Collection
     {
         return $papeletas
             ->groupBy($clave)
             ->map(
-                /** @param Collection<int, Papeleta> $filas */
                 function (Collection $filas, string $nombre): array {
                     $fila = [
                         'nombre' => $nombre,
@@ -125,7 +122,7 @@ class ResumenPapeletasService
                     foreach (self::GRUPOS as $grupo => $estados) {
                         $fila[$grupo] = $filas
                             ->filter(
-                                fn (Papeleta $p): bool => in_array(
+                                fn (mixed $p): bool => $p instanceof Papeleta && in_array(
                                     $p->estado::class,
                                     $estados,
                                     true,
@@ -143,13 +140,11 @@ class ResumenPapeletasService
             ->values();
     }
 
-    
-
     /**
-      * @param  Collection<int, Papeleta>  $papeletas
-      * @param  callable(Papeleta): (CarbonInterface|null)  $obtenerInicio
-      * @param  callable(Papeleta): (CarbonInterface|null)  $obtenerFin
-      */
+     * @param  Collection<int, Papeleta>  $papeletas
+     * @param  callable(Papeleta): (CarbonInterface|null)  $obtenerInicio
+     * @param  callable(Papeleta): (CarbonInterface|null)  $obtenerFin
+     */
     private function promedio(
         Collection $papeletas,
         callable $obtenerInicio,
@@ -172,18 +167,16 @@ class ResumenPapeletasService
     }
 
     /**
-      * @param  Collection<int, Papeleta>  $papeletas
-      * @return Collection<int, array{nombre: string, papeletas: int, minutos: int}>
-      */
+     * @param  Collection<int, Papeleta>  $papeletas
+     * @return Collection<int, array{nombre: string, papeletas: int, minutos: int}>
+     */
     private function jefesMasLentos(Collection $papeletas): Collection
     {
         return $papeletas
             ->filter(fn (Papeleta $p) => $p->resueltoPorJefe && $p->jefe_resuelto_at)
             ->groupBy('resuelto_por_jefe_id')
             ->map(
-                /** @param Collection<int, Papeleta> $filas */
                 function (Collection $filas): array {
-                    /** @var Papeleta $primera */
                     $primera = $filas->first();
 
                     $minutos = $filas

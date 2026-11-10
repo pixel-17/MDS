@@ -19,7 +19,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Throwable;
 
-
 class PapeletaController extends Controller
 {
     use ResuelveUsuarioAutenticado;
@@ -28,8 +27,6 @@ class PapeletaController extends Controller
     {
         $this->authorize('crear', Papeleta::class);
 
-        
-        
         if ($viva = Papeleta::vivaDe($this->usuarioAutenticado())) {
             return redirect()
                 ->route('trabajador.papeletas.show', $viva)
@@ -38,9 +35,6 @@ class PapeletaController extends Controller
 
         $motivos = Motivo::where('activo', true)->orderBy('nombre')->get();
 
-        
-        
-        
         $usuario = $this->usuarioAutenticado();
         $avisarAutorizacionAutomatica = $usuario->esJefeDeArea() && ! $horarioRrhh->estaEnHorarioAhora();
 
@@ -51,8 +45,6 @@ class PapeletaController extends Controller
     {
         $motivo = Motivo::findOrFail($request->integer('motivo_id'));
 
-        
-        
         $adjuntoPath = $motivo->requiere_sustento_en_retorno && $request->hasFile('adjunto_inicial_path')
             ? ($archivos->guardar($request->file('adjunto_inicial_path'), 'papeletas/adjuntos-iniciales') ?: null)
             : null;
@@ -78,7 +70,6 @@ class PapeletaController extends Controller
             ->with('success', 'Papeleta creada correctamente.');
     }
 
-    
     private function descartarAdjunto(?string $path): void
     {
         if ($path) {
@@ -95,7 +86,6 @@ class PapeletaController extends Controller
         return view('trabajador.papeletas.show', compact('papeleta'));
     }
 
-    
     public function subsanar(SubsanarObservacionRequest $request, Papeleta $papeleta, SubsanarObservacionAction $action, ArchivoSubidaService $archivos): RedirectResponse
     {
         $archivoPath = $request->hasFile('archivo')
@@ -103,7 +93,7 @@ class PapeletaController extends Controller
             : null;
 
         try {
-            $action->ejecutar($papeleta, $this->usuarioAutenticado(), $request->input('respuesta'), $archivoPath);
+            $action->ejecutar($papeleta, $this->usuarioAutenticado(), $request->string('respuesta')->toString(), $archivoPath);
         } catch (PapeletaException $e) {
             $this->descartarAdjunto($archivoPath);
 

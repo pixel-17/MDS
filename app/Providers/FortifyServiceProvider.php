@@ -20,16 +20,15 @@ use Laravel\Fortify\Fortify;
 class FortifyServiceProvider extends ServiceProvider
 {
     /**
-      * Register any application services.
-      */
+     * Register any application services.
+     */
     public function register(): void
     {
-        
     }
 
     /**
-      * Bootstrap any application services.
-      */
+     * Bootstrap any application services.
+     */
     public function boot(): void
     {
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
@@ -37,18 +36,10 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
 
-        
-        
-        
-        
-        
         Fortify::authenticateUsing(function (Request $request) {
             $user = User::where('email', $request->email)->first();
 
-            
-            
-            
-            if ($user && Hash::check($request->password, $user->password) && ! $user->activo) {
+            if ($user && Hash::check($request->string('password')->toString(), $user->password) && ! $user->activo) {
                 $user->notify(new CuentaDesactivadaNotification);
 
                 throw ValidationException::withMessages([
@@ -56,17 +47,15 @@ class FortifyServiceProvider extends ServiceProvider
                 ]);
             }
 
-            
-            if ($user && Hash::check($request->password, $user->password)) {
+            if ($user && Hash::check($request->string('password')->toString(), $user->password)) {
                 return $user;
             }
 
-            
             return null;
         });
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $throttleKey = Str::transliterate(Str::lower($request->string(Fortify::username())->toString()).'|'.$request->ip());
 
             return Limit::perMinute(5)->by($throttleKey);
         });
@@ -76,10 +65,10 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('passkeys', function (Request $request) {
-            $credentialId = $request->input('credential.id');
+            $credentialId = $request->string('credential.id')->toString();
 
             return Limit::perMinute(10)->by(
-                ($credentialId ?: $request->session()->getId()).'|'.$request->ip()
+                ($credentialId !== '' ? $credentialId : $request->session()->getId()).'|'.$request->ip()
             );
         });
     }

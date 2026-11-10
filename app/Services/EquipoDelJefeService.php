@@ -6,12 +6,11 @@ use App\Models\UnidadOrganica;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
-
 class EquipoDelJefeService
 {
     /**
-      * @return array{0: Collection<int, User>, 1: bool, 2: list<int>} [personas, esJefeDeArea, idsSoloLectura]
-      */
+     * @return array{0: Collection<int, User>, 1: bool, 2: list<int>} [personas, esJefeDeArea, idsSoloLectura]
+     */
     public function para(User $user): array
     {
         $unidadIds = $this->subtreeIdsDeAreasQueEncabeza($user);
@@ -21,10 +20,6 @@ class EquipoDelJefeService
 
         $directos = $user->subordinadosInmediatos()->get();
 
-        
-        
-        
-        
         if (! $esJefeDeArea && ! $user->hasRole('admin')) {
             $idsDeJefes = $this->idsDeJefes();
 
@@ -33,9 +28,6 @@ class EquipoDelJefeService
             );
         }
 
-        
-        
-        
         if (! $user->hasRole('admin')) {
             $paresSoloLectura = $this->jefesDeSusUnidades($user)
                 ->reject(fn (User $j) => $j->id === $user->id);
@@ -60,13 +52,13 @@ class EquipoDelJefeService
         return [
             $trabajadores,
             $esJefeDeArea,
-            array_values($paresSoloLectura->pluck('id')->map(fn ($id) => (int) $id)->all()),
+            array_values($paresSoloLectura->pluck('id')->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)->all()),
         ];
     }
 
     /**
-      * @return Collection<int, User>
-      */
+     * @return Collection<int, User>
+     */
     private function jefesDeSusUnidades(User $user): Collection
     {
         $unidadIds = UnidadOrganica::where('jefe_id', $user->id)->pluck('id');
@@ -84,20 +76,20 @@ class EquipoDelJefeService
     }
 
     /**
-      * @return Collection<int, int>
-      */
+     * @return Collection<int, int>
+     */
     public function idsDeJefes(): Collection
     {
         return UnidadOrganica::whereNotNull('jefe_id')->pluck('jefe_id')
             ->merge(User::whereNotNull('jefe_inmediato_id')->distinct()->pluck('jefe_inmediato_id'))
-            ->map(fn ($id) => (int) $id)
+            ->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)
             ->unique()
             ->values();
     }
 
     /**
-      * @return Collection<int, int>
-      */
+     * @return Collection<int, int>
+     */
     private function subtreeIdsDeAreasQueEncabeza(User $user): Collection
     {
         $ids = collect();

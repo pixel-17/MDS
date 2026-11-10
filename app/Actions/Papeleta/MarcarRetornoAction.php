@@ -18,14 +18,13 @@ use App\Support\Minutos;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
-
 class MarcarRetornoAction
 {
     use ExigeDecisorAjeno;
 
     /**
-      * @param  array<string, mixed>  $datos
-      */
+     * @param  array<string, mixed>  $datos
+     */
     public function normal(Papeleta $papeleta, User $trabajador, array $datos): Papeleta
     {
         if ($papeleta->trabajador_id !== $trabajador->id) {
@@ -42,7 +41,6 @@ class MarcarRetornoAction
         ]);
     }
 
-    
     public function manual(Papeleta $papeleta, User $jefe, string $justificacion): Papeleta
     {
         $this->exigirDecisorAjeno($papeleta, $jefe);
@@ -68,12 +66,11 @@ class MarcarRetornoAction
     }
 
     /**
-      * @param  array<string, mixed>  $datosRetorno
-      */
+     * @param  array<string, mixed>  $datosRetorno
+     */
     private function ejecutar(Papeleta $papeleta, array $datosRetorno): Papeleta
     {
         return DB::transaction(function () use ($papeleta, $datosRetorno) {
-            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             if (! $actual->estado->equals(AutorizadaYCorriendo::class)) {
@@ -86,16 +83,12 @@ class MarcarRetornoAction
 
             $estadoAnterior = class_basename($actual->estado);
 
-            /** @var Carbon $horaServidor */
             $horaServidor = $datosRetorno['hora_servidor'];
 
             $retorno = Retorno::create(array_merge(['papeleta_id' => $actual->id], $datosRetorno));
 
             $actual->descuento_refrigerio_minutos = $this->calcularDescuentoRefrigerio($actual, $horaServidor);
 
-            
-            
-            
             $consecuencia = $actual->motivo->consecuenciaAlTerminar();
 
             $actual->transicionarA(match ($consecuencia) {
@@ -124,11 +117,11 @@ class MarcarRetornoAction
     }
 
     /**
-      * @param  array<string, mixed>  $datos
-      */
+     * @param  array<string, mixed>  $datos
+     */
     private function calcularDentroDeRadio(Papeleta $papeleta, array $datos): ?bool
     {
-        if (empty($datos['latitud']) || empty($datos['longitud'])) {
+        if (empty($datos['latitud']) || empty($datos['longitud']) || ! is_numeric($datos['latitud']) || ! is_numeric($datos['longitud'])) {
             return null;
         }
 
@@ -161,15 +154,14 @@ class MarcarRetornoAction
         return $radioTierraMetros * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 
-    
     public function calcularDescuentoRefrigerio(Papeleta $papeleta, Carbon $horaRetorno): int
     {
         if ($papeleta->regimen !== '276' || ! $papeleta->hora_salida_real) {
             return 0;
         }
 
-        $inicioAlmuerzo = Configuracion::valorDe('BLOQUE_ALMUERZO_INICIO', '13:00');
-        $finAlmuerzo = Configuracion::valorDe('BLOQUE_ALMUERZO_FIN', '14:00');
+        $inicioAlmuerzo = Configuracion::valorTextoDe('BLOQUE_ALMUERZO_INICIO', '13:00');
+        $finAlmuerzo = Configuracion::valorTextoDe('BLOQUE_ALMUERZO_FIN', '14:00');
 
         $bloqueInicio = $papeleta->hora_salida_real->copy()
             ->setTimeFromTimeString($inicioAlmuerzo);

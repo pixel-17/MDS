@@ -8,7 +8,6 @@ use App\Models\Sustento;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
-
 class LimpiarArchivosHuerfanos extends Command
 {
     protected $signature = 'archivos:huerfanos
@@ -17,7 +16,6 @@ class LimpiarArchivosHuerfanos extends Command
 
     protected $description = 'Lista (o elimina) los archivos de papeletas que ninguna fila de la base de datos referencia.';
 
-    
     private const CARPETAS = [
         'papeletas/adjuntos-iniciales',
         'papeletas/retornos',
@@ -32,11 +30,13 @@ class LimpiarArchivosHuerfanos extends Command
         $limite = now()->subDays($dias)->getTimestamp();
         $disco = Storage::disk('local');
 
+        $aTexto = static fn (mixed $v): string => is_scalar($v) ? (string) $v : '';
+
         $referenciados = array_flip(array_merge(
-            Papeleta::whereNotNull('adjunto_inicial_path')->pluck('adjunto_inicial_path')->all(),
-            Papeleta::whereNotNull('observacion_adjunto_path')->pluck('observacion_adjunto_path')->all(),
-            Retorno::whereNotNull('foto_path')->pluck('foto_path')->all(),
-            Sustento::whereNotNull('archivo_path')->pluck('archivo_path')->all(),
+            Papeleta::whereNotNull('adjunto_inicial_path')->pluck('adjunto_inicial_path')->map($aTexto)->all(),
+            Papeleta::whereNotNull('observacion_adjunto_path')->pluck('observacion_adjunto_path')->map($aTexto)->all(),
+            Retorno::whereNotNull('foto_path')->pluck('foto_path')->map($aTexto)->all(),
+            Sustento::whereNotNull('archivo_path')->pluck('archivo_path')->map($aTexto)->all(),
         ));
 
         $huerfanos = 0;

@@ -2,10 +2,10 @@
 
 namespace App\Livewire\Profile;
 
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
-
 
 class DeviceSettingsForm extends Component
 {
@@ -17,7 +17,6 @@ class DeviceSettingsForm extends Component
 
     public function mount(): void
     {
-        /** @var \App\Models\User $usuario */
         $usuario = Auth::user();
 
         $this->volumen = $usuario->volumen_notificacion;
@@ -27,7 +26,6 @@ class DeviceSettingsForm extends Component
 
     public function guardar(): void
     {
-        /** @var \App\Models\User $usuario */
         $usuario = Auth::user();
 
         $usuario->forceFill([
@@ -38,9 +36,6 @@ class DeviceSettingsForm extends Component
 
         $this->dispatch('saved');
 
-        
-        
-        
         $this->dispatch('mssc-volumen-actualizado', volumen: $this->volumen);
     }
 

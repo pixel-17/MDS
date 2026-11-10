@@ -12,7 +12,6 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-
 #[Layout('layouts.app')]
 #[Title('Programar horarios — administración')]
 class ProgramacionAdmin extends Component
@@ -23,7 +22,6 @@ class ProgramacionAdmin extends Component
 
     public string $buscar = '';
 
-    
     #[Locked]
     public ?int $jefeId = null;
 
@@ -61,12 +59,9 @@ class ProgramacionAdmin extends Component
         $palabras = preg_split('/\s+/', trim($this->buscar), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $resultados = collect();
 
-        
         if ($palabras !== [] && mb_strlen(trim($this->buscar)) >= 2) {
             $consulta = User::with('unidadOrganica')->orderBy('name')->orderBy('apellido');
 
-            
-            
             foreach ($palabras as $palabra) {
                 $consulta->where(fn ($q) => $q
                     ->where('name', 'like', "%{$palabra}%")
@@ -82,9 +77,7 @@ class ProgramacionAdmin extends Component
             'resultados' => $resultados->take(self::MAX_RESULTADOS),
             'hayMas' => $resultados->count() > self::MAX_RESULTADOS,
             'idsJefes' => $equipos->idsDeJefes()->all(),
-            
-            
-            'idsJefesDeArea' => UnidadOrganica::whereNotNull('jefe_id')->whereHas('hijos')->pluck('jefe_id')->map(fn ($id) => (int) $id)->all(),
+            'idsJefesDeArea' => UnidadOrganica::whereNotNull('jefe_id')->whereHas('hijos')->pluck('jefe_id')->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)->all(),
             'jefe' => $this->jefeId ? User::find($this->jefeId) : null,
         ]);
     }

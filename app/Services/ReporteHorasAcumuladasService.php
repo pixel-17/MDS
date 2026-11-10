@@ -9,13 +9,12 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
-
 class ReporteHorasAcumuladasService
 {
     /**
-      * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
-      * @return Builder<Papeleta>
-      */
+     * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
+     * @return Builder<Papeleta>
+     */
     public function query(User $usuario, string $mes, array $filtros = []): Builder
     {
         [$inicio, $fin] = $this->rangoDelMes($mes);
@@ -33,7 +32,6 @@ class ReporteHorasAcumuladasService
             $query->where('trabajador_id', $filtros['trabajador_id']);
         }
 
-        
         if (! empty($filtros['buscar'])) {
             $buscar = trim($filtros['buscar']);
 
@@ -69,9 +67,9 @@ class ReporteHorasAcumuladasService
     }
 
     /**
-      * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
-      * @return Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>
-      */
+     * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
+     * @return Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>
+     */
     public function detalle(User $usuario, string $mes, array $filtros = []): Collection
     {
         $resultado = $this->query($usuario, $mes, $filtros)->get()->map(function (Papeleta $p) {
@@ -94,27 +92,28 @@ class ReporteHorasAcumuladasService
                 'retorno' => $horaRetorno,
                 'minutos_brutos' => $minutosBrutos,
                 'minutos_refrigerio' => (int) $p->descuento_refrigerio_minutos,
-                
-                
                 'minutos' => max(0, $minutosBrutos - (int) $p->descuento_refrigerio_minutos),
             ];
         });
 
-        /** @var Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}> $resultado */
         return $resultado;
     }
 
+    private static function sumaEntera(mixed $valor): int
+    {
+        return is_numeric($valor) ? (int) $valor : 0;
+    }
+
     /**
-      * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
-      * @param  Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>|null  $detalle
-      * @return Collection<int, array{trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, papeletas: int, minutos_totales: int, minutos_con_descuento: int, papeletas_con_descuento: int}>
-      */
+     * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
+     * @param  Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>|null  $detalle
+     * @return Collection<int, array{trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, papeletas: int, minutos_totales: int, minutos_con_descuento: int, papeletas_con_descuento: int}>
+     */
     public function resumenPorTrabajador(User $usuario, string $mes, array $filtros = [], ?Collection $detalle = null): Collection
     {
         return ($detalle ?? $this->detalle($usuario, $mes, $filtros))
             ->groupBy('trabajador_id')
             ->map(function (Collection $filas) {
-                /** @var Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}> $filas */
                 $primera = $filas->first() ?? throw new \LogicException('groupBy() nunca produce un grupo vacío.');
                 $conDescuento = $filas->where('suma_descuento', true);
 
@@ -125,8 +124,8 @@ class ReporteHorasAcumuladasService
                     'sede' => $primera['sede'],
                     'unidad_organica' => $primera['unidad_organica'],
                     'papeletas' => $filas->count(),
-                    'minutos_totales' => (int) $filas->sum('minutos'),
-                    'minutos_con_descuento' => (int) $conDescuento->sum('minutos'),
+                    'minutos_totales' => self::sumaEntera($filas->sum('minutos')),
+                    'minutos_con_descuento' => self::sumaEntera($conDescuento->sum('minutos')),
                     'papeletas_con_descuento' => $conDescuento->count(),
                 ];
             })
@@ -136,26 +135,24 @@ class ReporteHorasAcumuladasService
     }
 
     /**
-      * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
-      * @param  Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>|null  $detalle
-      * @return Collection<int, array{trabajador_id: int, trabajador: string, dia: string, minutos: int, motivos: string}>
-      */
+     * @param  array{trabajador_id?: int|null, buscar?: string|null, sede_id?: int|null, unidad_organica_id?: int|null, motivo_id?: int|null, regimen?: string|null, solo_con_descuento?: bool}  $filtros
+     * @param  Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>|null  $detalle
+     * @return Collection<int, array{trabajador_id: int, trabajador: string, dia: string, minutos: int, motivos: string}>
+     */
     public function resumenDiarioPorTrabajador(User $usuario, string $mes, array $filtros = [], ?Collection $detalle = null): Collection
     {
         return ($detalle ?? $this->detalle($usuario, $mes, $filtros))
             ->groupBy(function ($fila) {
-                /** @var array{trabajador_id: int, dia: string} $fila */
                 return $fila['trabajador_id'].'|'.$fila['dia'];
             })
             ->map(function (Collection $filas) {
-                /** @var Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}> $filas */
                 $primera = $filas->first() ?? throw new \LogicException('groupBy() nunca produce un grupo vacío.');
 
                 return [
                     'trabajador_id' => $primera['trabajador_id'],
                     'trabajador' => $primera['trabajador'],
                     'dia' => $primera['dia'],
-                    'minutos' => (int) $filas->sum('minutos'),
+                    'minutos' => self::sumaEntera($filas->sum('minutos')),
                     'motivos' => $filas->pluck('motivo')->unique()->implode(', '),
                 ];
             })
@@ -164,12 +161,10 @@ class ReporteHorasAcumuladasService
     }
 
     /**
-      * @return array{0: Carbon, 1: Carbon}
-      */
+     * @return array{0: Carbon, 1: Carbon}
+     */
     public function rangoDelMes(string $mes): array
     {
-        
-        
         if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $mes)) {
             $mes = now()->format('Y-m');
         }

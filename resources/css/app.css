@@ -1,4 +1,3 @@
-
 @import '@fontsource-variable/inter/index.css';
 @import '@fontsource-variable/fraunces/index.css';
 
@@ -56,7 +55,6 @@ body.app-bg {
 }
 
 .dark .auth-bg {
-    
     --surface: #1f1f23;
     --surface-muted: #14181a;
     --border-soft: #2d2d33;

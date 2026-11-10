@@ -11,7 +11,6 @@ use App\Services\GeneradorTurnoMensualService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-
 class CambiarEstadoUsuarioAction
 {
     public const REEMPLAZO_EXISTENTE = 'existente';
@@ -20,7 +19,6 @@ class CambiarEstadoUsuarioAction
 
     public const REEMPLAZO_VACANTE = 'vacante';
 
-    
     public function motivoParaNoDesactivar(User $actor, User $usuario): ?string
     {
         if ($usuario->is($actor)) {
@@ -35,8 +33,8 @@ class CambiarEstadoUsuarioAction
     }
 
     /**
-      * @return Collection<int, array{unidad: UnidadOrganica, es_area: bool, personas: int, subunidades: int, pendientes: int}>
-      */
+     * @return Collection<int, array{unidad: UnidadOrganica, es_area: bool, personas: int, subunidades: int, pendientes: int}>
+     */
     public function jefaturasPorResolver(User $usuario): Collection
     {
         $pendientes = app(PapeletasAbiertasService::class)->contarPendientesDeJefe($usuario);
@@ -54,9 +52,9 @@ class CambiarEstadoUsuarioAction
     }
 
     /**
-      * @param  array<int|string, array{modo?: string, usuario_id?: int|string|null, nuevo?: array<string, mixed>}>  $reemplazos  unidad_id => decisión
-      * @throws UsuarioException
-      */
+     * @param  array<int|string, array{modo?: string, usuario_id?: int|string|null, nuevo?: array<string, mixed>}>  $reemplazos  unidad_id => decisión
+     * @throws UsuarioException
+     */
     public function desactivar(User $actor, User $usuario, array $reemplazos = []): User
     {
         $this->exigirAdmin($actor);
@@ -73,7 +71,6 @@ class CambiarEstadoUsuarioAction
 
         $porResolver = $this->jefaturasPorResolver($usuario);
 
-        
         foreach ($porResolver as $fila) {
             $decision = $reemplazos[$fila['unidad']->id] ?? null;
             $modo = $decision['modo'] ?? null;
@@ -99,9 +96,9 @@ class CambiarEstadoUsuarioAction
     }
 
     /**
-      * @param  array{modo?: string, usuario_id?: int|string|null, nuevo?: array<string, mixed>}  $decision
-      * @throws UsuarioException
-      */
+     * @param  array{modo?: string, usuario_id?: int|string|null, nuevo?: array<string, mixed>}  $decision
+     * @throws UsuarioException
+     */
     private function relevarJefatura(User $actor, UnidadOrganica $unidad, User $saliente, array $decision): void
     {
         $modo = $decision['modo'] ?? self::REEMPLAZO_VACANTE;
@@ -134,7 +131,6 @@ class CambiarEstadoUsuarioAction
             return;
         }
 
-        
         $guardar(null, false);
 
         if ($modo === self::REEMPLAZO_NUEVO) {
@@ -143,9 +139,9 @@ class CambiarEstadoUsuarioAction
     }
 
     /**
-      * @param  array<string, mixed>  $nuevo  name, apellido, dni, email, regimen, sede_id (opcional)
-      * @throws UsuarioException
-      */
+     * @param  array<string, mixed>  $nuevo  name, apellido, dni, email, regimen, sede_id (opcional)
+     * @throws UsuarioException
+     */
     private function crearJefeNuevo(User $actor, UnidadOrganica $unidad, User $saliente, array $nuevo): void
     {
         foreach (['name', 'apellido', 'dni', 'email', 'regimen'] as $campo) {
@@ -158,19 +154,20 @@ class CambiarEstadoUsuarioAction
             throw new UsuarioException('El régimen del jefe nuevo debe ser 276 o 728.');
         }
 
+        $aTexto = static fn (mixed $v): string => is_scalar($v) ? (string) $v : '';
+
         app(CrearUsuarioAction::class)->ejecutar($actor, [
-            'name' => $nuevo['name'],
-            'apellido' => $nuevo['apellido'],
-            'dni' => $nuevo['dni'],
-            'email' => $nuevo['email'],
-            'regimen' => $nuevo['regimen'],
-            'sede_id' => $nuevo['sede_id'] ?? $saliente->sede_id,
+            'name' => $aTexto($nuevo['name']),
+            'apellido' => $aTexto($nuevo['apellido']),
+            'dni' => $aTexto($nuevo['dni']),
+            'email' => $aTexto($nuevo['email']),
+            'regimen' => $aTexto($nuevo['regimen']),
+            'sede_id' => is_numeric($nuevo['sede_id'] ?? null) ? (int) $nuevo['sede_id'] : $saliente->sede_id,
             'unidad_organica_id' => $unidad->id,
             'tipo' => 'jefe_inmediato',
         ], true);
     }
 
-    /** @throws UsuarioException */
     public function reactivar(User $actor, User $usuario): User
     {
         $this->exigirAdmin($actor);

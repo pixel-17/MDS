@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Configuracion;
 use Carbon\Carbon;
 
-
 class CalculadorDiasHabiles
 {
     public function esHabil(Carbon $fecha): bool
@@ -13,18 +12,16 @@ class CalculadorDiasHabiles
         return $this->esDiaLaborable($fecha);
     }
 
-    
     public function esDiaLaborable(Carbon $fecha): bool
     {
         $dias = array_map(
             'trim',
-            explode(',', (string) Configuracion::valorDe('HORARIO_ORDINARIO_DIAS_LABORABLES', '1,2,3,4,5'))
+            explode(',', Configuracion::valorTextoDe('HORARIO_ORDINARIO_DIAS_LABORABLES', '1,2,3,4,5'))
         );
 
         return in_array((string) $fecha->isoWeekday(), $dias, true);
     }
 
-    
     public function agregarDiasHabiles(Carbon $desde, int $dias): Carbon
     {
         $fecha = $desde->copy();
@@ -40,7 +37,6 @@ class CalculadorDiasHabiles
         return $fecha;
     }
 
-    
     public function agregarHorasHabiles(Carbon $desde, int $horas): Carbon
     {
         $fecha = $desde->copy();

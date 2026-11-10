@@ -25,7 +25,6 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Spatie\Permission\Models\Role;
 
-
 #[Layout('layouts.app')]
 #[Title('Usuario')]
 class UsuarioAdminForm extends Component
@@ -51,10 +50,8 @@ class UsuarioAdminForm extends Component
 
     public ?int $unidadOrganicaId = null;
 
-    /** @var array<int, int|string> */
     public array $rolesSeleccionados = [];
 
-    
     public string $rolNuevo = '';
 
     public bool $activo = true;
@@ -69,9 +66,7 @@ class UsuarioAdminForm extends Component
 
     public function mount(?User $usuario = null): void
     {
-        
         if ($usuario?->exists) {
-            
             $this->fechaAncla = now()->toDateString();
             $this->usuario = $usuario;
             $this->name = $usuario->name;
@@ -81,7 +76,7 @@ class UsuarioAdminForm extends Component
             $this->regimen = $usuario->regimen ?? '';
             $this->sedeId = $usuario->sede_id;
             $this->unidadOrganicaId = $usuario->unidad_organica_id;
-            $this->rolesSeleccionados = $usuario->roles->pluck('id')->all();
+            $this->rolesSeleccionados = self::aEnteros($usuario->roles->pluck('id')->all());
             $this->activo = $usuario->activo;
 
             $config = ConfiguracionTurno::where('user_id', $usuario->id)->first();
@@ -93,8 +88,6 @@ class UsuarioAdminForm extends Component
                 $this->diasDescanso = $config->dias_descanso;
             }
         } else {
-            
-            
             $unidadId = request()->integer('unidad') ?: null;
             $unidad = $unidadId ? UnidadOrganica::with('jefe')->find($unidadId) : null;
 
@@ -105,19 +98,35 @@ class UsuarioAdminForm extends Component
         }
     }
 
-    
-    
+    private static function idDelRol(string $nombre): int
+    {
+        $id = Role::where('name', $nombre)->value('id');
 
-    
+        return is_numeric($id) ? (int) $id : 0;
+    }
+
+    private static function aEnteros(mixed $valores): array
+    {
+        if (! is_array($valores)) {
+            return [];
+        }
+
+        return array_map(static fn (mixed $id): int => is_numeric($id) ? (int) $id : 0, $valores);
+    }
+
+    private static function aTexto(mixed $valor): string
+    {
+        return is_scalar($valor) ? (string) $valor : '';
+    }
+
     protected function esSoloRrhh(): bool
     {
-        $rrhhId = (int) Role::where('name', 'rrhh')->value('id');
-        $roles = array_map('intval', $this->rolesSeleccionados);
+        $rrhhId = self::idDelRol('rrhh');
+        $roles = self::aEnteros($this->rolesSeleccionados);
 
         return $rrhhId > 0 && $roles !== [] && array_diff($roles, [$rrhhId]) === [];
     }
 
-    
     protected function admiteConfiguracionTurno(): bool
     {
         if ($this->regimen !== '728') {
@@ -128,8 +137,6 @@ class UsuarioAdminForm extends Component
             return true;
         }
 
-        
-        
         if ($this->cambioDeRegimen()) {
             return true;
         }
@@ -137,10 +144,6 @@ class UsuarioAdminForm extends Component
         return ! ConfiguracionTurno::where('user_id', $this->usuario->id)->exists();
     }
 
-    
-    
-
-    /** @return array<string, mixed> */
     protected function rules(): array
     {
         $reglas = [
@@ -167,7 +170,6 @@ class UsuarioAdminForm extends Component
         return $reglas;
     }
 
-    /** @var array<string, string> */
     protected $messages = [
         'rolesSeleccionados.required' => 'Selecciona al menos un rol: un usuario sin rol no puede usar el sistema.',
         'rolesSeleccionados.min' => 'Selecciona al menos un rol: un usuario sin rol no puede usar el sistema.',
@@ -179,23 +181,15 @@ class UsuarioAdminForm extends Component
     {
         $this->autorizarAdmin();
 
-        
         if ($this->usuario === null && $this->rolNuevo !== '') {
             $this->rolesSeleccionados = [$this->rolNuevo];
         }
 
         if ($this->esSoloAdmin()) {
-            
-            
-            
             $this->regimen = '';
             $this->sedeId = null;
             $this->unidadOrganicaId = null;
         } elseif ($this->esSoloRrhh()) {
-            
-            
-            
-            
             $this->regimen = '';
             $this->sedeId = null;
             $this->unidadOrganicaId = null;
@@ -205,9 +199,9 @@ class UsuarioAdminForm extends Component
 
         $datos = $this->validate();
 
-        $adminId = (int) Role::where('name', 'admin')->value('id');
-        $trabajadorId = (int) Role::where('name', 'trabajador')->value('id');
-        $roles = array_values(array_map('intval', $datos['rolesSeleccionados']));
+        $adminId = self::idDelRol('admin');
+        $trabajadorId = self::idDelRol('trabajador');
+        $roles = array_values(self::aEnteros($datos['rolesSeleccionados']));
 
         if (! $this->validarRoles($roles, $adminId, $trabajadorId)) {
             return;
@@ -231,7 +225,6 @@ class UsuarioAdminForm extends Component
 
         $atributos = $this->construirAtributos($datos, $roles, $adminId);
 
-        
         $debeRetirarTurno = $this->usuario !== null
             && ($this->cambioDeRegimen() || ($this->usuario->activo && ! $datos['activo']));
 
@@ -247,11 +240,10 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-      * @param  list<int>  $roles
-      */
+     * @param  list<int>  $roles
+     */
     private function validarRoles(array $roles, int $adminId, int $trabajadorId): bool
     {
-        
         if ($this->esSoloAdmin() && $this->regimen !== '') {
             $this->addError('rolesSeleccionados', 'Un administrador no lleva régimen: deja el régimen vacío.');
 
@@ -270,13 +262,9 @@ class UsuarioAdminForm extends Component
             return false;
         }
 
-        
-        
-        
-        
         if ($this->usuario === null) {
-            $rrhhId = (int) Role::where('name', 'rrhh')->value('id');
-            $trabajadorId = (int) Role::where('name', 'trabajador')->value('id');
+            $rrhhId = self::idDelRol('rrhh');
+            $trabajadorId = self::idDelRol('trabajador');
 
             if (! in_array($adminId, $roles, true) && ! in_array($rrhhId, $roles, true)) {
                 $this->addError('rolesSeleccionados', 'Desde Cuentas de usuario solo se crean administradores o RR. HH. puros. Para dar de alta trabajadores, hazlo desde el organigrama.');
@@ -284,15 +272,12 @@ class UsuarioAdminForm extends Component
                 return false;
             }
 
-            
             if (in_array($adminId, $roles, true) && in_array($rrhhId, $roles, true)) {
                 $this->addError('rolesSeleccionados', 'Elige un solo rol: administrador o RR. HH.');
 
                 return false;
             }
 
-            
-            
             if (in_array($rrhhId, $roles, true) && in_array($trabajadorId, $roles, true)) {
                 $this->addError('rolesSeleccionados', 'Desde Cuentas de usuario solo se crea RR. HH. puro. Si la persona también es trabajador, dála de alta desde el organigrama y asígnale el rol RR. HH. desde allí.');
 
@@ -304,9 +289,9 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-      * @param  array<string, mixed>  $datos
-      * @param  list<int>  $roles
-      */
+     * @param  array<string, mixed>  $datos
+     * @param  list<int>  $roles
+     */
     private function validarUnidad(array $datos, int $adminId, array $roles): bool
     {
         if (in_array($adminId, $roles, true)) {
@@ -315,7 +300,7 @@ class UsuarioAdminForm extends Component
 
         if ($this->usuario
             && $this->usuario->unidad_organica_id !== null
-            && (int) $datos['unidadOrganicaId'] !== (int) $this->usuario->unidad_organica_id
+            && (is_numeric($datos['unidadOrganicaId']) ? (int) $datos['unidadOrganicaId'] : 0) !== (int) $this->usuario->unidad_organica_id
             && $this->usuario->unidadesQueEncabeza()->exists()
         ) {
             $this->addError('unidadOrganicaId', 'Encabeza una unidad: reasigna primero esa jefatura antes de moverlo a otra unidad.');
@@ -327,16 +312,16 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-      * @param  array<string, mixed>  $datos
-      */
+     * @param  array<string, mixed>  $datos
+     */
     private function validarUnicoRrhhActivo(array $datos): bool
     {
         if (! $this->usuario?->esUnicoRrhhActivo()) {
             return true;
         }
 
-        $rolRrhhId = (int) Role::where('name', 'rrhh')->value('id');
-        $conservaRol = in_array($rolRrhhId, array_map('intval', $datos['rolesSeleccionados']), true);
+        $rolRrhhId = self::idDelRol('rrhh');
+        $conservaRol = in_array($rolRrhhId, self::aEnteros($datos['rolesSeleccionados']), true);
 
         if (! $datos['activo']) {
             $this->addError('activo', 'Es el único usuario de RR. HH. activo: sin él, toda papeleta aprobada por el jefe se autorizaría sola. Designa primero a otra persona con rol RR. HH.');
@@ -354,16 +339,16 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-      * @param  array<string, mixed>  $datos
-      */
+     * @param  array<string, mixed>  $datos
+     */
     private function validarUnicoAdminActivo(array $datos): bool
     {
         if (! $this->usuario?->esUnicoAdminActivo()) {
             return true;
         }
 
-        $rolAdminId = (int) Role::where('name', 'admin')->value('id');
-        $conservaRol = in_array($rolAdminId, array_map('intval', $datos['rolesSeleccionados']), true);
+        $rolAdminId = self::idDelRol('admin');
+        $conservaRol = in_array($rolAdminId, self::aEnteros($datos['rolesSeleccionados']), true);
 
         if (! $datos['activo']) {
             $this->addError('activo', 'Es el único administrador activo: sin él nadie puede gestionar el sistema. Designa primero a otro administrador.');
@@ -381,15 +366,14 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-      * @param  array<string, mixed>  $datos
-      */
+     * @param  array<string, mixed>  $datos
+     */
     private function validarDesactivacion(array $datos): bool
     {
         if (! ($this->usuario?->activo && ! $datos['activo'])) {
             return true;
         }
 
-        /** @var User $actor */
         $actor = Auth::user();
 
         $motivo = app(CambiarEstadoUsuarioAction::class)->motivoParaNoDesactivar($actor, $this->usuario);
@@ -400,8 +384,6 @@ class UsuarioAdminForm extends Component
             return false;
         }
 
-        
-        
         $cargo = app(CambiarEstadoUsuarioAction::class)->jefaturasPorResolver($this->usuario);
 
         if ($cargo->isNotEmpty()) {
@@ -414,10 +396,10 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-      * @param  array<string, mixed>  $datos
-      * @param  list<int>  $roles
-      * @return array<string, mixed>
-      */
+     * @param  array<string, mixed>  $datos
+     * @param  list<int>  $roles
+     * @return array<string, mixed>
+     */
     private function construirAtributos(array $datos, array $roles, int $adminId): array
     {
         return [
@@ -426,7 +408,6 @@ class UsuarioAdminForm extends Component
             'dni' => $datos['dni'],
             'email' => $datos['email'],
             'regimen' => $datos['regimen'] ?: null,
-            
             'sede_id' => in_array($adminId, $roles, true) ? null : $datos['sedeId'],
             'unidad_organica_id' => in_array($adminId, $roles, true) ? null : $datos['unidadOrganicaId'],
             'activo' => $datos['activo'],
@@ -434,16 +415,14 @@ class UsuarioAdminForm extends Component
     }
 
     /**
-      * @param  array<string, mixed>  $atributos
-      * @param  array<string, mixed>  $datos
-      */
+     * @param  array<string, mixed>  $atributos
+     * @param  array<string, mixed>  $datos
+     */
     private function guardarUsuario(array $atributos, array $datos, bool $requiereTurno, GeneradorTurnoMensualService $generador, bool $debeRetirarTurno): void
     {
         if ($this->usuario) {
-            
-            
             if (filled($datos['password'])) {
-                $atributos['password'] = Hash::make($datos['password']);
+                $atributos['password'] = Hash::make(self::aTexto($datos['password']));
                 $atributos['debe_actualizar_password'] = true;
             }
 
@@ -453,41 +432,33 @@ class UsuarioAdminForm extends Component
                 $this->usuario->tokens()->delete();
             }
 
-            
             if ($debeRetirarTurno) {
                 $generador->retirarTurno($this->usuario);
             }
         } else {
-            
-            
-            
-            $atributos['password'] = Hash::make($datos['dni']);
+            $atributos['password'] = Hash::make(self::aTexto($datos['dni']));
             $atributos['debe_actualizar_password'] = true;
 
             $this->usuario = User::create($atributos);
         }
 
-        
-        
-        $this->usuario->syncRoles(array_map('intval', $datos['rolesSeleccionados']));
+        $this->usuario->syncRoles(self::aEnteros($datos['rolesSeleccionados']));
         PapeletaActualizada::olvidarDestinatariosFijos();
 
         if ($requiereTurno && $datos['activo']) {
-            /** @var User $actor */
             $actor = Auth::user();
 
             $generador->cargarConfiguracion(
                 trabajador: $this->usuario,
-                turno: $datos['turno'],
-                fechaAncla: Carbon::parse($datos['fechaAncla']),
+                turno: self::aTexto($datos['turno']),
+                fechaAncla: Carbon::parse(self::aTexto($datos['fechaAncla'])),
                 actor: $actor,
-                diasTrabajo: $datos['diasTrabajo'],
-                diasDescanso: $datos['diasDescanso'],
+                diasTrabajo: is_numeric($datos['diasTrabajo']) ? (int) $datos['diasTrabajo'] : 0,
+                diasDescanso: is_numeric($datos['diasDescanso']) ? (int) $datos['diasDescanso'] : 0,
             );
         }
     }
 
-    
     protected function buscarCuentaExistente(): ?User
     {
         if ($this->usuario !== null || strlen($this->dni) !== 8) {
@@ -501,18 +472,10 @@ class UsuarioAdminForm extends Component
     {
         return view('livewire.usuarios.usuario-admin-form', [
             'cuentaExistente' => $this->buscarCuentaExistente(),
-            
-            
-            
-            
             'sedes' => Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre'])
                 ->map(fn ($s) => ['id' => $s->id, 'label' => $s->nombre])->all(),
             'unidades' => UnidadOrganica::orderBy('nombre')->get(['id', 'nombre'])
                 ->map(fn ($u) => ['id' => $u->id, 'label' => $u->nombre])->all(),
-            
-            
-            
-            
             'roles' => Role::orderBy('name')
                 ->when($this->usuario === null, fn ($q) => $q->whereIn('name', ['admin', 'rrhh']))
                 ->when($this->usuario !== null, fn ($q) => $q->where('name', '!=', 'admin'))

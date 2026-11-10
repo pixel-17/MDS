@@ -7,14 +7,13 @@ use App\Models\UnidadOrganica;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
-
 class GuardarUnidadOrganicaAction
 {
     /**
-      * @param  array{nombre:string,tipo:?string,parent_id:?int,jefe_id:?int,activo:bool}  $datos
-      * @param  bool  $ubicarJefe  pasar al jefe nuevo a esta unidad si estaba en otra
-      * @throws UsuarioException
-      */
+     * @param  array{nombre:string,tipo:?string,parent_id:?int,jefe_id:?int,activo:bool}  $datos
+     * @param  bool  $ubicarJefe  pasar al jefe nuevo a esta unidad si estaba en otra
+     * @throws UsuarioException
+     */
     public function ejecutar(User $actor, ?UnidadOrganica $unidad, array $datos, bool $ubicarJefe = false): UnidadOrganica
     {
         if (! $actor->hasRole('admin')) {
@@ -53,9 +52,9 @@ class GuardarUnidadOrganicaAction
     }
 
     /**
-      * @param  array{nombre:string,tipo:?string,parent_id:?int,jefe_id:?int,activo:bool}  $datos
-      * @throws UsuarioException
-      */
+     * @param  array{nombre:string,tipo:?string,parent_id:?int,jefe_id:?int,activo:bool}  $datos
+     * @throws UsuarioException
+     */
     private function exigirAlcanceDeJefeDeArea(User $actor, ?UnidadOrganica $unidad, array $datos): void
     {
         if ($unidad === null) {
@@ -68,9 +67,9 @@ class GuardarUnidadOrganicaAction
     }
 
     /**
-      * @param  array{nombre:string,tipo:?string,parent_id:?int,jefe_id:?int,activo:bool}  $datos
-      * @throws UsuarioException
-      */
+     * @param  array{nombre:string,tipo:?string,parent_id:?int,jefe_id:?int,activo:bool}  $datos
+     * @throws UsuarioException
+     */
     private function exigirAlcanceDeJefeDeAreaAlCrear(User $actor, array $datos): void
     {
         $reglas = app(ReglasOrganigrama::class);
@@ -95,9 +94,9 @@ class GuardarUnidadOrganicaAction
     }
 
     /**
-      * @param  array{nombre:string,tipo:?string,parent_id:?int,jefe_id:?int,activo:bool}  $datos
-      * @throws UsuarioException
-      */
+     * @param  array{nombre:string,tipo:?string,parent_id:?int,jefe_id:?int,activo:bool}  $datos
+     * @throws UsuarioException
+     */
     private function exigirAlcanceDeJefeDeAreaAlEditar(User $actor, UnidadOrganica $unidad, array $datos): void
     {
         $reglas = app(ReglasOrganigrama::class);
@@ -127,9 +126,9 @@ class GuardarUnidadOrganicaAction
     }
 
     /**
-      * @throws UsuarioException
-      */
-    private function validarSinCiclos(?UnidadOrganica $unidad, mixed $parentId): void
+     * @throws UsuarioException
+     */
+    private function validarSinCiclos(?UnidadOrganica $unidad, ?int $parentId): void
     {
         if (! $unidad || ! $parentId) {
             return;
@@ -139,7 +138,7 @@ class GuardarUnidadOrganicaAction
 
         $prohibidos = [$unidad->id, ...$unidad->descendantIds()];
 
-        if (in_array((int) $parentId, $prohibidos, true)) {
+        if (in_array($parentId, $prohibidos, true)) {
             throw new UsuarioException('Esa unidad no puede ser su propio padre ni el de un descendiente suyo.');
         }
     }

@@ -8,11 +8,11 @@ use App\Models\User;
 use App\Services\GeneradorTurnoMensualService;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
-
 
 #[Layout('layouts.app')]
 #[Title('Configurar turno')]
@@ -21,15 +21,12 @@ class ConfiguracionTurnoForm extends Component
     #[Locked]
     public User $trabajador;
 
-    
     #[Locked]
     public bool $embebido = false;
 
-    
     #[Locked]
     public bool $sinTurnoVigenteHoy = false;
 
-    
     public ?string $mensajeExito = null;
 
     public function mount(User $trabajador, bool $embebido = false): void
@@ -49,14 +46,8 @@ class ConfiguracionTurnoForm extends Component
 
         $this->mensajeExito = null;
 
-        /** @var User $actor */
         $actor = auth()->user();
 
-        
-        
-        
-        
-        
         $ciclo = GeneradorTurnoMensualService::cicloOrdinario276();
 
         $generador->cargarConfiguracion(
@@ -68,24 +59,16 @@ class ConfiguracionTurnoForm extends Component
             diasDescanso: $ciclo['dias_descanso'],
         );
 
-        
-        
         if ($this->embebido) {
             $this->dispatch('turno-guardado', trabajadorId: $this->trabajador->id);
 
             return;
         }
 
-        
-        
-        
-        
-        
         $this->sinTurnoVigenteHoy = Turno::vigenteParaUsuario($this->trabajador->id) === null;
         $this->mensajeExito = 'Configuración de turno cargada. Se generó el horario del mes en curso.';
     }
 
-    
     public function cancelar(): void
     {
         if ($this->embebido) {
@@ -94,8 +77,8 @@ class ConfiguracionTurnoForm extends Component
     }
 
     /**
-      * @return array{inicioMes: Carbon, semanas: array<int, array<int, int|null>>, turnosPorDia: \Illuminate\Support\Collection<int, Turno>, hoy: Carbon}
-      */
+     * @return array{inicioMes: Carbon, semanas: array<int, array<int, int|null>>, turnosPorDia: Collection<int, Turno>, hoy: Carbon}
+     */
     private function calendarioDelMes(): array
     {
         $inicioMes = now()->startOfMonth();
@@ -106,7 +89,7 @@ class ConfiguracionTurnoForm extends Component
             ->get()
             ->keyBy(fn (Turno $turno) => $turno->fecha->day);
 
-        $primerDiaSemana = $inicioMes->dayOfWeekIso; 
+        $primerDiaSemana = $inicioMes->dayOfWeekIso;
         $celdas = array_fill(0, $primerDiaSemana - 1, null);
 
         for ($dia = 1; $dia <= $finMes->day; $dia++) {

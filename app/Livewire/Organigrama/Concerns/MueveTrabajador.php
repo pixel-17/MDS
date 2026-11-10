@@ -13,15 +13,13 @@ use App\Models\User;
 use App\Services\Organigrama\ArmadorOrganigrama;
 use Illuminate\Support\Collection;
 
-
 trait MueveTrabajador
 {
     /**
-      * @var array{trabajador: int, origen: int, destino: int, cambiar_sede: bool}|null
-      */
+     * @var array{trabajador: int, origen: int, destino: int, cambiar_sede: bool}|null
+     */
     public ?array $propuesta = null;
 
-    
     public function proponerMovimiento(int $trabajadorId, int $destinoId): void
     {
         $usuario = $this->autorizar();
@@ -42,15 +40,12 @@ trait MueveTrabajador
             return;
         }
 
-        
         if ($trabajador->unidadesQueEncabeza()->exists()) {
             $this->proponerMovimientoJefe($usuario, $trabajador, $destino);
 
             return;
         }
 
-        
-        
         if ((int) $trabajador->unidad_organica_id === (int) $destino->id) {
             $this->proponerMovimientoJefe($usuario, $trabajador, $destino);
 
@@ -60,7 +55,6 @@ trait MueveTrabajador
         try {
             $vista = app(MoverTrabajadorAction::class)->previsualizar($usuario, $trabajador, $destino);
         } catch (UsuarioException $e) {
-            
             $this->proponerMovimientoJefe($usuario, $trabajador, $destino);
 
             if ($this->propuestaJefe !== null) {
@@ -78,12 +72,10 @@ trait MueveTrabajador
             'trabajador' => (int) $trabajador->id,
             'origen' => (int) $trabajador->unidad_organica_id,
             'destino' => (int) $destino->id,
-            
             'cambiar_sede' => $vista['sede']['propone_cambio'],
         ];
     }
 
-    
     public function ascenderTrabajador(): void
     {
         $usuario = $this->autorizar();
@@ -173,8 +165,8 @@ trait MueveTrabajador
     }
 
     /**
-      * @return array<string, mixed>|null
-      */
+     * @return array<string, mixed>|null
+     */
     private function vistaPreviaMovimiento(User $usuario): ?array
     {
         if ($this->propuesta === null) {
@@ -203,14 +195,18 @@ trait MueveTrabajador
     }
 
     /**
-      * @param  array<string, mixed>|null  $ficha
-      * @param  Collection<int, UnidadOrganica>  $unidades
-      * @param  array<int, true>  $enAlcance
-      * @return list<array{id: int, label: string, hint: string}>
-      */
+     * @param  array<string, mixed>|null  $ficha
+     * @param  Collection<int, UnidadOrganica>  $unidades
+     * @param  array<int, true>  $enAlcance
+     * @return list<array{id: int, label: string, hint: string}>
+     */
     private function destinosParaMover(?array $ficha, Collection $unidades, array $enAlcance): array
     {
         if (! $this->modoEdicion || $ficha === null) {
+            return [];
+        }
+
+        if (! $ficha['persona'] instanceof User) {
             return [];
         }
 

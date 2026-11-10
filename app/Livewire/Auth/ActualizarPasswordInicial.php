@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -9,7 +10,6 @@ use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
-
 
 #[Layout('layouts.app')]
 #[Title('Actualiza tu contraseña')]
@@ -19,7 +19,6 @@ class ActualizarPasswordInicial extends Component
 
     public string $password_confirmation = '';
 
-    /** @return array<string, mixed> */
     protected function rules(): array
     {
         $dni = (string) Auth::user()?->dni;
@@ -32,7 +31,6 @@ class ActualizarPasswordInicial extends Component
         ];
     }
 
-    /** @return array<string, string> */
     protected function messages(): array
     {
         return [
@@ -44,7 +42,6 @@ class ActualizarPasswordInicial extends Component
     {
         $datos = $this->validate();
 
-        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         $user->update([

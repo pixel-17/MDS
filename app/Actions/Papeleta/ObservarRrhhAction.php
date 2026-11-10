@@ -13,7 +13,6 @@ use App\States\Papeleta\PendienteRrhh;
 use App\States\Papeleta\Rechazada;
 use Illuminate\Support\Facades\DB;
 
-
 class ObservarRrhhAction
 {
     use ExigeDecisorAjeno;
@@ -23,7 +22,6 @@ class ObservarRrhhAction
     public function ejecutar(Papeleta $papeleta, User $rrhh, string $comentario): Papeleta
     {
         $papeleta = DB::transaction(function () use ($papeleta, $rrhh, $comentario) {
-            /** @var Papeleta $actual */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             $this->exigirDecisorAjeno($actual, $rrhh);
@@ -32,13 +30,11 @@ class ObservarRrhhAction
                 throw new PapeletaException('Esta papeleta ya no está pendiente de decisión de RRHH.');
             }
 
-            
-            
             if ($actual->sinJefatura()) {
                 throw new PapeletaException('Esta papeleta no tiene jefe superior que pueda responder una observación: solo puedes aprobarla o rechazarla.');
             }
 
-            $tope = (int) Configuracion::valorDe('TOPE_OBSERVACIONES', 3);
+            $tope = Configuracion::valorEnteroDe('TOPE_OBSERVACIONES', 3);
 
             $actual->contador_observaciones_rrhh++;
 
@@ -60,9 +56,6 @@ class ObservarRrhhAction
             return $actual;
         });
 
-        
-        
-        
         if ($papeleta->estado->equals(Rechazada::class)) {
             $this->notificar->rechazada($papeleta);
         } else {
