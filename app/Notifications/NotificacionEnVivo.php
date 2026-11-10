@@ -15,6 +15,9 @@ abstract class NotificacionEnVivo extends Notification implements ShouldQueue
 
     public int $tries = 3;
 
+    /**
+     * @return int[] segundos de espera entre cada intento
+     */
     public function backoff(): array
     {
         return [10, 60, 300];
@@ -92,7 +95,12 @@ abstract class NotificacionEnVivo extends Notification implements ShouldQueue
             ->badge('/icons/badge-72.png')
             ->tag($this->etiquetaPush());
 
-        $mensaje->data($this->datosPush());
+        $datosPush = [
+            ...$this->datosPush(),
+            'badgeCount' => $notifiable->unreadNotifications()->count(),
+        ];
+
+        $mensaje->data($datosPush);
 
         if ($this->url) {
             $mensaje->action($this->textoAccion(), 'ver');
