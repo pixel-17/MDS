@@ -135,6 +135,9 @@ class ArmadorOrganigrama
     public function idsEnAlcance(Collection $raicesDeAlcance, Collection $porPadre): array
     {
         $enAlcance = [];
+        /**
+         * @var array<int, int> $pendientes
+         */
         $pendientes = $raicesDeAlcance->pluck('id')->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)->all();
 
         while ($pendientes) {

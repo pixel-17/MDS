@@ -96,6 +96,9 @@ class ReporteHorasAcumuladasService
             ];
         });
 
+        /**
+         * @var Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}> $resultado
+         */
         return $resultado;
     }
 
@@ -114,6 +117,9 @@ class ReporteHorasAcumuladasService
         return ($detalle ?? $this->detalle($usuario, $mes, $filtros))
             ->groupBy('trabajador_id')
             ->map(function (Collection $filas) {
+                /**
+                 * @var Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}> $filas
+                 */
                 $primera = $filas->first() ?? throw new \LogicException('groupBy() nunca produce un grupo vacío.');
                 $conDescuento = $filas->where('suma_descuento', true);
 
@@ -143,9 +149,15 @@ class ReporteHorasAcumuladasService
     {
         return ($detalle ?? $this->detalle($usuario, $mes, $filtros))
             ->groupBy(function ($fila) {
+                /**
+                 * @var array{trabajador_id: int, dia: string} $fila
+                 */
                 return $fila['trabajador_id'].'|'.$fila['dia'];
             })
             ->map(function (Collection $filas) {
+                /**
+                 * @var Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: \Illuminate\Support\Carbon|null, retorno: \Illuminate\Support\Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}> $filas
+                 */
                 $primera = $filas->first() ?? throw new \LogicException('groupBy() nunca produce un grupo vacío.');
 
                 return [

@@ -110,6 +110,9 @@ class ResumenPapeletasService
         return $papeletas
             ->groupBy($clave)
             ->map(
+                /**
+                 * @param Collection<int, Papeleta> $filas
+                 */
                 function (Collection $filas, string $nombre): array {
                     $fila = [
                         'nombre' => $nombre,
@@ -176,7 +179,13 @@ class ResumenPapeletasService
             ->filter(fn (Papeleta $p) => $p->resueltoPorJefe && $p->jefe_resuelto_at)
             ->groupBy('resuelto_por_jefe_id')
             ->map(
+                /**
+                 * @param Collection<int, Papeleta> $filas
+                 */
                 function (Collection $filas): array {
+                    /**
+                     * @var Papeleta $primera
+                     */
                     $primera = $filas->first();
 
                     $minutos = $filas

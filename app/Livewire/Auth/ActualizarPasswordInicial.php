@@ -19,6 +19,9 @@ class ActualizarPasswordInicial extends Component
 
     public string $password_confirmation = '';
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function rules(): array
     {
         $dni = (string) Auth::user()?->dni;
@@ -31,6 +34,9 @@ class ActualizarPasswordInicial extends Component
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
     protected function messages(): array
     {
         return [
@@ -42,6 +48,9 @@ class ActualizarPasswordInicial extends Component
     {
         $datos = $this->validate();
 
+        /**
+         * @var User $user
+         */
         $user = Auth::user();
 
         $user->update([

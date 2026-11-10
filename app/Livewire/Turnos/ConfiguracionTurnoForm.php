@@ -46,6 +46,9 @@ class ConfiguracionTurnoForm extends Component
 
         $this->mensajeExito = null;
 
+        /**
+         * @var User $actor
+         */
         $actor = auth()->user();
 
         $ciclo = GeneradorTurnoMensualService::cicloOrdinario276();

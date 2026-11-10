@@ -25,6 +25,9 @@ class JefeIndex extends Component
 
     public string $buscar = '';
 
+    /**
+     * @return array<int, string>
+     */
     protected function nombresDePaginadores(): array
     {
         return [
@@ -39,6 +42,9 @@ class JefeIndex extends Component
 
     public function render(): View
     {
+        /**
+         * @var User $user
+         */
         $user = Auth::user();
 
         abort_unless($user->esJefeDeEquipo(), 403);

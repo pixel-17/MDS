@@ -27,16 +27,25 @@ class DashboardMetricsService
         private readonly ReporteHorasAcumuladasService $reporteHorasAcumuladas,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function paraAdmin(): array
     {
         return $this->recordar('admin', fn () => $this->calcularAdmin());
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function paraRrhh(User $rrhh): array
     {
         return $this->recordar('rrhh', fn () => $this->calcularRrhh($rrhh));
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function paraJefe(User $jefe): array
     {
         return $this->recordar('jefe:'.$jefe->id, fn () => $this->calcularJefe($jefe));
@@ -64,6 +73,9 @@ class DashboardMetricsService
         return Cache::remember("dashboard-metricas:{$version}:{$clave}", self::TTL_SEGUNDOS, $calcular);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function calcularAdmin(): array
     {
         $desde = now()->subDays($this->diasVentana);
@@ -101,6 +113,9 @@ class DashboardMetricsService
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function calcularRrhh(User $rrhh): array
     {
         $desde = now()->subDays($this->diasVentana);
@@ -169,6 +184,9 @@ class DashboardMetricsService
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function calcularJefe(User $jefe): array
     {
         $desde = now()->subDays($this->diasVentana);

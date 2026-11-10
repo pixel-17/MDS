@@ -39,6 +39,7 @@ class ProgramacionEquipo extends Component
 
     public function mount(): void
     {
+        abort_unless((bool) auth()->user()?->esJefeDeAlguien(), 403);
         $this->anio = now()->year;
         $this->mes = now()->month;
     }

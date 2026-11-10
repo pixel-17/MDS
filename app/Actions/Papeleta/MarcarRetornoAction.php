@@ -71,6 +71,9 @@ class MarcarRetornoAction
     private function ejecutar(Papeleta $papeleta, array $datosRetorno): Papeleta
     {
         return DB::transaction(function () use ($papeleta, $datosRetorno) {
+            /**
+             * @var Papeleta $actual
+             */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             if (! $actual->estado->equals(AutorizadaYCorriendo::class)) {
@@ -83,6 +86,9 @@ class MarcarRetornoAction
 
             $estadoAnterior = class_basename($actual->estado);
 
+            /**
+             * @var Carbon $horaServidor
+             */
             $horaServidor = $datosRetorno['hora_servidor'];
 
             $retorno = Retorno::create(array_merge(['papeleta_id' => $actual->id], $datosRetorno));

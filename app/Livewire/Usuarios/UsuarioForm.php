@@ -55,6 +55,9 @@ class UsuarioForm extends Component
 
     public ?int $unidadOrganicaId = null;
 
+    /**
+     * @var array<int, int|string>
+     */
     public array $rolesSeleccionados = [];
 
     public bool $activo = true;
@@ -122,6 +125,9 @@ class UsuarioForm extends Component
 
     protected function resolverAlcance(?User $objetivo): string
     {
+        /**
+         * @var User $actor
+         */
         $actor = Auth::user();
 
         if ($actor->hasRole('admin') && ($objetivo || request()->query('tipo') === 'admin' || $this->nuevoAdmin)) {
@@ -153,6 +159,9 @@ class UsuarioForm extends Component
         return is_numeric($id) ? (int) $id : 0;
     }
 
+    /**
+     * @return array<int, int>
+     */
     private static function aEnteros(mixed $valores): array
     {
         if (! is_array($valores)) {
@@ -203,6 +212,9 @@ class UsuarioForm extends Component
         return $ids->map(fn ($id) => (int) $id)->unique()->values()->all();
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function rules(): array
     {
         $creando = $this->usuario === null;
@@ -259,6 +271,9 @@ class UsuarioForm extends Component
         return $reglas;
     }
 
+    /**
+     * @var array<string, string>
+     */
     protected $messages = [
         'rolesSeleccionados.required' => 'Selecciona al menos un rol: un usuario sin rol no puede usar el sistema.',
         'rolesSeleccionados.min' => 'Selecciona al menos un rol: un usuario sin rol no puede usar el sistema.',
@@ -294,6 +309,9 @@ class UsuarioForm extends Component
      */
     protected function guardarComoJefe(array $datos): void
     {
+        /**
+         * @var User $actor
+         */
         $actor = Auth::user();
         $esArea = $this->esArea();
 
@@ -344,6 +362,9 @@ class UsuarioForm extends Component
 
         $usuario = $this->usuario;
 
+        /**
+         * @var User $actor
+         */
         $actor = Auth::user();
 
         abort_unless($actor->can('editar', $usuario), 403);
@@ -478,6 +499,9 @@ class UsuarioForm extends Component
         }
 
         if ($this->usuario?->activo && ! $activo) {
+            /**
+             * @var User $actor
+             */
             $actor = Auth::user();
 
             $motivo = app(CambiarEstadoUsuarioAction::class)->motivoParaNoDesactivar($actor, $this->usuario);

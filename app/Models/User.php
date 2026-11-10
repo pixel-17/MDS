@@ -50,6 +50,9 @@ class User extends Authenticatable
 {
     use HasApiTokens;
 
+    /**
+     * @use HasFactory<UserFactory>
+     */
     use HasFactory;
 
     use HasProfilePhoto;
@@ -173,6 +176,9 @@ class User extends Authenticatable
         'trabajador' => 'Trabajador',
     ];
 
+    /**
+     * @var 'admin'|'rrhh'|'jefe_area'|'jefe_inmediato'|'trabajador'|null
+     */
     private ?string $tipoUsuarioMemo = null;
 
     /**
@@ -351,6 +357,9 @@ class User extends Authenticatable
         return $mias->isNotEmpty() && $otro->unidadIdsComoJefe()->intersect($mias)->isNotEmpty();
     }
 
+    /**
+     * @return Collection<int, int>
+     */
     private function unidadIdsComoJefe(): Collection
     {
         return UnidadOrganica::where('jefe_id', $this->id)->pluck('id')->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)->values();
@@ -370,6 +379,9 @@ class User extends Authenticatable
         return $this->hasMany(Papeleta::class, 'trabajador_id');
     }
 
+    /**
+     * @return Attribute<string, never>
+     */
     protected function nombreCompleto(): Attribute
     {
         return Attribute::make(

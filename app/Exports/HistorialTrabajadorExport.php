@@ -36,6 +36,9 @@ class HistorialTrabajadorExport implements FromCollection, WithHeadings, WithMap
         return ['N.º', 'Día', 'Motivo', 'Sede', 'Estado', 'Salida', 'Retorno', 'Minutos fuera', 'Descuenta', 'Sustento'];
     }
 
+    /**
+     * @param  array{id: int, dia: Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<PapeletaState>, abandono: bool, salida: Carbon|null, retorno: Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}  $fila
+     */
     public function map($fila): array
     {
         return [

@@ -15,6 +15,9 @@ class StorePapeletaRequest extends FormRequest
         return (bool) $this->user()?->can('crear', Papeleta::class);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         $tope = $this->user()?->regimen === '728'

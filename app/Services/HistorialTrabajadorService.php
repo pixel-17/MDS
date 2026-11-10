@@ -79,6 +79,9 @@ class HistorialTrabajadorService
                 'sustento_estado' => $p->sustentos->last()?->estado,
             ]);
 
+        /**
+         * @var Collection<int, array{id: int, dia: Carbon, motivo: string, sede: string, estado: string, estado_fqcn: class-string<PapeletaState>, abandono: bool, salida: Carbon|null, retorno: Carbon|null, minutos: int|null, suma_descuento: bool, sustento_estado: 'pendiente'|'presentado'|'vencido'|'aprobado'|'observado'|'rechazado'|null}> $resultado
+         */
         return $resultado;
     }
 

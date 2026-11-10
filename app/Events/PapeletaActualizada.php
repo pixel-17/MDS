@@ -29,6 +29,9 @@ class PapeletaActualizada implements ShouldBroadcastNow
      */
     private static array $pendientes = [];
 
+    /**
+     * @param  array<int, int>  $userIds
+     */
     public function __construct(
         public int $papeletaId,
         public string $estado,
@@ -36,6 +39,9 @@ class PapeletaActualizada implements ShouldBroadcastNow
         public array $userIds,
     ) {}
 
+    /**
+     * @return array<int, PrivateChannel>
+     */
     public function broadcastOn(): array
     {
         return array_map(
@@ -44,6 +50,9 @@ class PapeletaActualizada implements ShouldBroadcastNow
         );
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function broadcastWith(): array
     {
         return [

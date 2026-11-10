@@ -17,6 +17,9 @@ class CrearUsuarioRequest extends FormRequest
         return true;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         $unidadesDisponibles = $this->unidadesDisponibles();
@@ -93,6 +96,9 @@ class CrearUsuarioRequest extends FormRequest
         return $unidad?->jefe?->regimen;
     }
 
+    /**
+     * @return Collection<int, int>
+     */
     public function unidadesDisponibles(): Collection
     {
         $encabezadas = $this->user()->unidadesDeArea ?? collect();

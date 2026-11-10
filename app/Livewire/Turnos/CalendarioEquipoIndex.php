@@ -32,6 +32,9 @@ class CalendarioEquipoIndex extends Component
     #[Locked]
     public int $version = 0;
 
+    /**
+     * @var array<int, string>
+     */
     #[Locked]
     public array $advertencias = [];
 
@@ -52,6 +55,9 @@ class CalendarioEquipoIndex extends Component
     private function jefeVista(): User
     {
         if ($this->jefeId === null) {
+            /**
+             * @var User $usuario
+             */
             $usuario = auth()->user();
 
             return $usuario;
@@ -135,6 +141,9 @@ class CalendarioEquipoIndex extends Component
      */
     private function persistir(ProgramacionTurnoService $servicio, Collection $equipo, array $cambios): void
     {
+        /**
+         * @var User $actor
+         */
         $actor = auth()->user();
 
         $servicio->guardarEquipo($equipo, $this->anio, $this->mes, $cambios, $actor);
@@ -177,6 +186,9 @@ class CalendarioEquipoIndex extends Component
 
         $ciclo = GeneradorTurnoMensualService::cicloOrdinario276(now()->startOfWeek());
 
+        /**
+         * @var User $actor
+         */
         $actor = auth()->user();
 
         $generador->cargarConfiguracion(

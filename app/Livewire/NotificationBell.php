@@ -21,6 +21,9 @@ class NotificationBell extends Component
 
     public function marcarComoLeida(string $id): void
     {
+        /**
+         * @var User $usuario
+         */
         $usuario = Auth::user();
 
         $notificacion = $usuario->notifications()->whereKey($id)->first();
@@ -30,6 +33,9 @@ class NotificationBell extends Component
 
     public function marcarTodasComoLeidas(): void
     {
+        /**
+         * @var User $usuario
+         */
         $usuario = Auth::user();
 
         $usuario->unreadNotifications->markAsRead();
@@ -37,6 +43,9 @@ class NotificationBell extends Component
 
     public function render(): View
     {
+        /**
+         * @var User $usuario
+         */
         $usuario = Auth::user();
 
         $noLeidas = $usuario->unreadNotifications()->count();

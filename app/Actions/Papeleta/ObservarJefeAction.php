@@ -22,6 +22,9 @@ class ObservarJefeAction
     public function ejecutar(Papeleta $papeleta, User $jefe, string $comentario, string $actorTipo = 'jefe_inmediato', bool $requiereAdjunto = false): Papeleta
     {
         $papeleta = DB::transaction(function () use ($papeleta, $jefe, $comentario, $actorTipo, $requiereAdjunto) {
+            /**
+             * @var Papeleta $actual
+             */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             $this->exigirDecisorAjeno($actual, $jefe);

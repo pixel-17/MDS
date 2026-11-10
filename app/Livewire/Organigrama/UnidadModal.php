@@ -73,6 +73,9 @@ class UnidadModal extends Component
 
     protected function autorizarAccion(?int $id, ?int $parentId): User
     {
+        /**
+         * @var User|null $actor
+         */
         $actor = auth()->user();
 
         abort_unless($actor !== null, 403);
@@ -91,6 +94,9 @@ class UnidadModal extends Component
         return $actor;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function rules(): array
     {
         return [
@@ -117,6 +123,9 @@ class UnidadModal extends Component
             return;
         }
 
+        /**
+         * @var User $actor
+         */
         $actor = auth()->user();
 
         if (! $this->intentar(
@@ -149,6 +158,9 @@ class UnidadModal extends Component
             return;
         }
 
+        /**
+         * @var User $actor
+         */
         $actor = auth()->user();
 
         if (! $this->intentar(
@@ -175,6 +187,9 @@ class UnidadModal extends Component
             return view('livewire.organigrama.unidad-modal', ['padres' => [], 'jefes' => [], 'resumen' => null, 'contexto' => null, 'vista' => null, 'esAdmin' => false]);
         }
 
+        /**
+         * @var User $actor
+         */
         $actor = auth()->user();
         $esAdmin = $actor->hasRole('admin');
 

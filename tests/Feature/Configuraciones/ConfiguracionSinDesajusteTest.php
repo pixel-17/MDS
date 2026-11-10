@@ -11,6 +11,9 @@ class ConfiguracionSinDesajusteTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * @return array<int, string>
+     */
     private function clavesLeidasPorElCodigo(): array
     {
         $claves = [];

@@ -50,6 +50,9 @@ class UsuarioAdminForm extends Component
 
     public ?int $unidadOrganicaId = null;
 
+    /**
+     * @var array<int, int|string>
+     */
     public array $rolesSeleccionados = [];
 
     public string $rolNuevo = '';
@@ -105,6 +108,9 @@ class UsuarioAdminForm extends Component
         return is_numeric($id) ? (int) $id : 0;
     }
 
+    /**
+     * @return array<int, int>
+     */
     private static function aEnteros(mixed $valores): array
     {
         if (! is_array($valores)) {
@@ -144,6 +150,9 @@ class UsuarioAdminForm extends Component
         return ! ConfiguracionTurno::where('user_id', $this->usuario->id)->exists();
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function rules(): array
     {
         $reglas = [
@@ -170,6 +179,9 @@ class UsuarioAdminForm extends Component
         return $reglas;
     }
 
+    /**
+     * @var array<string, string>
+     */
     protected $messages = [
         'rolesSeleccionados.required' => 'Selecciona al menos un rol: un usuario sin rol no puede usar el sistema.',
         'rolesSeleccionados.min' => 'Selecciona al menos un rol: un usuario sin rol no puede usar el sistema.',
@@ -374,6 +386,9 @@ class UsuarioAdminForm extends Component
             return true;
         }
 
+        /**
+         * @var User $actor
+         */
         $actor = Auth::user();
 
         $motivo = app(CambiarEstadoUsuarioAction::class)->motivoParaNoDesactivar($actor, $this->usuario);
@@ -446,6 +461,9 @@ class UsuarioAdminForm extends Component
         PapeletaActualizada::olvidarDestinatariosFijos();
 
         if ($requiereTurno && $datos['activo']) {
+            /**
+             * @var User $actor
+             */
             $actor = Auth::user();
 
             $generador->cargarConfiguracion(

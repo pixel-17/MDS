@@ -20,8 +20,14 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class HorasAcumuladasDetalleSheet implements FromCollection, ShouldAutoSize, WithColumnWidths, WithEvents, WithHeadings, WithMapping, WithStyles, WithTitle
 {
+    /**
+     * @param  Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: Carbon|null, retorno: Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>  $detalle
+     */
     public function __construct(protected Collection $detalle) {}
 
+    /**
+     * @return Collection<int, array{papeleta_id: int, trabajador_id: int, trabajador: string, dni: string, sede: string|null, unidad_organica: string|null, dia: string, motivo: string, suma_descuento: bool, salida: Carbon|null, retorno: Carbon|null, minutos_brutos: int, minutos_refrigerio: int, minutos: int<0, max>}>
+     */
     public function collection(): Collection
     {
         return $this->detalle;

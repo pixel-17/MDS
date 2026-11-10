@@ -27,6 +27,9 @@ class BajaConReemplazo extends Component
     /**
      * @var array<int|string, array<string, mixed>>
      */
+    /**
+     * @var array<int|string, array{modo?: string, usuario_id?: int|string|null, nuevo?: array<string, mixed>}>
+     */
     public array $decisiones = [];
 
     public ?string $error = null;
@@ -89,6 +92,9 @@ class BajaConReemplazo extends Component
             }
         }
 
+        /**
+         * @var User $actor
+         */
         $actor = auth()->user();
 
         if (! $this->intentar(

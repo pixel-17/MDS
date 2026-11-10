@@ -41,6 +41,9 @@ class TrabajadorIndex extends Component
     {
         $termino = trim($this->buscar);
 
+        /**
+         * @var User $usuario
+         */
         $usuario = Auth::user();
 
         $papeletas = $usuario->papeletas()

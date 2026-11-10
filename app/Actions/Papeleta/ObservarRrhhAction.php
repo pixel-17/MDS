@@ -22,6 +22,9 @@ class ObservarRrhhAction
     public function ejecutar(Papeleta $papeleta, User $rrhh, string $comentario): Papeleta
     {
         $papeleta = DB::transaction(function () use ($papeleta, $rrhh, $comentario) {
+            /**
+             * @var Papeleta $actual
+             */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             $this->exigirDecisorAjeno($actual, $rrhh);

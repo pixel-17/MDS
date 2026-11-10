@@ -46,6 +46,9 @@ class RevisionPosthocAction
         $reclasificada = false;
 
         $papeleta = DB::transaction(function () use ($papeleta, $rrhh, $resultado, $comentario, &$reclasificada) {
+            /**
+             * @var Papeleta $actual
+             */
             $actual = Papeleta::whereKey($papeleta->id)->lockForUpdate()->firstOrFail();
 
             $this->exigirDecisorAjeno($actual, $rrhh);

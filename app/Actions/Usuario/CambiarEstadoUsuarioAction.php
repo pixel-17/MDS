@@ -168,6 +168,9 @@ class CambiarEstadoUsuarioAction
         ], true);
     }
 
+    /**
+     * @throws UsuarioException
+     */
     public function reactivar(User $actor, User $usuario): User
     {
         $this->exigirAdmin($actor);
