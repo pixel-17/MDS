@@ -10,7 +10,6 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-
 #[Layout('layouts.app')]
 #[Title('Sedes')]
 class SedeIndex extends Component
@@ -23,17 +22,23 @@ class SedeIndex extends Component
     {
         $this->autorizarAdmin();
 
+        if ($sede->usuarios()->exists()) {
+            $sede->forceFill(['activo' => false])->save();
+            session()->now('mensaje', 'Sede desactivada: tiene usuarios asociados y no puede borrarse.');
+
+            return;
+        }
+
         try {
             $sede->delete();
             session()->now('mensaje', 'Sede eliminada.');
         } catch (QueryException $e) {
-            
             if (! str_starts_with((string) $e->getCode(), '23')) {
                 throw $e;
             }
 
             $sede->forceFill(['activo' => false])->save();
-            session()->now('mensaje', 'Sede desactivada: tiene usuarios o papeletas asociados y no puede borrarse.');
+            session()->now('mensaje', 'Sede desactivada: tiene papeletas asociadas y no puede borrarse.');
         }
     }
 

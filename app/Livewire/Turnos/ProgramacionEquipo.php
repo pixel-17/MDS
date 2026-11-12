@@ -17,7 +17,6 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-
 #[Layout('layouts.app')]
 #[Title('Programar turnos — mi equipo (728)')]
 class ProgramacionEquipo extends Component
@@ -26,11 +25,12 @@ class ProgramacionEquipo extends Component
 
     public int $mes;
 
-    
     #[Locked]
     public int $version = 0;
 
-    /** @var array<int, string> */
+    /**
+     * @var array<int, string>
+     */
     #[Locked]
     public array $advertencias = [];
 
@@ -39,7 +39,9 @@ class ProgramacionEquipo extends Component
 
     public function mount(): void
     {
-        abort_unless((bool) auth()->user()?->esJefeDeAlguien(), 403);
+        $actor = auth()->user();
+        abort_unless($actor?->hasRole('admin') || (bool) $actor?->esJefeDeAlguien(), 403);
+
         $this->anio = now()->year;
         $this->mes = now()->month;
     }
@@ -65,8 +67,8 @@ class ProgramacionEquipo extends Component
     }
 
     /**
-      * @param  array<int|string, array<string, string>>  $cambios  userId => dias (solo filas modificadas)
-      */
+     * @param  array<int|string, array<string, string>>  $cambios  userId => dias (solo filas modificadas)
+     */
     public function guardar(ProgramacionTurnoService $servicio, array $cambios): void
     {
         $this->mensaje = null;
@@ -80,7 +82,6 @@ class ProgramacionEquipo extends Component
 
         $equipo = $this->equipo();
 
-        
         $servicio->validarEquipo($equipo, $this->anio, $this->mes, $cambios);
 
         $this->advertencias = $servicio->advertenciasEquipo($equipo, $cambios);
@@ -91,8 +92,8 @@ class ProgramacionEquipo extends Component
     }
 
     /**
-      * @param  array<int|string, array<string, string>>  $cambios
-      */
+     * @param  array<int|string, array<string, string>>  $cambios
+     */
     public function guardarIgualmente(ProgramacionTurnoService $servicio, array $cambios): void
     {
         $this->persistir($servicio, $this->equipo(), $cambios);
@@ -104,12 +105,14 @@ class ProgramacionEquipo extends Component
     }
 
     /**
-      * @param  Collection<int, User>  $equipo
-      * @param  array<int|string, array<string, string>>  $cambios
-      */
+     * @param  Collection<int, User>  $equipo
+     * @param  array<int|string, array<string, string>>  $cambios
+     */
     private function persistir(ProgramacionTurnoService $servicio, Collection $equipo, array $cambios): void
     {
-        /** @var User $actor */
+        /**
+         * @var User $actor
+         */
         $actor = auth()->user();
 
         $servicio->guardarEquipo($equipo, $this->anio, $this->mes, $cambios, $actor);
@@ -130,11 +133,13 @@ class ProgramacionEquipo extends Component
     }
 
     /**
-      * @return Collection<int, User>
-      */
+     * @return Collection<int, User>
+     */
     private function equipo(): Collection
     {
-        /** @var User $actor */
+        /**
+         * @var User $actor
+         */
         $actor = auth()->user();
 
         [$trabajadores, , $soloLectura] = app(EquipoDelJefeService::class)->para($actor);
@@ -146,12 +151,13 @@ class ProgramacionEquipo extends Component
 
     public function render(): View
     {
-        /** @var User $actor */
+        /**
+         * @var User $actor
+         */
         $actor = auth()->user();
 
         [$todos, $esJefeDeArea, $soloLectura] = app(EquipoDelJefeService::class)->para($actor);
 
-        
         $todos = $todos->reject(fn (User $t) => in_array($t->id, $soloLectura, true))->values();
 
         $equipo = $todos->filter(fn (User $t) => $t->regimen === '728' && $t->activo)->values();
@@ -165,8 +171,6 @@ class ProgramacionEquipo extends Component
             ->get()
             ->groupBy('user_id');
 
-        
-        
         $diasIniciales = [];
         foreach ($equipo as $trabajador) {
             $mapa = ($turnosPorUsuario->get($trabajador->id) ?? collect())

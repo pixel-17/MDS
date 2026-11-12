@@ -10,7 +10,6 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-
 #[Layout('layouts.app')]
 #[Title('Editar configuración')]
 class ConfiguracionForm extends Component
@@ -22,7 +21,21 @@ class ConfiguracionForm extends Component
 
     public string $valor = '';
 
-    
+    /**
+     * @var array<int, string>
+     */
+    public array $diasSeleccionados = [];
+
+    public const DIAS = [
+        1 => 'Lunes',
+        2 => 'Martes',
+        3 => 'Miércoles',
+        4 => 'Jueves',
+        5 => 'Viernes',
+        6 => 'Sábado',
+        7 => 'Domingo',
+    ];
+
     public static function esClaveDeTurno(string $clave): bool
     {
         return (bool) preg_match('/^(TURNO_[A-Z]+_HORA|HORARIO_ORDINARIO_HORA)_(INICIO|FIN)$/', $clave);
@@ -34,35 +47,66 @@ class ConfiguracionForm extends Component
 
         $this->configuracion = $configuracion;
         $this->valor = $configuracion->valor;
+
+        if ($this->tipoCampo() === 'dias') {
+            $this->diasSeleccionados = array_filter(explode(',', $configuracion->valor), fn ($d) => $d !== '');
+        }
     }
 
-    /** @return array<string, mixed> */
+    public function tipoCampo(): string
+    {
+        return self::tipoCampoDe($this->configuracion->clave);
+    }
+
+    public static function tipoCampoDe(string $clave): string
+    {
+        if (preg_match('/(_HORA_(INICIO|FIN)|^BLOQUE_ALMUERZO_(INICIO|FIN))$/', $clave)) {
+            return 'hora';
+        }
+
+        if ($clave === 'HORARIO_ORDINARIO_DIAS_LABORABLES') {
+            return 'dias';
+        }
+
+        if (preg_match('/(_MINUTOS|_HORAS_HABILES|_DIAS_HABILES|^TOPE_|^POSTHOC_ALERTA_)/', $clave)) {
+            return 'entero';
+        }
+
+        return 'texto';
+    }
+
+    public function updatedDiasSeleccionados(): void
+    {
+        $dias = array_unique(array_map('intval', $this->diasSeleccionados));
+        sort($dias);
+
+        $this->valor = implode(',', $dias);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     protected function rules(): array
     {
         return ['valor' => self::reglasParaClave($this->configuracion->clave)];
     }
 
     /**
-      * @return array<int, string>
-      */
+     * @return array<int, string>
+     */
     public static function reglasParaClave(string $clave): array
     {
-        if (preg_match('/(_HORA_(INICIO|FIN)|^BLOQUE_ALMUERZO_(INICIO|FIN))$/', $clave)) {
-            return ['required', 'string', 'date_format:H:i'];
-        }
-
-        if ($clave === 'HORARIO_ORDINARIO_DIAS_LABORABLES') {
-            return ['required', 'string', 'regex:/^[1-7](,[1-7])*$/'];
-        }
-
-        if (preg_match('/(_MINUTOS|_HORAS_HABILES|_DIAS_HABILES|^TOPE_|^POSTHOC_ALERTA_)/', $clave)) {
-            return ['required', 'integer', 'min:1', 'max:100000'];
-        }
-
-        return ['required', 'string', 'max:255'];
+        return match (self::tipoCampoDe($clave)) {
+            'hora' => ['required', 'string', 'date_format:H:i'],
+            'dias' => ['required', 'string', 'regex:/^[1-7](,[1-7])*$/'],
+            'entero' => ['required', 'integer', 'min:1', 'max:100000'],
+            default => ['required', 'string', 'max:255'],
+        };
     }
 
-    /** @return array<string, string> */
+    /**
+     * @return array<string, string>
+     */
     protected function messages(): array
     {
         return [

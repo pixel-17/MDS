@@ -18,7 +18,6 @@ use App\States\Papeleta\PendienteRrhh;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
-
 class CrearPapeletaAction
 {
     public function __construct(
@@ -27,8 +26,8 @@ class CrearPapeletaAction
     ) {}
 
     /**
-      * @param  array<string, mixed>  $datos
-      */
+     * @param  array<string, mixed>  $datos
+     */
     public function ejecutar(User $trabajador, Motivo $motivo, array $datos): Papeleta
     {
         $this->validarMotivoYRegimen($trabajador, $motivo, $datos);
@@ -53,25 +52,25 @@ class CrearPapeletaAction
             $autorizaSistema,
         ));
 
-        
-        
-        
         $this->notificarCreacion($papeleta, $estadoInicial, $autorizaSistema);
 
         return $papeleta;
     }
 
     /**
-      * @param  array<string, mixed>  $datos
-      */
+     * @param  array<string, mixed>  $datos
+     */
     private function validarMotivoYRegimen(User $trabajador, Motivo $motivo, array $datos): void
     {
-        
-        
-        
         if (! in_array($trabajador->regimen, ['276', '728'], true)) {
             throw new PapeletaException(
                 'Tu usuario no tiene un régimen (276 o 728) asignado. Comunícate con Administración para regularizarlo antes de crear una papeleta.'
+            );
+        }
+
+        if (! $trabajador->sede_id) {
+            throw new PapeletaException(
+                'Tu usuario no tiene una sede asignada. Comunícate con Administración para regularizarlo antes de crear una papeleta.'
             );
         }
 
@@ -85,16 +84,12 @@ class CrearPapeletaAction
     }
 
     /**
-      * @return array{directoARrhh: bool, jefeInmediatoId: ?int, jefeAreaId: ?int, esJefeInmediatoDeLaUnidad: bool, rrhhEnHorario: bool}
-      */
+     * @return array{directoARrhh: bool, jefeInmediatoId: ?int, jefeAreaId: ?int, esJefeInmediatoDeLaUnidad: bool, rrhhEnHorario: bool}
+     */
     private function resolverJefatura(User $trabajador): array
     {
         $unidad = $trabajador->unidadOrganica;
 
-        
-        
-        
-        
         $directoARrhh = $trabajador->esJefeDeArea();
 
         if ($directoARrhh && ! User::role('rrhh')->where('activo', true)->exists()) {
@@ -107,23 +102,12 @@ class CrearPapeletaAction
             ? $unidad->jefaturasDe($trabajador)
             : [null, null];
 
-        
         $jefeInmediato = $jefeInmediatoResuelto !== null
             ? User::whereKey($jefeInmediatoResuelto)->where('activo', true)->first()
             : null;
 
-        
-        
-        
-        
-        
         $esJefeInmediatoDeLaUnidad = $unidad?->esJefeDeLaUnidad($trabajador) ?? false;
 
-        
-        
-        
-        
-        
         if (! $directoARrhh && ! $jefeInmediato) {
             if ($esJefeInmediatoDeLaUnidad) {
                 throw new PapeletaException(
@@ -136,10 +120,6 @@ class CrearPapeletaAction
             );
         }
 
-        
-        
-        
-        
         return [
             'directoARrhh' => $directoARrhh,
             'jefeInmediatoId' => $jefeInmediato?->id,
@@ -150,24 +130,11 @@ class CrearPapeletaAction
     }
 
     /**
-      * @param  array{directoARrhh: bool, rrhhEnHorario: bool}  $jefatura
-      * @return class-string<PendienteJefe|PendienteRrhh|AutorizadaYCorriendo>
-      */
+     * @param  array{directoARrhh: bool, rrhhEnHorario: bool}  $jefatura
+     * @return class-string<PendienteJefe|PendienteRrhh|AutorizadaYCorriendo>
+     */
     private function determinarEstadoInicial(array $jefatura): string
     {
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         return match (true) {
             $jefatura['directoARrhh'] && ! $jefatura['rrhhEnHorario'] => AutorizadaYCorriendo::class,
             $jefatura['directoARrhh'] => PendienteRrhh::class,
@@ -176,9 +143,9 @@ class CrearPapeletaAction
     }
 
     /**
-      * @param  array<string, mixed>  $datos
-      * @param  array{directoARrhh: bool, jefeInmediatoId: ?int, jefeAreaId: ?int, esJefeInmediatoDeLaUnidad: bool}  $jefatura
-      */
+     * @param  array<string, mixed>  $datos
+     * @param  array{directoARrhh: bool, jefeInmediatoId: ?int, jefeAreaId: ?int, esJefeInmediatoDeLaUnidad: bool}  $jefatura
+     */
     private function crearPapeletaConHistorial(
         User $trabajador,
         Motivo $motivo,
@@ -189,8 +156,6 @@ class CrearPapeletaAction
         string $estadoInicial,
         bool $autorizaSistema,
     ): Papeleta {
-        
-        
         User::whereKey($trabajador->id)->lockForUpdate()->first();
         $this->exigirSinPapeletaViva($trabajador);
 
@@ -211,11 +176,6 @@ class CrearPapeletaAction
             'hora_salida_real' => $autorizaSistema ? now() : null,
         ];
 
-        
-        
-        
-        
-        
         if ($autorizaSistema) {
             $campos['revision_posthoc_estado'] = 'pendiente';
         }
@@ -237,8 +197,8 @@ class CrearPapeletaAction
     }
 
     /**
-      * @param  array{directoARrhh: bool}  $jefatura
-      */
+     * @param  array{directoARrhh: bool}  $jefatura
+     */
     private function registrarHistorialDeEscalamiento(Papeleta $papeleta, array $jefatura, bool $autorizaSistema): void
     {
         if ($jefatura['directoARrhh']) {
@@ -255,10 +215,6 @@ class CrearPapeletaAction
             return;
         }
 
-        
-        
-        
-        
     }
 
     private function notificarCreacion(Papeleta $papeleta, string $estadoInicial, bool $autorizaSistema): void
@@ -282,13 +238,9 @@ class CrearPapeletaAction
         }
     }
 
-    
     private function resolverTurnoActivo(User $trabajador): ?Turno
     {
         if ($trabajador->regimen === '728') {
-            
-            
-            
             $turno = Turno::vigenteParaUsuario($trabajador->id);
 
             if (! $turno || $turno->es_descanso) {
@@ -311,7 +263,6 @@ class CrearPapeletaAction
         return null;
     }
 
-    
     private function resolverFinDeTurno(User $trabajador, ?Turno $turno): Carbon
     {
         if ($trabajador->regimen === '728') {
